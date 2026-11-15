@@ -1,0 +1,26 @@
+<template>
+    <!-- SFUIC New Base card -->
+    <lightning-card title="SFUIC New Base">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small">lightning-input type=color</h3>
+            <lightning-input data-id="lightning-input-color" type="color" label="SFUIC Color" value={color} onchange={handleColor}></lightning-input>
+            <p data-id="color-result">Color: {color}</p>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-input type=range</h3>
+            <lightning-input data-id="lightning-input-range" type="range" label="SFUIC Range" min="0" max="10" step="1" value={range} onchange={handleRange}></lightning-input>
+            <p data-id="range-result">Range: {range}</p>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-empty-state</h3>
+            <lightning-empty-state data-id="lightning-empty-state" title="SFUIC Nothing Here" illustration-name="noresults:search">
+                <p slot="description">SFUIC No records match this view.</p>
+            </lightning-empty-state>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-illustration</h3>
+            <lightning-illustration data-id="lightning-illustration" illustration-name="error:unrecoverable" alternative-text="SFUIC Error illustration"></lightning-illustration>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning/refresh</h3>
+            <lightning-button data-id="lightning-refresh" label="SFUIC Send Refresh" onclick={sendRefresh}></lightning-button>
+            <p data-id="refresh-result">Refresh events sent: {refreshCount}</p>
+        </div>
+    </lightning-card>
+</template>

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <name>SFUIC_Aura_Local_Action</name>
+        <label>SFUIC Aura Local Action</label>
+        <locationX>0</locationX>
+        <locationY>200</locationY>
+        <actionName>c:sfUiCAuraFlowAction</actionName>
+        <actionType>component</actionType>
+        <connector>
+            <targetReference>SFUIC_Aura_Done</targetReference>
+        </connector>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+    </actionCalls>
+    <apiVersion>68.0</apiVersion>
+    <environments>Default</environments>
+    <interviewLabel>SFUIC Aura Screen {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>SFUIC Aura Screen</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    <screens>
+        <name>SFUIC_Aura_Screen_1</name>
+        <label>SFUIC Aura Screen</label>
+        <locationX>0</locationX>
+        <locationY>100</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <connector>
+            <targetReference>SFUIC_Aura_Local_Action</targetReference>
+        </connector>
+        <fields>
+            <name>SFUIC_Aura_Screen_Label</name>
+            <fieldText>&lt;p&gt;&lt;b&gt;SFUIC Aura Screen&lt;/b&gt;: an Aura screen component, then an Aura local action on Next.&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <fields>
+            <name>SFUIC_Aura_Flow_Screen</name>
+            <extensionName>c:sfUiCAuraFlowScreen</extensionName>
+            <fieldType>ComponentInstance</fieldType>
+            <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+            <isRequired>true</isRequired>
+            <storeOutputAutomatically>true</storeOutputAutomatically>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>SFUIC_Aura_Done</name>
+        <label>SFUIC Aura Done</label>
+        <locationX>0</locationX>
+        <locationY>300</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>SFUIC_Aura_Done_Text</name>
+            <fieldText>&lt;p&gt;SFUIC Aura local action done.&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>SFUIC_Aura_Screen_1</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+</Flow>

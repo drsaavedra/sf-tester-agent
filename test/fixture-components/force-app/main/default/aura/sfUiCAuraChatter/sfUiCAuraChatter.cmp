@@ -1,0 +1,18 @@
+<aura:component implements="flexipage:availableForRecordHome,force:hasRecordId">
+    <lightning:card title="SFUIC Aura Chatter">
+        <div class="slds-p-horizontal_small">
+            <div data-id="forceChatter:publisher">
+                <h3 class="slds-text-heading_small">forceChatter:publisher</h3>
+                <forceChatter:publisher context="RECORD" recordId="{!v.recordId}"/>
+            </div>
+            <div data-id="forceChatter:feed" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">forceChatter:feed</h3>
+                <forceChatter:feed type="Record" subjectId="{!v.recordId}"/>
+            </div>
+            <div data-id="forceChatter:fullFeed" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">forceChatter:fullFeed</h3>
+                <forceChatter:fullFeed/>
+            </div>
+        </div>
+    </lightning:card>
+</aura:component>

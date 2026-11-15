@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>F_Pct__c</fullName>
+    <label>F Pct</label>
+    <formula>0.25</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <precision>18</precision>
+    <scale>0</scale>
+    <type>Percent</type>
+</CustomField>

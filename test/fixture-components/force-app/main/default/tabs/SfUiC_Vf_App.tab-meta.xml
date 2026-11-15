@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomTab xmlns="http://soap.sforce.com/2006/04/metadata">
+    <flexiPage>SfUiC_Vf_App_Page</flexiPage>
+    <label>SFUIC Vf App</label>
+    <motif>Custom20: Airplane</motif>
+</CustomTab>

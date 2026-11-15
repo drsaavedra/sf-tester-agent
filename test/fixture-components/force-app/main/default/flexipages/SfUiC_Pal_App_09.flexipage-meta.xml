@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FlexiPage xmlns="http://soap.sforce.com/2006/04/metadata">
+    <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-184: runtime_industries_commandcenter:watchListToolbar&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_01</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>runtime_industries_commandcenter:watchListToolbar</componentName>
+                <identifier>runtime_industries_commandcenter_watchListToolbar</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-185: runtime_industries_sustainability:supplierAllScorecardList&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_02</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>runtime_industries_sustainability:supplierAllScorecardList</componentName>
+                <identifier>runtime_industries_sustainability_supplierAllScorecardList</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-186: runtime_industries_sustainability:supplierOpenScorecardList&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_03</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>runtime_industries_sustainability:supplierOpenScorecardList</componentName>
+                <identifier>runtime_industries_sustainability_supplierOpenScorecardList</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-187: runtime_omnistudio:componentConsumptionRate&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_04</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>runtime_omnistudio:componentConsumptionRate</componentName>
+                <identifier>runtime_omnistudio_componentConsumptionRate</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-188: runtime_omnistudio:componentConsumptionRateContainer&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_05</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>runtime_omnistudio:componentConsumptionRateContainer</componentName>
+                <identifier>runtime_omnistudio_componentConsumptionRateContainer</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-189: runtime_omnistudio:generationTrend&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_06</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>runtime_omnistudio:generationTrend</componentName>
+                <identifier>runtime_omnistudio_generationTrend</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-190: runtime_omnistudio:generationTrendContainer&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_07</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>runtime_omnistudio:generationTrendContainer</componentName>
+                <identifier>runtime_omnistudio_generationTrendContainer</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-191: runtime_omnistudio:homeTrends&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_08</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>runtime_omnistudio:homeTrends</componentName>
+                <identifier>runtime_omnistudio_homeTrends</identifier>
+            </componentInstance>
+        </itemInstances>
+        <name>main</name>
+        <type>Region</type>
+    </flexiPageRegions>
+    <masterLabel>SFUIC Pal App 09</masterLabel>
+    <template>
+        <name>flexipage:defaultAppHomeTemplate</name>
+    </template>
+    <type>AppPage</type>
+</FlexiPage>

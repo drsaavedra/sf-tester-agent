@@ -1,0 +1,5 @@
+{
+  "name": "sf-tester",
+  "owner": { "name": "sf-tester" },
+  "plugins": [{ "name": "sf-tester-pane", "source": "./" }]
+}

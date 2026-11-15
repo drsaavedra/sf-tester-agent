@@ -1,0 +1,87 @@
+<aura:component implements="flexipage:availableForAllPageTypes">
+    <aura:attribute name="tab" type="String" default="one"/>
+
+    <!-- SFUIC Aura Layout card -->
+    <lightning:card title="SFUIC Aura Layout" iconName="standard:dashboard">
+        <aura:set attribute="actions">
+            <lightning:button label="SFUIC Card Action"/>
+        </aura:set>
+        <aura:set attribute="footer">SFUIC card footer</aura:set>
+        <div class="slds-p-horizontal_small">
+            <div data-id="lightning:card">
+                <h3 class="slds-text-heading_small">lightning:card</h3>
+                <p class="slds-text-body_small">This whole gallery sits in a lightning:card with an icon, an action and a footer.</p>
+            </div>
+
+            <div data-id="lightning:accordion" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:accordion</h3>
+                <lightning:accordion activeSectionName="A">
+                    <lightning:accordionSection name="A" label="SFUIC Section A (lightning:accordionSection)">
+                        <p>SFUIC section A body</p>
+                    </lightning:accordionSection>
+                    <lightning:accordionSection name="B" label="SFUIC Section B">
+                        <p>SFUIC section B body</p>
+                    </lightning:accordionSection>
+                </lightning:accordion>
+                <div data-id="lightning:accordionSection"><h3 class="slds-text-heading_small slds-m-top_x-small">lightning:accordionSection</h3></div>
+            </div>
+
+            <div data-id="lightning:carousel" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:carousel</h3>
+                <lightning:carousel disableAutoScroll="true">
+                    <lightning:carouselImage src="/img/icon/t4v35/standard/account_120.png" header="SFUIC Slide One" description="First slide" alternativeText="SFUIC Slide One" href="/lightning/o/Account/home"/>
+                    <lightning:carouselImage src="/img/icon/t4v35/standard/contact_120.png" header="SFUIC Slide Two" description="Second slide" alternativeText="SFUIC Slide Two"/>
+                    <lightning:carouselImage src="/img/icon/t4v35/standard/opportunity_120.png" header="SFUIC Slide Three" description="Third slide" alternativeText="SFUIC Slide Three"/>
+                </lightning:carousel>
+                <div data-id="lightning:carouselImage">
+                    <h3 class="slds-text-heading_small slds-m-top_x-small">lightning:carouselImage</h3>
+                    <p class="slds-text-body_small">Each slide of the carousel above is a lightning:carouselImage.</p>
+                </div>
+            </div>
+
+            <div data-id="lightning:layout" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:layout</h3>
+                <lightning:layout multipleRows="true" horizontalAlign="spread">
+                    <lightning:layoutItem size="12" mediumDeviceSize="4" padding="around-small">
+                        <div class="slds-box">SFUIC Layout Item One (lightning:layoutItem)</div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="12" mediumDeviceSize="4" padding="around-small">
+                        <div class="slds-box">SFUIC Layout Item Two</div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="12" mediumDeviceSize="4" padding="around-small">
+                        <div class="slds-box">SFUIC Layout Item Three</div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+                <div data-id="lightning:layoutItem"><h3 class="slds-text-heading_small">lightning:layoutItem</h3></div>
+            </div>
+
+            <div data-id="lightning:tabset" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:tabset</h3>
+                <lightning:tabset selectedTabId="{!v.tab}">
+                    <lightning:tab label="SFUIC Tab One" id="one">
+                        <div>SFUIC tab one body (lightning:tab)</div>
+                    </lightning:tab>
+                    <lightning:tab label="SFUIC Tab Two" id="two">SFUIC tab two body</lightning:tab>
+                    <lightning:tab label="SFUIC Tab Three" id="three" iconName="utility:info">SFUIC tab three body</lightning:tab>
+                </lightning:tabset>
+                <p data-id="aura-tab-result">Selected tab: {!v.tab}</p>
+                <div data-id="lightning:tab"><h3 class="slds-text-heading_small">lightning:tab</h3></div>
+            </div>
+
+            <div data-id="lightning:tile" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:tile</h3>
+                <lightning:tile label="SFUIC Aura Tile" href="/lightning/o/Account/home">
+                    <aura:set attribute="media">
+                        <lightning:avatar fallbackIconName="standard:account" alternativeText="SFUIC Tile media"/>
+                    </aura:set>
+                    <p class="slds-truncate">SFUIC tile body text</p>
+                </lightning:tile>
+            </div>
+
+            <div data-id="lightning:container" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:container</h3>
+                <lightning:container src="{!$Resource.SfUiC_Container + '/index.html'}" alternativeText="SFUIC Container"/>
+            </div>
+        </div>
+    </lightning:card>
+</aura:component>

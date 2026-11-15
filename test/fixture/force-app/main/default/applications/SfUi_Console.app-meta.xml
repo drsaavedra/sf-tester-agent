@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>View</actionName>
+        <content>SfUi_Dyn_ConsoleApp_Page</content>
+        <formFactor>Large</formFactor>
+        <pageOrSobjectType>SfUiDyn__c</pageOrSobjectType>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+    </actionOverrides>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>SfUi_Dyn_ConsoleProfile_Page</content>
+        <formFactor>Large</formFactor>
+        <pageOrSobjectType>SfUiDyn__c</pageOrSobjectType>
+        <profile>Admin</profile>
+        <type>Flexipage</type>
+    </profileActionOverrides>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <label>SF UI Console</label>
+    <navType>Console</navType>
+    <tabs>standard-home</tabs>
+    <tabs>SfUiProbe__c</tabs>
+    <uiType>Lightning</uiType>
+    <workspaceConfig>
+        <mappings>
+            <tab>standard-home</tab>
+        </mappings>
+        <mappings>
+            <tab>SfUiProbe__c</tab>
+        </mappings>
+    </workspaceConfig>
+</CustomApplication>

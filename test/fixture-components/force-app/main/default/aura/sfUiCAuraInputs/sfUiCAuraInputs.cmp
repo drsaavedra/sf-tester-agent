@@ -1,0 +1,109 @@
+<aura:component implements="flexipage:availableForAllPageTypes">
+    <aura:attribute name="colours" type="List"/>
+    <aura:attribute name="salutations" type="List"/>
+    <aura:attribute name="picked" type="List" default="['red']"/>
+    <aura:attribute name="combo" type="String" default="green"/>
+    <aura:attribute name="dual" type="List" default="['b']"/>
+    <aura:attribute name="dualOptions" type="List"/>
+    <aura:attribute name="radio" type="String" default="blue"/>
+    <aura:attribute name="selectValue" type="String" default="green"/>
+    <aura:attribute name="slider" type="Integer" default="40"/>
+    <aura:attribute name="rich" type="String" default="&lt;p&gt;&lt;b&gt;SFUIC&lt;/b&gt; rich text&lt;/p&gt;"/>
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+
+    <!-- SFUIC Aura Inputs card -->
+    <lightning:card title="SFUIC Aura Inputs">
+        <div class="slds-p-horizontal_small">
+            <div data-id="lightning:input">
+                <h3 class="slds-text-heading_small">lightning:input</h3>
+                <lightning:input name="sfuicText" label="SFUIC Text" value="SFUIC typed"/>
+                <lightning:input type="number" name="sfuicNumber" label="SFUIC Number" value="42"/>
+                <lightning:input type="date" name="sfuicDate" label="SFUIC Date" value="2026-03-15"/>
+                <lightning:input type="datetime" name="sfuicDateTime" label="SFUIC Date Time" value="2026-03-15T09:45:00Z"/>
+                <lightning:input type="time" name="sfuicTime" label="SFUIC Time" value="14:30:00.000"/>
+                <lightning:input type="email" name="sfuicEmail" label="SFUIC Email" value="sfuic@example.com"/>
+                <lightning:input type="search" name="sfuicSearch" label="SFUIC Search"/>
+                <lightning:input type="color" name="sfuicColor" label="SFUIC Color" value="#1b96ff"/>
+                <lightning:input type="checkbox" name="sfuicCheck" label="SFUIC Checkbox" checked="true"/>
+                <lightning:input type="toggle" name="sfuicToggle" label="SFUIC Toggle"/>
+                <lightning:input type="checkbox-button" name="sfuicCheckButton" label="SFUIC Checkbox Button"/>
+                <lightning:input type="file" name="sfuicFile" label="SFUIC File"/>
+            </div>
+
+            <div data-id="lightning:checkboxGroup" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:checkboxGroup</h3>
+                <lightning:checkboxGroup name="sfuicCheckGroup" label="SFUIC Checkbox Group" options="{!v.colours}" value="{!v.picked}"/>
+                <p>Picked: {!v.picked}</p>
+            </div>
+
+            <div data-id="lightning:combobox" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:combobox</h3>
+                <lightning:combobox name="sfuicCombo" label="SFUIC Combobox" value="{!v.combo}" options="{!v.colours}" placeholder="SFUIC pick a colour"/>
+                <p>Combobox: {!v.combo}</p>
+            </div>
+
+            <div data-id="lightning:dualListbox" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:dualListbox</h3>
+                <lightning:dualListbox name="sfuicDual" label="SFUIC Dual Listbox" sourceLabel="SFUIC Available" selectedLabel="SFUIC Chosen"
+                    options="{!v.dualOptions}"
+                    value="{!v.dual}"/>
+            </div>
+
+            <div data-id="lightning:inputAddress" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:inputAddress</h3>
+                <lightning:inputAddress addressLabel="SFUIC Address" streetLabel="Street" cityLabel="City" countryLabel="Country"
+                    provinceLabel="State" postalCodeLabel="Postal Code" street="1 Market St" city="San Francisco"
+                    province="CA" country="US" postalCode="94105"/>
+            </div>
+
+            <div data-id="lightning:inputLocation" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:inputLocation</h3>
+                <lightning:inputLocation label="SFUIC Location" latitude="37.7938" longitude="-122.3948"/>
+            </div>
+
+            <div data-id="lightning:inputName" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:inputName</h3>
+                <lightning:inputName label="SFUIC Name" salutation="Dr." firstName="Ada" lastName="Sfuic" options="{!v.salutations}"/>
+            </div>
+
+            <div data-id="lightning:inputRichText" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:inputRichText</h3>
+                <lightning:inputRichText label="SFUIC Rich Text" labelVisible="true" value="{!v.rich}">
+                    <lightning:insertImageButton/>
+                </lightning:inputRichText>
+                <div data-id="lightning:insertImageButton">
+                    <h3 class="slds-text-heading_small slds-m-top_x-small">lightning:insertImageButton</h3>
+                    <p class="slds-text-body_small">The image button sits at the end of the rich text toolbar above.</p>
+                </div>
+            </div>
+
+            <div data-id="lightning:radioGroup" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:radioGroup</h3>
+                <lightning:radioGroup name="sfuicRadio" label="SFUIC Radio Group" options="{!v.colours}" value="{!v.radio}" type="radio"/>
+                <lightning:radioGroup name="sfuicRadioButton" label="SFUIC Radio Buttons" options="{!v.colours}" value="{!v.radio}" type="button"/>
+                <p>Radio: {!v.radio}</p>
+            </div>
+
+            <div data-id="lightning:select" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:select</h3>
+                <lightning:select name="sfuicSelect" label="SFUIC Select" value="{!v.selectValue}">
+                    <option value="red">SFUIC Red</option>
+                    <option value="green">SFUIC Green</option>
+                    <option value="blue">SFUIC Blue</option>
+                </lightning:select>
+                <p>Select: {!v.selectValue}</p>
+            </div>
+
+            <div data-id="lightning:slider" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:slider</h3>
+                <lightning:slider label="SFUIC Slider" value="{!v.slider}" min="0" max="100" step="10"/>
+                <p>Slider: {!v.slider}</p>
+            </div>
+
+            <div data-id="lightning:textarea" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:textarea</h3>
+                <lightning:textarea name="sfuicTextarea" label="SFUIC Text Area" value="SFUIC long text" maxlength="255"/>
+            </div>
+        </div>
+    </lightning:card>
+</aura:component>

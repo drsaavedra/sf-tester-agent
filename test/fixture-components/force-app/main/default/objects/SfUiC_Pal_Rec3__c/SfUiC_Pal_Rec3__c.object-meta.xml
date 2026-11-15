@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>View</actionName>
+        <content>SfUiC_Pal_Rec_03</content>
+        <formFactor>Large</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+    </actionOverrides>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <enableActivities>false</enableActivities>
+    <enableFeeds>false</enableFeeds>
+    <enableReports>false</enableReports>
+    <enableSearch>true</enableSearch>
+    <label>SFUIC Pal Rec 3</label>
+    <nameField>
+        <label>Pal Rec 3 Name</label>
+        <type>Text</type>
+    </nameField>
+    <pluralLabel>SFUIC Pal Rec 3s</pluralLabel>
+    <sharingModel>ReadWrite</sharingModel>
+</CustomObject>

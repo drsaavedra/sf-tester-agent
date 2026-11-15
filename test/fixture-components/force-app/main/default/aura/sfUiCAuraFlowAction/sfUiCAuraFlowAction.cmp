@@ -1,0 +1,3 @@
+<aura:component implements="lightning:availableForFlowActions">
+    <!-- Local action: invoke() shows a toast, so the run is visible -->
+</aura:component>

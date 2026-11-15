@@ -1,0 +1,13 @@
+diff --git a/test/fixture/force-app/main/default/lwc/sfUiInputs/sfUiInputs.html b/test/fixture/force-app/main/default/lwc/sfUiInputs/sfUiInputs.html
+index 2e499cb..5db6399 100644
+--- a/test/fixture/force-app/main/default/lwc/sfUiInputs/sfUiInputs.html
++++ b/test/fixture/force-app/main/default/lwc/sfUiInputs/sfUiInputs.html
+@@ -2,7 +2,7 @@
+     <lightning-card title="SF UI Inputs">
+         <div class="slds-p-around_small">
+             <lightning-combobox label="Size" options={sizes} value={size} onchange={handleSize}></lightning-combobox>
+-            <p lwc:if={size}>Size chosen: {size}</p>
++            <p lwc:if={size} style="position:relative">Size chosen: {size}<span style="position:absolute;inset:0;background:#fff"></span></p>
+             <lightning-datatable key-field="id" data={rows} columns={columns} onrowaction={handleRowAction} hide-checkbox-column></lightning-datatable>
+             <p lwc:if={rowAction}>Row action: {rowAction}</p>
+             <lightning-record-picker label="Company" object-api-name="Account" onchange={handlePick}></lightning-record-picker>

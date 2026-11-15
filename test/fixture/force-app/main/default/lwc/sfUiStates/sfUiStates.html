@@ -1,0 +1,25 @@
+<template>
+    <!-- User experience states -->
+    <div class="slds-p-top_small">
+        <lightning-input label="Code" pattern="[A-Z]{3}" message-when-pattern-mismatch="Use three capital letters"></lightning-input>
+        <lightning-button label="Check code" onclick={handleCheck}></lightning-button>
+        <p lwc:if={codeOk}>Code accepted</p>
+        <lightning-button label="Load slowly" onclick={handleLoad}></lightning-button>
+        <lightning-spinner lwc:if={loading} alternative-text="Loading states" size="small"></lightning-spinner>
+        <p lwc:if={loaded}>Loaded after wait</p>
+        <lightning-button label="Raise toast" onclick={handleToast}></lightning-button>
+        <lightning-slider label="Volume" value={volume} onchange={handleVolume}></lightning-slider>
+        <p lwc:if={volumeSet}>Volume: {volume}</p>
+        <lightning-input-rich-text label="Story" label-visible onchange={handleStory}></lightning-input-rich-text>
+        <p lwc:if={story}>Story: {story}</p>
+        <lightning-pill-container items={pills} onitemremove={handleRemove}></lightning-pill-container>
+        <p lwc:if={removed}>Removed pill: {removed}</p>
+        <lightning-tree items={tree} header="Places" onselect={handleTree}></lightning-tree>
+        <p lwc:if={leaf}>Tree chose: {leaf}</p>
+        <lightning-tabset>
+            <lightning-tab label="Inner one">Inner one body</lightning-tab>
+            <lightning-tab label="Inner two" onactive={handleInner}>Inner two body</lightning-tab>
+        </lightning-tabset>
+        <p lwc:if={innerTwo}>Inner tab two shown</p>
+    </div>
+</template>

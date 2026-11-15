@@ -1,0 +1,6 @@
+{
+  "FirstName": "Probe",
+  "LastName": "Breaker",
+  "profileName": "Standard Platform User",
+  "permsets": ["SfUi_Probe_Read", "SfUiC_Access", "SfUi_Typed_One"]
+}

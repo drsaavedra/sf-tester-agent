@@ -1,0 +1,86 @@
+<aura:component implements="flexipage:availableForAllPageTypes">
+    <aura:attribute name="stamp" type="Long"/>
+    <aura:attribute name="hourAgo" type="Long"/>
+    <aura:attribute name="richText" type="String"/>
+    <aura:attribute name="markers" type="List"/>
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+
+    <!-- SFUIC Aura Output card -->
+    <lightning:card title="SFUIC Aura Output">
+        <div class="slds-p-horizontal_small">
+            <div data-id="lightning:formattedAddress">
+                <h3 class="slds-text-heading_small">lightning:formattedAddress</h3>
+                <lightning:formattedAddress street="1 Market St" city="San Francisco" province="CA" postalCode="94105" country="US"/>
+            </div>
+            <div data-id="lightning:formattedDateTime" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:formattedDateTime</h3>
+                <lightning:formattedDateTime value="{!v.stamp}" year="numeric" month="long" day="2-digit" hour="2-digit" minute="2-digit"/>
+            </div>
+            <div data-id="lightning:formattedEmail" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:formattedEmail</h3>
+                <lightning:formattedEmail value="sfuic@example.com" label="SFUIC Email"/>
+            </div>
+            <div data-id="lightning:formattedLocation" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:formattedLocation</h3>
+                <lightning:formattedLocation latitude="37.7938" longitude="-122.3948"/>
+            </div>
+            <div data-id="lightning:formattedName" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:formattedName</h3>
+                <lightning:formattedName salutation="Dr." firstName="Ada" middleName="B" lastName="Sfuic" format="long"/>
+            </div>
+            <div data-id="lightning:formattedNumber" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:formattedNumber</h3>
+                <lightning:formattedNumber value="1234.5" style="currency" currencyCode="USD"/>
+            </div>
+            <div data-id="lightning:formattedPhone" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:formattedPhone</h3>
+                <lightning:formattedPhone value="4155550100"/>
+            </div>
+            <div data-id="lightning:formattedRichText" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:formattedRichText</h3>
+                <lightning:formattedRichText value="{!v.richText}"/>
+            </div>
+            <div data-id="lightning:formattedText" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:formattedText</h3>
+                <lightning:formattedText value="SFUIC text with a link www.example.com" linkify="true"/>
+            </div>
+            <div data-id="lightning:formattedTime" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:formattedTime</h3>
+                <lightning:formattedTime value="14:30:00.000Z"/>
+            </div>
+            <div data-id="lightning:formattedUrl" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:formattedUrl</h3>
+                <lightning:formattedUrl value="https://www.example.com" label="SFUIC Url" target="_blank"/>
+            </div>
+            <div data-id="lightning:relativeDateTime" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:relativeDateTime</h3>
+                <lightning:relativeDateTime value="{!v.hourAgo}"/>
+            </div>
+            <div data-id="lightning:avatar" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:avatar</h3>
+                <lightning:avatar src="/img/icon/t4v35/standard/account_120.png" alternativeText="SFUIC Avatar" initials="SA" fallbackIconName="standard:account"/>
+                <lightning:avatar initials="SF" alternativeText="SFUIC Initials" variant="circle"/>
+            </div>
+            <div data-id="lightning:icon" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:icon</h3>
+                <lightning:icon iconName="standard:account" alternativeText="SFUIC Account icon" title="SFUIC Account icon"/>
+                <lightning:icon iconName="utility:warning" alternativeText="SFUIC Warning" variant="warning" size="small"/>
+            </div>
+            <div data-id="lightning:dynamicIcon" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:dynamicIcon</h3>
+                <lightning:dynamicIcon type="eq" option="play" alternativeText="SFUIC Equalizer playing"/>
+                <lightning:dynamicIcon type="trend" option="up" alternativeText="SFUIC Trend up"/>
+            </div>
+            <div data-id="lightning:spinner" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:spinner</h3>
+                <div style="position: relative; height: 4rem;">
+                    <lightning:spinner alternativeText="SFUIC Loading" size="small"/>
+                </div>
+            </div>
+            <div data-id="lightning:map" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:map</h3>
+                <lightning:map mapMarkers="{!v.markers}" zoomLevel="12" listView="visible"/>
+            </div>
+        </div>
+    </lightning:card>
+</aura:component>

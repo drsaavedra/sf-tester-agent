@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FlexiPage xmlns="http://soap.sforce.com/2006/04/metadata">
+    <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-231: template Home: Omnichannel Inventory Home Template One Region (runtime_commerce_oci:homeTemplateOneRegion), region main&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_template</identifier>
+            </componentInstance>
+        </itemInstances>
+        <name>main</name>
+        <type>Region</type>
+    </flexiPageRegions>
+    <masterLabel>SFUIC Pal T 10 Omnichannel Inventory Home Template One Region</masterLabel>
+    <template>
+        <name>runtime_commerce_oci:homeTemplateOneRegion</name>
+    </template>
+    <type>HomePage</type>
+</FlexiPage>

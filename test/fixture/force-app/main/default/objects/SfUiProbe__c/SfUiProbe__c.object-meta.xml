@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>View</actionName>
+        <content>SfUi_Probe_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+    </actionOverrides>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <enableReports>false</enableReports>
+    <enableSearch>true</enableSearch>
+    <label>SF UI Probe</label>
+    <nameField>
+        <label>Probe Name</label>
+        <type>Text</type>
+    </nameField>
+    <pluralLabel>SF UI Probes</pluralLabel>
+    <sharingModel>ReadWrite</sharingModel>
+</CustomObject>

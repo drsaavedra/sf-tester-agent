@@ -1,0 +1,12 @@
+<aura:component implements="lightning:actionOverride">
+    <aura:attribute name="fields" type="List"/>
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+    <lightning:navigation aura:id="nav"/>
+    <lightning:card title="SFUIC Aura New">
+        <div class="slds-p-horizontal_small" data-id="lightning:actionOverride">
+            <h3 class="slds-text-heading_small">lightning:actionOverride</h3>
+            <p>This component overrides the New action of SFUIC Auras.</p>
+            <lightning:recordForm objectApiName="SfUiC_Aura__c" fields="{!v.fields}" columns="1" mode="edit" onsuccess="{!c.done}" oncancel="{!c.cancel}"/>
+        </div>
+    </lightning:card>
+</aura:component>

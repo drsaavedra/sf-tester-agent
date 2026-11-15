@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Profile xmlns="http://soap.sforce.com/2006/04/metadata">
+    <custom>false</custom>
+    <layoutAssignments><layout>SfUiTyped__c-SF UI Typed Layout</layout></layoutAssignments>
+    <layoutAssignments><layout>SfUiTyped__c-SF UI Typed Alpha Layout</layout><recordType>SfUiTyped__c.Alpha_Type</recordType></layoutAssignments>
+    <layoutAssignments><layout>SfUiTyped__c-SF UI Typed Layout</layout><recordType>SfUiTyped__c.Beta_Type</recordType></layoutAssignments>
+</Profile>

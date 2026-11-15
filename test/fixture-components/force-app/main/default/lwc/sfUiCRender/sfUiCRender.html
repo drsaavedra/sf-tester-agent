@@ -1,0 +1,72 @@
+<template>
+    <!-- Rendering modes: light DOM, slots, dynamic component -->
+    <lightning-card title="SFUIC Render: rendering modes">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small" data-id="light-dom">Light DOM (lwc:render-mode light)</h3>
+            <c-sf-ui-c-light></c-sf-ui-c-light>
+
+            <h3 class="slds-text-heading_small slds-m-top_small" data-id="slots">Slotted content from a parent</h3>
+            <c-sf-ui-c-slot>
+                <span slot="header">SFUIC slotted header from the parent</span>
+                <span>SFUIC slotted body from the parent</span>
+            </c-sf-ui-c-slot>
+
+            <h3 class="slds-text-heading_small slds-m-top_small" data-id="dynamic-component">Dynamic component (lwc:component lwc:is)</h3>
+            <c-sf-ui-c-dynamic></c-sf-ui-c-dynamic>
+        </div>
+    </lightning-card>
+
+    <!-- Canvas chart drawn by a static resource script -->
+    <lightning-card title="SFUIC Render: canvas chart">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small" data-id="canvas-chart">Canvas chart (platformResourceLoader)</h3>
+            <canvas lwc:ref="chart" width="300" height="120" aria-label="SFUIC bar chart"></canvas>
+            <p data-id="chart-result">Chart: {chartStatus}</p>
+        </div>
+    </lightning-card>
+
+    <!-- Native HTML controls: dialog, details, contenteditable, drag and drop, iframe -->
+    <lightning-card title="SFUIC Render: native HTML">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small" data-id="html-dialog">dialog</h3>
+            <lightning-button label="SFUIC Open Dialog" onclick={openDialog}></lightning-button>
+            <dialog lwc:ref="dialog" class="slds-box">
+                <p>SFUIC native dialog</p>
+                <button class="slds-button slds-button_neutral" onclick={closeDialog}>SFUIC Close Dialog</button>
+            </dialog>
+            <p data-id="dialog-result">Dialog: {dialogStatus}</p>
+
+            <h3 class="slds-text-heading_small slds-m-top_small" data-id="html-details">details</h3>
+            <details>
+                <summary>SFUIC Details summary</summary>
+                <p>SFUIC details body</p>
+            </details>
+
+            <h3 class="slds-text-heading_small slds-m-top_small" data-id="html-contenteditable">contenteditable</h3>
+            <div class="slds-box slds-box_x-small" contenteditable="true" oninput={edited}>SFUIC editable text</div>
+            <p data-id="contenteditable-result">Edited text: {editedText}</p>
+
+            <h3 class="slds-text-heading_small slds-m-top_small" data-id="html-drag-drop">HTML5 drag and drop</h3>
+            <div class="slds-grid slds-gutters_x-small">
+                <div class="slds-col slds-box slds-box_x-small" draggable="true" ondragstart={dragStart}>SFUIC Drag me</div>
+                <div class="slds-col slds-box slds-box_x-small" ondragover={dragOver} ondrop={drop}>SFUIC Drop here</div>
+            </div>
+            <p data-id="drag-drop-result">Dropped: {dropped}</p>
+
+            <h3 class="slds-text-heading_small slds-m-top_small" data-id="html-iframe">iframe to a static resource</h3>
+            <iframe src={frameUrl} title="SFUIC Frame" width="100%" height="120"></iframe>
+        </div>
+    </lightning-card>
+
+    <!-- Pages outside this one: the URL-addressable LWC and the standalone Aura app -->
+    <lightning-card title="SFUIC Render: other pages">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small" data-id="url-addressable">lightning__UrlAddressable</h3>
+            <lightning-button label="SFUIC Open Url Addressable" onclick={openUrl}></lightning-button>
+            <p><a href="/lightning/cmp/c__sfUiCUrl?c__name=SFUIC%20Link">SFUIC Url Addressable link</a></p>
+
+            <h3 class="slds-text-heading_small slds-m-top_small" data-id="standalone-aura-app">Standalone Aura app (.app)</h3>
+            <p><a href="/c/sfUiCStandalone.app" target="_blank">SFUIC Standalone App link</a></p>
+        </div>
+    </lightning-card>
+</template>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QuickAction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionSubtype>Update</actionSubtype>
+    <flexiPage>SfUiC_Line_Qa_Page</flexiPage>
+    <label>SFUIC Page Action</label>
+    <optionsCreateFeedItem>false</optionsCreateFeedItem>
+    <type>Flexipage</type>
+</QuickAction>

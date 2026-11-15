@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FlexiPage xmlns="http://soap.sforce.com/2006/04/metadata">
+    <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties>
+                    <name>actionNames</name>
+                    <valueList>
+                        <valueListItems>
+                            <value>Edit</value>
+                        </valueListItems>
+                        <valueListItems>
+                            <value>SfUiC_Line__c.SfUiC_Page_Action</value>
+                        </valueListItems>
+                    </valueList>
+                </componentInstanceProperties>
+                <componentInstanceProperties><name>enableActionsConfiguration</name><value>true</value></componentInstanceProperties>
+                <componentName>force:highlightsPanel</componentName>
+                <identifier>force_highlightsPanel</identifier>
+            </componentInstance>
+        </itemInstances>
+        <name>header</name>
+        <type>Region</type>
+    </flexiPageRegions>
+    <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Actions and Recommendations&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_actionList</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>lbpm:actionList</componentName>
+                <identifier>lbpm_actionList</identifier>
+            </componentInstance>
+        </itemInstances>
+        <name>main</name>
+        <type>Region</type>
+    </flexiPageRegions>
+    <masterLabel>SFUIC Line Page</masterLabel>
+    <sobjectType>SfUiC_Line__c</sobjectType>
+    <template>
+        <name>flexipage:recordHomeSingleColTemplateDesktop</name>
+        <properties>
+            <name>enablePageActionConfig</name>
+            <value>false</value>
+        </properties>
+    </template>
+    <type>RecordPage</type>
+</FlexiPage>

@@ -1,0 +1,25 @@
+<template>
+    <lightning-card title="SFUIC Base Visuals">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small">lightning-avatar</h3>
+            <lightning-avatar data-id="lightning-avatar" src="/img/icon/t4v35/standard/account_120.png" alternative-text="SFUIC Avatar" initials="SA" fallback-icon-name="standard:account"></lightning-avatar>
+            <lightning-avatar data-id="lightning-avatar-initials" initials="SF" alternative-text="SFUIC Initials" variant="circle"></lightning-avatar>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-badge</h3>
+            <lightning-badge data-id="lightning-badge" label="SFUIC Badge" icon-name="utility:check"></lightning-badge>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-dynamic-icon</h3>
+            <lightning-dynamic-icon data-id="lightning-dynamic-icon" type="eq" option="play" alternative-text="SFUIC Equalizer playing"></lightning-dynamic-icon>
+            <lightning-dynamic-icon data-id="lightning-dynamic-icon-trend" type="trend" option="up" alternative-text="SFUIC Trend up"></lightning-dynamic-icon>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-map</h3>
+            <lightning-map data-id="lightning-map" map-markers={markers} zoom-level="12" list-view="visible"></lightning-map>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-pill</h3>
+            <template for:each={pills} for:item="pill">
+                <lightning-pill key={pill} data-id="lightning-pill" name={pill} label={pill} onremove={removePill}></lightning-pill>
+            </template>
+            <p data-id="pill-result">Removed: {removed}</p>
+        </div>
+    </lightning-card>
+</template>

@@ -1,0 +1,16 @@
+<aura:component implements="force:appHostable">
+    <lightning:navigation aura:id="nav"/>
+    <lightning:card title="SFUIC Aura Host">
+        <div class="slds-p-horizontal_small">
+            <div data-id="force:appHostable">
+                <h3 class="slds-text-heading_small">force:appHostable</h3>
+                <p>This tab is an Aura component tab: sfUiCAuraHost implements force:appHostable.</p>
+            </div>
+            <div data-id="lightning:isUrlAddressable" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:isUrlAddressable</h3>
+                <p>The button opens sfUiCAuraAddress through lightning:navigation (standard__component).</p>
+                <lightning:button label="SFUIC Open Addressable" onclick="{!c.open}"/>
+            </div>
+        </div>
+    </lightning:card>
+</aura:component>

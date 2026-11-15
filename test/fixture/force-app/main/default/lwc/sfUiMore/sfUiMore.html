@@ -1,0 +1,26 @@
+<template>
+    <!-- More inputs card -->
+    <lightning-card title="SF UI More">
+        <div class="slds-p-around_small">
+            <lightning-input type="checkbox" label="Agree" onchange={handleAgree}></lightning-input>
+            <p lwc:if={agree}>Agree: {agree}</p>
+            <lightning-input type="toggle" label="Notify" onchange={handleNotify}></lightning-input>
+            <p lwc:if={notify}>Notify: {notify}</p>
+            <lightning-radio-group label="Shade" options={shades} value={shade} onchange={handleShade}></lightning-radio-group>
+            <p lwc:if={shade}>Shade chosen: {shade}</p>
+            <lightning-checkbox-group label="Extras" options={extrasOptions} value={extras} onchange={handleExtras}></lightning-checkbox-group>
+            <p lwc:if={extrasChosen}>Extras chosen: {extrasChosen}</p>
+            <lightning-dual-listbox label="Tools" source-label="Available" selected-label="Chosen" options={toolOptions} value={tools} onchange={handleTools}></lightning-dual-listbox>
+            <p lwc:if={toolsChosen}>Tools chosen: {toolsChosen}</p>
+            <lightning-input type="date" label="Visit date" onchange={handleVisit}></lightning-input>
+            <p lwc:if={visit}>Visit date: {visit}</p>
+            <c-sf-ui-extra></c-sf-ui-extra>
+            <c-sf-ui-states></c-sf-ui-states>
+            <c-sf-ui-widgets></c-sf-ui-widgets>
+            <c-sf-ui-widgets2></c-sf-ui-widgets2>
+            <c-sf-ui-widgets3></c-sf-ui-widgets3>
+            <c-sf-ui-widgets4></c-sf-ui-widgets4>
+            <lightning-button lwc:if={recordId} label="Open more dialog" onclick={handleOpen}></lightning-button>
+        </div>
+    </lightning-card>
+</template>

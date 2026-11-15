@@ -1,0 +1,30 @@
+<aura:component implements="flexipage:availableForRecordHome,force:hasRecordId">
+    <aura:attribute name="rec" type="Object"/>
+    <aura:attribute name="events" type="List"/>
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+    <aura:attribute name="last" type="String" default="none"/>
+    <aura:attribute name="refreshed" type="Integer" default="0"/>
+    <aura:handler event="force:refreshView" action="{!c.refreshed}"/>
+    <!-- Reads the seed file id for lightning:openFiles -->
+    <force:recordData recordId="{!v.recordId}" fields="File_Id__c" targetFields="{!v.rec}"/>
+
+    <lightning:card title="SFUIC Aura Events">
+        <div class="slds-p-horizontal_small">
+            <p>Last fired: {!v.last}. force:refreshView handled: {!v.refreshed}</p>
+            <aura:iteration items="{!v.events}" var="evt">
+                <div data-id="{!evt}" class="slds-m-top_small">
+                    <h3 class="slds-text-heading_small">{!evt}</h3>
+                    <lightning:button name="{!evt}" label="{!evt}" onclick="{!c.fire}"/>
+                </div>
+            </aura:iteration>
+            <div data-id="force:recordSave" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">force:recordSave</h3>
+                <p>The force:recordSave button is on the SFUIC Aura Force card, under force:recordEdit.</p>
+            </div>
+            <div data-id="force:closeQuickAction" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">force:closeQuickAction</h3>
+                <p>The force:closeQuickAction button is in the SFUIC Aura No Header quick action of this record.</p>
+            </div>
+        </div>
+    </lightning:card>
+</aura:component>

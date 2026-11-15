@@ -1,0 +1,31 @@
+{
+  "name": "sf-tester",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Granular, stackable Salesforce Lightning UI functions for testing agents: Playwright plus org metadata, no computer vision for navigation",
+  "main": "src/index.js",
+  "bin": {
+    "sf-tester": "src/cli.js"
+  },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 test/*.test.js"
+  },
+  "license": "Apache-2.0",
+  "author": "Dave Renald Saavedra",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/drsaavedra/sf-tester-agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/drsaavedra/sf-tester-agent/issues"
+  },
+  "homepage": "https://github.com/drsaavedra/sf-tester-agent#readme",
+  "engines": {
+    "node": ">=22.10"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.31.0",
+    "playwright-core": "1.56.1",
+    "zod": "3.25.76"
+  }
+}

@@ -1,0 +1,90 @@
+<aura:component implements="flexipage:availableForAllPageTypes">
+    <aura:attribute name="pressed" type="String" default="none"/>
+    <aura:attribute name="liked" type="Boolean" default="false"/>
+    <aura:attribute name="followed" type="Boolean" default="false"/>
+    <aura:attribute name="menuPick" type="String" default="none"/>
+    <aura:attribute name="pills" type="List"/>
+    <aura:attribute name="pillRemoved" type="String" default="none"/>
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+
+    <lightning:card title="SFUIC Aura Actions">
+        <div class="slds-p-horizontal_small">
+            <div data-id="lightning:button">
+                <h3 class="slds-text-heading_small">lightning:button</h3>
+                <lightning:button label="SFUIC Aura Button" variant="brand" iconName="utility:check" onclick="{!c.press}"/>
+                <lightning:button label="SFUIC Aura Neutral" onclick="{!c.press}"/>
+            </div>
+
+            <div data-id="lightning:buttonGroup" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:buttonGroup</h3>
+                <lightning:buttonGroup>
+                    <lightning:button label="SFUIC Left" onclick="{!c.press}"/>
+                    <lightning:button label="SFUIC Middle" onclick="{!c.press}"/>
+                    <lightning:button label="SFUIC Right" onclick="{!c.press}"/>
+                </lightning:buttonGroup>
+            </div>
+
+            <div data-id="lightning:buttonIcon" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:buttonIcon</h3>
+                <lightning:buttonIcon iconName="utility:settings" alternativeText="SFUIC Settings" title="SFUIC Settings" onclick="{!c.press}"/>
+            </div>
+            <p data-id="aura-button-result">Last pressed: {!v.pressed}</p>
+
+            <div data-id="lightning:buttonIconStateful" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:buttonIconStateful</h3>
+                <lightning:buttonIconStateful iconName="utility:like" selected="{!v.liked}" alternativeText="SFUIC Like" onclick="{!c.toggleLike}"/>
+                <span class="slds-m-left_small">Liked: {!v.liked ? 'yes' : 'no'}</span>
+            </div>
+
+            <div data-id="lightning:buttonStateful" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:buttonStateful</h3>
+                <lightning:buttonStateful labelWhenOff="SFUIC Follow" labelWhenOn="SFUIC Following" labelWhenHover="SFUIC Unfollow"
+                    iconNameWhenOff="utility:add" iconNameWhenOn="utility:check" iconNameWhenHover="utility:close"
+                    state="{!v.followed}" onclick="{!c.toggleFollow}"/>
+            </div>
+
+            <div data-id="lightning:buttonMenu" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:buttonMenu</h3>
+                <lightning:buttonMenu alternativeText="SFUIC Aura Menu" label="SFUIC Aura Menu" onselect="{!c.menuSelect}">
+                    <lightning:menuSubheader label="SFUIC Subheader (lightning:menuSubheader)"/>
+                    <lightning:menuItem label="SFUIC Menu One (lightning:menuItem)" value="one"/>
+                    <lightning:menuItem label="SFUIC Menu Two" value="two" iconName="utility:edit"/>
+                    <lightning:menuDivider/>
+                    <lightning:menuItem label="SFUIC Menu Three" value="three" checked="true"/>
+                </lightning:buttonMenu>
+                <p data-id="aura-menu-result">Menu pick: {!v.menuPick}</p>
+                <div data-id="lightning:menuItem"><h3 class="slds-text-heading_small slds-m-top_x-small">lightning:menuItem</h3></div>
+                <div data-id="lightning:menuDivider"><h3 class="slds-text-heading_small">lightning:menuDivider</h3></div>
+                <div data-id="lightning:menuSubheader"><h3 class="slds-text-heading_small">lightning:menuSubheader</h3></div>
+                <p class="slds-text-body_small">The three menu children above render inside the SFUIC Aura Menu when it is open.</p>
+            </div>
+
+            <div data-id="lightning:clickToDial" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:clickToDial</h3>
+                <!-- Without a softphone or Open CTI this renders as plain phone text, not a dial link -->
+                <lightning:clickToDial value="4155550100"/>
+            </div>
+
+            <div data-id="lightning:pill" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:pill</h3>
+                <lightning:pill label="SFUIC Aura Pill" name="SFUIC Aura Pill" href="/lightning/o/Account/home" onremove="{!c.removePill}"/>
+            </div>
+
+            <div data-id="lightning:pillContainer" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:pillContainer</h3>
+                <lightning:pillContainer items="{!v.pills}" onitemremove="{!c.removeItem}"/>
+                <p data-id="aura-pill-result">Removed: {!v.pillRemoved}</p>
+            </div>
+
+            <div data-id="lightning:badge" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:badge</h3>
+                <lightning:badge label="SFUIC Aura Badge" iconName="utility:check"/>
+            </div>
+
+            <div data-id="lightning:helptext" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:helptext</h3>
+                <lightning:helptext content="SFUIC Aura help text tip"/>
+            </div>
+        </div>
+    </lightning:card>
+</aura:component>

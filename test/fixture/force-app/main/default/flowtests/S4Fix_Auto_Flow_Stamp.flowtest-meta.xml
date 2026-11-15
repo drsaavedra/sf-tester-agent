@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FlowTest xmlns="http://soap.sforce.com/2006/04/metadata">
+    <flowApiName>S4Fix_Auto_Flow</flowApiName>
+    <label>Text comes back stamped</label>
+    <testPoints>
+        <elementApiName>Start</elementApiName>
+        <parameters>
+            <leftValueReference>text</leftValueReference>
+            <type>InputVariable</type>
+            <value>
+                <stringValue>x</stringValue>
+            </value>
+        </parameters>
+        <parameters>
+            <leftValueReference>recordId</leftValueReference>
+            <type>InputVariable</type>
+            <value>
+                <stringValue>a00000000000000AAA</stringValue>
+            </value>
+        </parameters>
+    </testPoints>
+    <testPoints>
+        <assertions>
+            <errorMessage>The action did not stamp the text</errorMessage>
+            <conditions>
+                <leftValueReference>Stamp_Text</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>stamped:x</stringValue>
+                </rightValue>
+            </conditions>
+        </assertions>
+        <elementApiName>Finish</elementApiName>
+    </testPoints>
+</FlowTest>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WebLink xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SfUiC_Item_Link</fullName>
+    <availability>online</availability>
+    <displayType>link</displayType>
+    <encodingKey>UTF-8</encodingKey>
+    <linkType>url</linkType>
+    <masterLabel>SFUIC Item Link</masterLabel>
+    <openType>replace</openType>
+    <url>https://example.com/?link={!SfUiC_Item__c.Name}</url>
+    <protected>false</protected>
+</WebLink>

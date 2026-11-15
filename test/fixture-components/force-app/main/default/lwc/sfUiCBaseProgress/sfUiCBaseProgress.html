@@ -1,0 +1,24 @@
+<template>
+    <lightning-card title="SFUIC Base Progress">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small">lightning-progress-bar</h3>
+            <lightning-progress-bar data-id="lightning-progress-bar" value={percent} size="large" variant="circular"></lightning-progress-bar>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-progress-indicator</h3>
+            <lightning-progress-indicator data-id="lightning-progress-indicator" current-step={step} type="base" variant="base">
+                <lightning-progress-step label="SFUIC Step One" value="1" onclick={pickStep}></lightning-progress-step>
+                <lightning-progress-step label="SFUIC Step Two" value="2" onclick={pickStep}></lightning-progress-step>
+                <lightning-progress-step label="SFUIC Step Three" value="3" onclick={pickStep}></lightning-progress-step>
+            </lightning-progress-indicator>
+            <p data-id="progress-step-result">Current step: {step}</p>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-progress-ring</h3>
+            <lightning-progress-ring data-id="lightning-progress-ring" value={percent} variant="base-autocomplete" size="large"></lightning-progress-ring>
+
+            <div class="slds-m-top_small">
+                <lightning-button label="SFUIC Advance" onclick={advance}></lightning-button>
+                <span class="slds-m-left_small" data-id="progress-percent">{percent}%</span>
+            </div>
+        </div>
+    </lightning-card>
+</template>

@@ -1,0 +1,169 @@
+{
+  "checks": [
+    {
+      "id": "probe-count-rule", "kind": "record", "requirement": "Count cannot be negative",
+      "covers": ["objects/SfUiProbe__c/validationRules/SfUi_Count_Not_Negative"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": ["SfUi_Probe"] },
+      "object": "SfUiProbe__c",
+      "cases": [
+        { "name": "rejects negative", "fields": { "Name": "v", "Tags__c": "Alpha", "Count__c": -1 }, "expect": { "saves": false, "error": "Count cannot be negative" } },
+        { "name": "accepts zero", "fields": { "Name": "v", "Tags__c": "Alpha", "Count__c": 0 }, "expect": { "saves": true } }
+      ]
+    },
+    {
+      "id": "probe-due-rule", "kind": "record", "requirement": "Due cannot be before 2000",
+      "covers": ["objects/SfUiProbe__c/validationRules/SfUi_Due_Not_Before_2000"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": ["SfUi_Probe"] },
+      "object": "SfUiProbe__c",
+      "cases": [
+        { "name": "rejects 1999", "fields": { "Name": "v", "Tags__c": "Alpha", "Due__c": { "date": "1999-12-31" } }, "expect": { "saves": false, "error": "Due date cannot be before 2000" } },
+        { "name": "accepts 2000", "fields": { "Name": "v", "Tags__c": "Alpha", "Due__c": { "date": "2000-01-01" } }, "expect": { "saves": true } }
+      ]
+    },
+    {
+      "id": "typed-size-required", "kind": "pageRequired", "requirement": "Size is required on the Beta form",
+      "covers": ["layouts/SfUiTyped__c-SF UI Typed Layout", "objects/SfUiTyped__c/fields/Size__c"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": ["SfUi_Probe"] },
+      "object": "SfUiTyped__c", "recordType": "Beta_Type", "field": "Size__c", "expect": { "required": true }
+    },
+    {
+      "id": "typed-size-admin-control", "kind": "pageRequired", "requirement": "Size is optional for an administrator, who gets the Alpha layout",
+      "covers": ["layouts/SfUiTyped__c-SF UI Typed Alpha Layout", "objects/SfUiTyped__c/fields/Size__c"],
+      "persona": { "profile": "System Administrator", "permissionSets": ["SfUi_Probe"] },
+      "object": "SfUiTyped__c", "recordType": "Beta_Type", "field": "Size__c", "expect": { "required": false }
+    },
+    {
+      "id": "probe-class-access", "kind": "classAccess", "requirement": "A probe user can call the probe controller",
+      "covers": ["classes/SfUiProbeController", "permissionsets/SfUi_Probe", "lwc/sfUiProbe"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": ["SfUi_Probe"] },
+      "class": "SfUiProbeController", "expect": { "access": true }
+    },
+    {
+      "id": "probe-class-denied-control", "kind": "classAccess", "requirement": "A user with no probe permission set cannot call the probe controller",
+      "covers": ["classes/SfUiProbeController"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": [] },
+      "class": "SfUiProbeController", "expect": { "access": false }
+    },
+    {
+      "id": "probe-ping", "kind": "apex", "requirement": "A probe user can ping",
+      "covers": ["classes/SfUiProbeController"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": ["SfUi_Probe"] },
+      "act": "return SfUiProbeController.ping((Id) input.get('recordId'));",
+      "cases": [
+        { "name": "returns pong", "expect": { "returns": "pong null" } },
+        { "name": "a bad id throws", "input": { "recordId": "not-an-id" }, "expect": { "throws": "Invalid id" } }
+      ]
+    },
+    {
+      "id": "dyn-more-gated", "kind": "componentVisible", "requirement": "More shows on a High record that is not closed, for a user with See More",
+      "covers": ["flexipages/SfUi_Dyn_Gated_Page", "permissionsets/SfUi_Probe"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": ["SfUi_Probe"] },
+      "object": "SfUiDyn__c", "app": "SfUi_App", "flexiPage": "SfUi_Dyn_Gated_Page", "component": "c:sfUiMore",
+      "cases": [
+        { "name": "shown when High and open", "record": { "Level__c": "High", "Note__c": "open" }, "expect": { "visible": true } },
+        { "name": "hidden when Low", "record": { "Level__c": "Low", "Note__c": "open" }, "expect": { "visible": false } },
+        { "name": "hidden when the tab rule fails", "record": { "Level__c": "High", "Note__c": "closed" }, "expect": { "visible": false } }
+      ]
+    },
+    {
+      "id": "dyn-more-needs-permission", "kind": "componentVisible", "requirement": "More stays hidden from a user without See More, whatever the record",
+      "covers": ["flexipages/SfUi_Dyn_Gated_Page"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": ["SfUi_Probe_Read"] },
+      "object": "SfUiDyn__c", "app": "SfUi_App", "flexiPage": "SfUi_Dyn_Gated_Page", "component": "c:sfUiMore",
+      "cases": [
+        { "name": "hidden although High and open", "record": { "Level__c": "High", "Note__c": "open" }, "expect": { "visible": false } },
+        { "name": "shown if See More were granted", "record": { "Level__c": "High", "Note__c": "open" }, "customPermissions": { "SfUi_See_More": true }, "expect": { "visible": true } }
+      ]
+    },
+    {
+      "id": "gate-delete-action", "kind": "componentVisible", "requirement": "Delete is offered on a High record, to an administrator",
+      "covers": ["flexipages/SfUi_Gate_Record_Page"],
+      "persona": { "profile": "System Administrator", "permissionSets": ["SfUi_Gate_Access"] },
+      "object": "SfUiGate__c", "app": "SfUi_App", "flexiPage": "SfUi_Gate_Record_Page", "component": "force:highlightsPanel", "action": "Delete",
+      "cases": [
+        { "name": "offered when High", "record": { "Level__c": "High" }, "expect": { "visible": true } },
+        { "name": "not offered when Low", "record": { "Level__c": "Low" }, "expect": { "visible": false } }
+      ]
+    },
+    {
+      "id": "gate-delete-action-user", "kind": "componentVisible", "requirement": "Delete is offered on a High record, to a platform user",
+      "covers": ["flexipages/SfUi_Gate_Record_Page"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": ["SfUi_Gate_Access"] },
+      "object": "SfUiGate__c", "app": "SfUi_App", "flexiPage": "SfUi_Gate_Record_Page", "component": "force:highlightsPanel", "action": "Delete",
+      "cases": [
+        { "name": "offered when High", "record": { "Level__c": "High" }, "expect": { "visible": true } },
+        { "name": "not offered when Low", "record": { "Level__c": "Low" }, "expect": { "visible": false } }
+      ]
+    },
+    {
+      "id": "gate-note-field", "kind": "componentVisible", "requirement": "Note shows unless the level is Low",
+      "covers": ["flexipages/SfUi_Gate_Record_Page"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": ["SfUi_Gate_Access"] },
+      "object": "SfUiGate__c", "app": "SfUi_App", "flexiPage": "SfUi_Gate_Record_Page", "field": "Note__c",
+      "cases": [
+        { "name": "shown when High", "record": { "Level__c": "High", "Note__c": null }, "expect": { "visible": true } },
+        { "name": "hidden when Low", "record": { "Level__c": "Low", "Note__c": null }, "expect": { "visible": false } },
+        { "name": "hidden by its section when Note is y", "record": { "Level__c": "High", "Note__c": "y" }, "expect": { "visible": false } }
+      ]
+    },
+    {"id": "s4-save-item", "kind": "apex", "requirement": "Saving an item runs the trigger, the flow and the quantity rule", "covers": ["classes/S4Map_Controller"], "persona": {"profile": "System Administrator", "permissionSets": []}, "act": "return S4Map_Controller.saveItem('x', (Decimal) input.get('qty')) != null;", "cases": [{"name": "saves a positive quantity", "input": {"qty": 1}, "expect": {"returns": true}}, {"name": "a negative quantity throws", "input": {"qty": -1}, "expect": {"throws": "Quantity cannot be negative"}}]},
+    {
+      "id": "bump-screen-flow", "kind": "flow", "requirement": "The Bump flow asks for a count and saves it on the probe",
+      "covers": ["flows/SfUi_Bump_Flow"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": ["SfUi_Probe"] },
+      "flow": "SfUi_Bump_Flow"
+    },
+    {
+      "id": "s4-auto-flow", "kind": "flow", "requirement": "The autolaunched flow stamps the text it is given onto the item, and a blank text is refused",
+      "covers": ["flows/S4Fix_Auto_Flow", "classes/S4Fix_Stamp"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": ["S4Fix_Access"] },
+      "flow": "S4Fix_Auto_Flow", "object": "S4Fix_Item__c",
+      "cases": [
+        { "name": "stamps the text", "input": { "text": "a" }, "record": { "Name": "i" }, "expect": { "record": { "Result__c": "stamped:a" } } },
+        { "name": "a blank text throws", "input": { "text": "" }, "record": { "Name": "i" }, "expect": { "throws": "Text is required" } }
+      ]
+    },
+    {
+      "id": "s4-item-flow", "kind": "flow", "requirement": "A new item is marked Seen by the record-triggered flow, which leaves Result alone",
+      "covers": ["flows/S4Fix_Item_Flow"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": ["S4Fix_Access"] },
+      "flow": "S4Fix_Item_Flow",
+      "cases": [
+        { "name": "sets Status to Seen", "input": { "Name": "i" }, "expect": { "returns": { "Status__c": "Seen" } } },
+        { "name": "leaves Result empty", "input": { "Name": "i" }, "expect": { "returns": { "Result__c": null } } }
+      ]
+    },
+    {
+      "id": "s4fix-stamp", "kind": "apex", "requirement": "The stamp action returns each text stamped, and refuses a blank one",
+      "covers": ["classes/S4Fix_Stamp"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": ["S4Fix_Access"] },
+      "act": "return S4Fix_Stamp.stamp(new List<String>{(String) input.get('text')});",
+      "cases": [
+        { "name": "stamps the text", "input": { "text": "x" }, "expect": { "returns": ["stamped:x"] } },
+        { "name": "a blank text throws", "input": { "text": " " }, "expect": { "throws": "Text is required" } }
+      ]
+    },
+    {
+      "id": "s4fix-auto-flow", "kind": "apex", "requirement": "The autolaunched flow writes the stamped text to the item's Result",
+      "covers": ["classes/S4Fix_Stamp"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": ["S4Fix_Access"] },
+      "act": "S4Fix_Item__c r = new S4Fix_Item__c(Name = 'item');\ninsert as system r;\nFlow.Interview.createInterview('S4Fix_Auto_Flow', new Map<String,Object>{'recordId' => r.Id, 'text' => input.get('text')}).start();\nreturn [SELECT Result__c FROM S4Fix_Item__c WHERE Id = :r.Id][0].Result__c;",
+      "cases": [
+        { "name": "result is stamped", "input": { "text": "x" }, "expect": { "returns": "stamped:x" } },
+        { "name": "a blank text throws", "input": { "text": " " }, "expect": { "throws": "Text is required" } }
+      ]
+    },
+    {
+      "id": "s4fix-stamp-class-access", "kind": "classAccess", "requirement": "A user with S4Fix Access can call the stamp action",
+      "covers": ["classes/S4Fix_Stamp", "permissionsets/S4Fix_Access"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": ["S4Fix_Access"] },
+      "class": "S4Fix_Stamp", "expect": { "access": true }
+    },
+    {
+      "id": "s4fix-stamp-class-denied-control", "kind": "classAccess", "requirement": "A user without S4Fix Access cannot call the stamp action",
+      "covers": ["classes/S4Fix_Stamp"],
+      "persona": { "profile": "Standard Platform User", "permissionSets": [] },
+      "class": "S4Fix_Stamp", "expect": { "access": false }
+    }
+  ]
+}

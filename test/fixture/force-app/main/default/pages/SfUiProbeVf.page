@@ -1,0 +1,12 @@
+<apex:page showHeader="false" sidebar="false" standardStylesheets="false" lightningStylesheets="false">
+    <!-- A Visualforce page for sf_measure frame: Lightning shows it in a cross-origin iframe on the SfUi_Vf tab. -->
+    <div style="margin:8px;padding:4px;font:14px Arial">
+        <div class="box" style="width:120px;height:20px;white-space:nowrap">Inside Visualforce</div>
+        <button type="button">VF button</button>
+        <!-- For the frame scope: type, choose and press inside the page, with the result echoed as text. -->
+        <p><label>VF note <input type="text" id="vfNote"/></label></p>
+        <p><label>VF size <select id="vfSize"><option>Small</option><option>Large</option></select></label></p>
+        <button type="button" onclick="document.getElementById('vfOut').textContent = 'VF saw ' + document.getElementById('vfNote').value + ' ' + document.getElementById('vfSize').value">VF echo</button>
+        <p id="vfOut"></p>
+    </div>
+</apex:page>

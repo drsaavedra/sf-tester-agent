@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <name>Stamp_Text</name>
+        <label>Stamp Text</label>
+        <locationX>176</locationX>
+        <locationY>134</locationY>
+        <actionName>S4Fix_Stamp</actionName>
+        <actionType>apex</actionType>
+        <connector>
+            <targetReference>Set_Result</targetReference>
+        </connector>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>texts</name>
+            <value>
+                <elementReference>text</elementReference>
+            </value>
+        </inputParameters>
+        <nameSegment>S4Fix_Stamp</nameSegment>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </actionCalls>
+    <apiVersion>66.0</apiVersion>
+    <interviewLabel>S4Fix Auto Flow {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>S4Fix Auto Flow</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordUpdates>
+        <name>Set_Result</name>
+        <label>Set Result</label>
+        <locationX>176</locationX>
+        <locationY>242</locationY>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Result__c</field>
+            <value>
+                <elementReference>Stamp_Text</elementReference>
+            </value>
+        </inputAssignments>
+        <object>S4Fix_Item__c</object>
+    </recordUpdates>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Stamp_Text</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>text</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+</Flow>

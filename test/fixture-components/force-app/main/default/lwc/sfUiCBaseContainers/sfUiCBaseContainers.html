@@ -1,0 +1,32 @@
+<template>
+    <lightning-card title="SFUIC Base Containers">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small">lightning-carousel</h3>
+            <lightning-carousel data-id="lightning-carousel" disable-auto-scroll>
+                <lightning-carousel-image src="/img/icon/t4v35/standard/account_120.png" header="SFUIC Slide One" description="First slide" alternative-text="SFUIC Slide One" href="/lightning/o/Account/home"></lightning-carousel-image>
+                <lightning-carousel-image src="/img/icon/t4v35/standard/contact_120.png" header="SFUIC Slide Two" description="Second slide" alternative-text="SFUIC Slide Two"></lightning-carousel-image>
+                <lightning-carousel-image src="/img/icon/t4v35/standard/opportunity_120.png" header="SFUIC Slide Three" description="Third slide" alternative-text="SFUIC Slide Three"></lightning-carousel-image>
+            </lightning-carousel>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-layout</h3>
+            <lightning-layout data-id="lightning-layout" multiple-rows horizontal-align="spread">
+                <lightning-layout-item size="12" medium-device-size="4" padding="around-small">
+                    <div class="slds-box">SFUIC Layout Item One</div>
+                </lightning-layout-item>
+                <lightning-layout-item size="12" medium-device-size="4" padding="around-small">
+                    <div class="slds-box">SFUIC Layout Item Two</div>
+                </lightning-layout-item>
+                <lightning-layout-item size="12" medium-device-size="4" padding="around-small">
+                    <div class="slds-box">SFUIC Layout Item Three</div>
+                </lightning-layout-item>
+            </lightning-layout>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-tile</h3>
+            <lightning-tile data-id="lightning-tile" label="SFUIC Tile" href="/lightning/o/Account/home" actions={tileActions} onactiontriggered={tileAction}>
+                <lightning-avatar slot="media" fallback-icon-name="standard:account" alternative-text="SFUIC Tile media"></lightning-avatar>
+                <p class="slds-truncate">SFUIC tile body text</p>
+            </lightning-tile>
+            <p data-id="tile-result">Tile action: {tileResult}</p>
+        </div>
+    </lightning-card>
+</template>

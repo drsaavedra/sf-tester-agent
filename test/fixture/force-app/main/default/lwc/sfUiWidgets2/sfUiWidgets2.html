@@ -1,0 +1,24 @@
+<template>
+    <!-- Tree grid, sortable table, compound inputs, breadcrumbs and more typed inputs -->
+    <div class="slds-p-top_small">
+        <lightning-tree-grid key-field="name" data={teams} columns={teamColumns} ontoggle={handleToggle} hide-checkbox-column></lightning-tree-grid>
+        <p lwc:if={toggled}>Tree grid toggled: {toggled}</p>
+        <lightning-datatable key-field="id" data={sortedItems} columns={sortColumns} sorted-by={sortedBy} sorted-direction={sortedDirection} onsort={handleSort} hide-checkbox-column></lightning-datatable>
+        <p lwc:if={sortedBy}>Sorted: {sortedBy} {sortedDirection}, first {firstItem}</p>
+        <lightning-input-address address-label="Mailing" street-label="Street" city-label="City" country-label="Country" province-label="Province" postal-code-label="Postal Code" onchange={handleAddress}></lightning-input-address>
+        <p lwc:if={city}>Address city: {city}</p>
+        <lightning-input-name label="Contact name" options={salutations} onchange={handleName}></lightning-input-name>
+        <p lwc:if={fullName}>Name: {fullName}</p>
+        <lightning-breadcrumbs>
+            <lightning-breadcrumb label="Parent page" name="parent" onclick={handleCrumb}></lightning-breadcrumb>
+            <lightning-breadcrumb label="Child page" name="child" onclick={handleCrumb}></lightning-breadcrumb>
+        </lightning-breadcrumbs>
+        <p lwc:if={crumb}>Breadcrumb: {crumb}</p>
+        <lightning-input type="color" label="Shade colour" onchange={handleColour}></lightning-input>
+        <p lwc:if={colour}>Colour: {colour}</p>
+        <lightning-input type="tel" label="Phone number" onchange={handleTel}></lightning-input>
+        <p lwc:if={tel}>Phone: {tel}</p>
+        <lightning-input type="url" label="Web address" onchange={handleUrl}></lightning-input>
+        <p lwc:if={url}>Web address: {url}</p>
+    </div>
+</template>

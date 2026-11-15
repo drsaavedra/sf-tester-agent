@@ -1,0 +1,11 @@
+<aura:component implements="lightning:isUrlAddressable">
+    <aura:attribute name="note" type="String" default="none"/>
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.init}"/>
+    <lightning:card title="SFUIC Aura Addressable">
+        <div class="slds-p-horizontal_small" data-id="lightning:isUrlAddressable">
+            <h3 class="slds-text-heading_small">lightning:isUrlAddressable</h3>
+            <p>Note: {!v.note}</p>
+        </div>
+    </lightning:card>
+</aura:component>

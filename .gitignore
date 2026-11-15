@@ -1,0 +1,8 @@
+node_modules/
+.playwright-mcp/
+.DS_Store
+.claude/
+.sf/
+.sfdx/
+*.tgz
+.env*

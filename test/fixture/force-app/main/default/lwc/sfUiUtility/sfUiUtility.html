@@ -1,0 +1,8 @@
+<template>
+    <!-- A utility bar panel -->
+    <div class="slds-p-around_small">
+        <lightning-input label="Utility note" onchange={handleNote}></lightning-input>
+        <lightning-button label="Ping utility" onclick={handlePing}></lightning-button>
+        <p lwc:if={pinged}>Utility pinged: {note}</p>
+    </div>
+</template>

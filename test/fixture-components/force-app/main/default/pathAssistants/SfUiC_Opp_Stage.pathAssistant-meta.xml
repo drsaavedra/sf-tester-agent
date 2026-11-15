@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PathAssistant xmlns="http://soap.sforce.com/2006/04/metadata">
+    <active>true</active>
+    <entityName>Opportunity</entityName>
+    <fieldName>StageName</fieldName>
+    <masterLabel>SFUIC Opp Stage</masterLabel>
+    <pathAssistantSteps>
+        <info>&lt;p&gt;SFUIC Prospecting guidance&lt;/p&gt;</info>
+        <picklistValueName>Prospecting</picklistValueName>
+    </pathAssistantSteps>
+    <pathAssistantSteps>
+        <info>&lt;p&gt;SFUIC Qualification guidance&lt;/p&gt;</info>
+        <picklistValueName>Qualification</picklistValueName>
+    </pathAssistantSteps>
+    <pathAssistantSteps>
+        <info>&lt;p&gt;SFUIC Needs Analysis guidance&lt;/p&gt;</info>
+        <picklistValueName>Needs Analysis</picklistValueName>
+    </pathAssistantSteps>
+    <pathAssistantSteps>
+        <info>&lt;p&gt;SFUIC Value Proposition guidance&lt;/p&gt;</info>
+        <picklistValueName>Value Proposition</picklistValueName>
+    </pathAssistantSteps>
+    <pathAssistantSteps>
+        <info>&lt;p&gt;SFUIC Id. Decision Makers guidance&lt;/p&gt;</info>
+        <picklistValueName>Id. Decision Makers</picklistValueName>
+    </pathAssistantSteps>
+    <pathAssistantSteps>
+        <info>&lt;p&gt;SFUIC Perception Analysis guidance&lt;/p&gt;</info>
+        <picklistValueName>Perception Analysis</picklistValueName>
+    </pathAssistantSteps>
+    <pathAssistantSteps>
+        <info>&lt;p&gt;SFUIC Proposal/Price Quote guidance&lt;/p&gt;</info>
+        <picklistValueName>Proposal/Price Quote</picklistValueName>
+    </pathAssistantSteps>
+    <pathAssistantSteps>
+        <info>&lt;p&gt;SFUIC Negotiation/Review guidance&lt;/p&gt;</info>
+        <picklistValueName>Negotiation/Review</picklistValueName>
+    </pathAssistantSteps>
+    <pathAssistantSteps>
+        <info>&lt;p&gt;SFUIC Closed Won guidance&lt;/p&gt;</info>
+        <picklistValueName>Closed Won</picklistValueName>
+    </pathAssistantSteps>
+    <pathAssistantSteps>
+        <info>&lt;p&gt;SFUIC Closed Lost guidance&lt;/p&gt;</info>
+        <picklistValueName>Closed Lost</picklistValueName>
+    </pathAssistantSteps>
+    <recordTypeName>__MASTER__</recordTypeName>
+</PathAssistant>

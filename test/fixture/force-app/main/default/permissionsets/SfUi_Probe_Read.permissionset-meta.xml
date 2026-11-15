@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <classAccesses><apexClass>SfUiProbeController</apexClass><enabled>true</enabled></classAccesses>
+    <fieldPermissions><editable>false</editable><field>SfUiProbe__c.Account__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>SfUiProbe__c.Due__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>SfUiProbe__c.At__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>SfUiProbe__c.Kind__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>SfUiProbe__c.Detail__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>SfUiProbe__c.Done__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>SfUiProbe__c.Count__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>SfUiProbe__c.Start__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>SfUiDyn__c.Note__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>SfUiDyn__c.Level__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>SfUiDyn__c.Stage__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>SfUiDyn__c.Hidden__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>SfUiDyn__c.Loc__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>SfUiDyn__c.Probe__c</field><readable>true</readable></fieldPermissions>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>SF UI Probe Read</label>
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>SfUiDyn__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>SfUiProbe__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <tabSettings><tab>SfUiProbe__c</tab><visibility>Visible</visibility></tabSettings>
+</PermissionSet>

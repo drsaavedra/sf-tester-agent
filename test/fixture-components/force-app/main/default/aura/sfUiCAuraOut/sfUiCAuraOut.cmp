@@ -1,0 +1,11 @@
+<aura:component>
+    <aura:attribute name="count" type="Integer" default="0"/>
+    <!-- Card drawn by Lightning Out inside the Visualforce page -->
+    <lightning:card title="SFUIC Aura Out">
+        <div class="slds-p-horizontal_small" data-id="lightning-out">
+            <h3 class="slds-text-heading_small">Lightning Out ($Lightning.use)</h3>
+            <lightning:button label="SFUIC Out Count" onclick="{!c.bump}"/>
+            <p>Pressed: {!v.count}</p>
+        </div>
+    </lightning:card>
+</aura:component>

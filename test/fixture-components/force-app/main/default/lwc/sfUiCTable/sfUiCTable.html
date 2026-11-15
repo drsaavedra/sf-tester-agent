@@ -1,0 +1,51 @@
+<template>
+    <!-- Infinite loading table -->
+    <lightning-card title="SFUIC Table: infinite loading">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small" data-id="datatable-infinite-loading">lightning-datatable: infinite loading</h3>
+            <div style="height: 200px">
+                <lightning-datatable key-field="id" data={infiniteRows} columns={basicColumns} hide-checkbox-column
+                    enable-infinite-loading={moreToLoad} onloadmore={loadMore}></lightning-datatable>
+            </div>
+            <p data-id="infinite-result">Rows loaded: {infiniteCount} of 60</p>
+        </div>
+    </lightning-card>
+
+    <!-- Header actions and wrap text table -->
+    <lightning-card title="SFUIC Table: header actions and wrap text">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small" data-id="datatable-header-actions">lightning-datatable: header actions and wrap text</h3>
+            <lightning-datatable key-field="id" data={rows} columns={headerColumns} hide-checkbox-column
+                onheaderaction={headerAction}></lightning-datatable>
+            <p data-id="header-action-result">Last header action: {headerResult}</p>
+        </div>
+    </lightning-card>
+
+    <!-- Column resize table -->
+    <lightning-card title="SFUIC Table: column resize">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small" data-id="datatable-column-resize">lightning-datatable: column resize</h3>
+            <lightning-datatable key-field="id" data={rows} columns={resizeColumns} hide-checkbox-column
+                min-column-width="60" max-column-width="600" onresize={resized}></lightning-datatable>
+            <p data-id="resize-result">Column widths: {resizeResult}</p>
+        </div>
+    </lightning-card>
+
+    <!-- Single-row radio selection table -->
+    <lightning-card title="SFUIC Table: single-row selection">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small" data-id="datatable-single-select">lightning-datatable: single-row selection (radio)</h3>
+            <lightning-datatable key-field="id" data={rows} columns={basicColumns} max-row-selection="1"
+                onrowselection={selected}></lightning-datatable>
+            <p data-id="single-select-result">Selected: {selectedName}</p>
+        </div>
+    </lightning-card>
+
+    <!-- Custom data type table -->
+    <lightning-card title="SFUIC Table: custom data type">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small" data-id="datatable-custom-type">lightning-datatable: custom data type (sfuicBadge)</h3>
+            <c-sf-ui-c-table-types key-field="id" data={rows} columns={customColumns} hide-checkbox-column></c-sf-ui-c-table-types>
+        </div>
+    </lightning-card>
+</template>

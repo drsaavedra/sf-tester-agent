@@ -1,0 +1,15 @@
+<template>
+    <!-- Row selection, a password, a location, a button-style radio group and a checkbox button -->
+    <div class="slds-p-top_small">
+        <lightning-datatable key-field="id" data={crew} columns={crewColumns} onrowselection={handleRows}></lightning-datatable>
+        <p lwc:if={picked}>Rows picked: {picked}</p>
+        <lightning-input type="password" label="Pass phrase" onchange={handlePass}></lightning-input>
+        <p lwc:if={passLength}>Pass length: {passLength}</p>
+        <lightning-input-location label="Site" onchange={handleSite}></lightning-input-location>
+        <p lwc:if={site}>Site at: {site}</p>
+        <lightning-radio-group type="button" label="Speed" options={speeds} value={speed} onchange={handleSpeed}></lightning-radio-group>
+        <p lwc:if={speed}>Speed: {speed}</p>
+        <lightning-input type="checkbox-button" label="Express" onchange={handleExpress}></lightning-input>
+        <p lwc:if={express}>Express: on</p>
+    </div>
+</template>

@@ -1,0 +1,70 @@
+name: release-preview
+
+# One full replay per Salesforce release, by hand, on a new scratch org of the next release (--release preview).
+# Run it in the preview window; Spring '27 is 2027-01-10 to 2027-02-20 (sfdx-dev guide, "Scratch Org Version Selection").
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  replay-preview:
+    runs-on: ubuntu-latest
+    # The weekly job's 150 min (fixture deploy and replay) plus up to 30 for the org create and 20 for the Apex tests.
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - name: Install dependencies
+        run: npm ci
+      - name: Install the Salesforce CLI
+        run: npm install --global @salesforce/cli@2.154.4
+      # The validation org is also the Dev Hub that creates the scratch org.
+      - name: Log in to the Dev Hub
+        env:
+          AUTH_URL: ${{ secrets.SF_TESTER_VALIDATION_AUTH_URL }}
+        run: |
+          if [ -z "$AUTH_URL" ]; then echo "Set the SF_TESTER_VALIDATION_AUTH_URL secret (sf org auth show-sfdx-auth-url)"; exit 1; fi
+          printf '%s' "$AUTH_URL" | sf org login sfdx-url --sfdx-url-stdin - --alias devhub
+      - name: Create a scratch org on the preview release
+        id: create
+        working-directory: test/fixture
+        run: sf org create scratch --definition-file config/project-scratch-def.json --release preview --target-dev-hub devhub --alias preview --duration-days 1 --wait 30
+      # README "This repo's validation org", steps 1 (all local tests run after the replay), 2 and 5. FOR VIEW marks the
+      # platform user as viewed by the admin, which the owner picker in mass-action@list-view needs.
+      - name: Set up the fixture
+        id: setup
+        working-directory: test/fixture
+        run: |
+          sf project deploy start -o preview --source-dir force-app --wait 30
+          sf org assign permset --name SfUi_Probe -o preview
+          sf org create user -o preview --definition-file config/platform-user-def.json
+          sf data query -o preview --query "SELECT Id FROM User WHERE FirstName = 'Probe' AND LastName = 'Platform' FOR VIEW"
+      # ponytail: card-move@kanban needs the admin's one-time Kanban Settings (README step 4), which a new org lacks;
+      # include it once the route answers that dialog itself.
+      - name: Replay every route except card-move@kanban
+        run: node src/cli.js replay --org preview --app LightningSales --catalogue src/combinations.json --junit replay.xml --only '^(?!card-move@kanban(~|$))'
+      - name: Keep the replay report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: replay-report-preview
+          path: replay.xml
+          if-no-files-found: ignore
+      # The fixture's Apex on the preview release, run after the replay so a red test does not stop the routes.
+      - name: Run the fixture's Apex tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        # A run past --wait can return with no summary (exit code unverified), so only an outcome of Passed counts.
+        run: |
+          sf apex run test -o preview --test-level RunLocalTests --wait 20 --json > apex.json && rc=0 || rc=$?
+          jq '.result.summary // .result // .' apex.json
+          [ "$rc" = 0 ] && jq -e '.result.summary.outcome == "Passed"' apex.json > /dev/null
+      # Also after a failed create, in case it set the alias. A timed-out create sets none, so --duration-days 1 ends that org.
+      - name: Delete the scratch org
+        if: ${{ always() && steps.create.outcome != 'skipped' }}
+        run: |
+          if [ "${{ steps.create.outcome }}" = success ]; then sf org delete scratch -o preview --no-prompt
+          else sf org delete scratch -o preview --no-prompt || echo "::warning::No preview org to delete; a timed-out create leaves one for a day"; fi

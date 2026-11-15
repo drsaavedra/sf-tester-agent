@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FlexiPage xmlns="http://soap.sforce.com/2006/04/metadata">
+    <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Recommendations (Einstein Next Best Action)&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_nba</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>strategyName</name><value>SfUiC_Nba_Strategy</value></componentInstanceProperties>
+                <componentInstanceProperties><name>widgetTitle</name><value>SFUIC Recommendations</value></componentInstanceProperties>
+                <componentName>runtime_communities_nba:builderNbaWidget</componentName>
+                <identifier>nba_widget</identifier>
+            </componentInstance>
+        </itemInstances>
+        <name>main</name>
+        <type>Region</type>
+    </flexiPageRegions>
+    <masterLabel>SFUIC Nba App Page</masterLabel>
+    <template>
+        <name>flexipage:defaultAppHomeTemplate</name>
+    </template>
+    <type>AppPage</type>
+</FlexiPage>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FlexiPage xmlns="http://soap.sforce.com/2006/04/metadata">
+    <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-205: sales_einstein_sdr:dataGraphCreationModal&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_01</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>sales_einstein_sdr:dataGraphCreationModal</componentName>
+                <identifier>sales_einstein_sdr_dataGraphCreationModal</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-206: sales_einstein_sdr:sellerWorkModeContainer&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_02</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>sales_einstein_sdr:sellerWorkModeContainer</componentName>
+                <identifier>sales_einstein_sdr_sellerWorkModeContainer</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-207: sales_einstein_sdr:webConnectorPersonalizationModal&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_03</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>sales_einstein_sdr:webConnectorPersonalizationModal</componentName>
+                <identifier>sales_einstein_sdr_webConnectorPersonalizationModal</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-209: setup_agent_health_monitoring:agentAlerts&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_04</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>setup_agent_health_monitoring:agentAlerts</componentName>
+                <identifier>setup_agent_health_monitoring_agentAlerts</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-210: setup_agent_health_monitoring:alertDetails&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_05</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>setup_agent_health_monitoring:alertDetails</componentName>
+                <identifier>setup_agent_health_monitoring_alertDetails</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-211: setup_agent_health_monitoring:heartbeatDetails&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_06</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>setup_agent_health_monitoring:heartbeatDetails</componentName>
+                <identifier>setup_agent_health_monitoring_heartbeatDetails</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC Pal A1-212: setup_marketing_unifiedmarketing:customFontsBusinessUnitSection&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>lbl_07</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>setup_marketing_unifiedmarketing:customFontsBusinessUnitSection</componentName>
+                <identifier>setup_marketing_unifiedmarketing_customFontsBusinessUnitSection</identifier>
+            </componentInstance>
+        </itemInstances>
+        <name>main</name>
+        <type>Region</type>
+    </flexiPageRegions>
+    <masterLabel>SFUIC Pal App 11</masterLabel>
+    <template>
+        <name>flexipage:defaultAppHomeTemplate</name>
+    </template>
+    <type>AppPage</type>
+</FlexiPage>

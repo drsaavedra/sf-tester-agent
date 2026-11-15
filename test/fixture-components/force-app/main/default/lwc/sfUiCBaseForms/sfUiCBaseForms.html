@@ -1,0 +1,18 @@
+<template>
+    <lightning-card title="SFUIC Base Forms">
+        <div class="slds-p-horizontal_small">
+            <p data-id="forms-record">Record: SFUIC Shape 1 {recordStatus}</p>
+            <template lwc:if={recordId}>
+                <h3 class="slds-text-heading_small slds-m-top_small">lightning-record-view-form</h3>
+                <lightning-record-view-form data-id="lightning-record-view-form" record-id={recordId} object-api-name="SfUiC_Shape__c">
+                    <lightning-output-field field-name="Name"></lightning-output-field>
+                    <lightning-output-field field-name="Status__c"></lightning-output-field>
+                    <lightning-output-field field-name="Amount__c"></lightning-output-field>
+                </lightning-record-view-form>
+
+                <h3 class="slds-text-heading_small slds-m-top_small">lightning-record-form</h3>
+                <lightning-record-form data-id="lightning-record-form" record-id={recordId} object-api-name="SfUiC_Shape__c" fields={formFields} columns="2" mode="view"></lightning-record-form>
+            </template>
+        </div>
+    </lightning-card>
+</template>

@@ -1,0 +1,19 @@
+<template>
+    <!-- Extra inputs -->
+    <div class="slds-p-top_small">
+        <lightning-textarea label="Remarks" onchange={handleRemarks}></lightning-textarea>
+        <p lwc:if={remarks}>Remarks: {remarks}</p>
+        <lightning-button-menu alternative-text="Extra actions" onselect={handleMenu}>
+            <lightning-menu-item value="archive" label="Archive"></lightning-menu-item>
+            <lightning-menu-item value="restore" label="Restore"></lightning-menu-item>
+        </lightning-button-menu>
+        <p lwc:if={menu}>Menu chose: {menu}</p>
+        <lightning-accordion active-section-name="A" onsectiontoggle={handleSection}>
+            <lightning-accordion-section name="A" label="Section A">Inside A</lightning-accordion-section>
+            <lightning-accordion-section name="B" label="Section B">Inside B</lightning-accordion-section>
+        </lightning-accordion>
+        <p lwc:if={section}>Open section: {section}</p>
+        <lightning-datatable key-field="id" data={items} columns={itemColumns} draft-values={drafts} onsave={handleSave} hide-checkbox-column></lightning-datatable>
+        <p lwc:if={saved}>Saved qty: {saved}</p>
+    </div>
+</template>

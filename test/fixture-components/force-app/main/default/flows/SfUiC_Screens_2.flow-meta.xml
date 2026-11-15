@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+<apiVersion>66.0</apiVersion>
+<environments>Default</environments>
+<interviewLabel>SFUIC Screens 2 {!$Flow.CurrentDateTime}</interviewLabel>
+<label>SFUIC Screens 2</label>
+<processMetadataValues>
+<name>BuilderType</name>
+<value>
+<stringValue>LightningFlowBuilder</stringValue>
+</value>
+</processMetadataValues>
+<processType>Flow</processType>
+<screens>
+<name>S2_Contact</name>
+<label>SFUIC Screens 2: contact inputs</label>
+<locationX>0</locationX>
+<locationY>0</locationY>
+<allowBack>false</allowBack>
+<allowFinish>true</allowFinish>
+<allowPause>true</allowPause>
+<connector>
+<targetReference>S2_Display</targetReference>
+</connector>
+<fields>
+<name>Address_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Address&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Address</name>
+<extensionName>flowruntime:address</extensionName>
+<fieldType>ComponentInstance</fieldType>
+<inputParameters>
+<name>addressLabel</name>
+<value>
+<stringValue>SFUIC Address</stringValue>
+</value>
+</inputParameters>
+<inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+<isRequired>true</isRequired>
+<storeOutputAutomatically>true</storeOutputAutomatically>
+</fields>
+<fields>
+<name>Email_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Email&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Email</name>
+<extensionName>flowruntime:email</extensionName>
+<fieldType>ComponentInstance</fieldType>
+<inputParameters>
+<name>label</name>
+<value>
+<stringValue>SFUIC Email</stringValue>
+</value>
+</inputParameters>
+<inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+<isRequired>true</isRequired>
+<storeOutputAutomatically>true</storeOutputAutomatically>
+</fields>
+<fields>
+<name>Name_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Name&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Name</name>
+<extensionName>flowruntime:name</extensionName>
+<fieldType>ComponentInstance</fieldType>
+<inputParameters>
+<name>label</name>
+<value>
+<stringValue>SFUIC Name</stringValue>
+</value>
+</inputParameters>
+<inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+<isRequired>true</isRequired>
+<storeOutputAutomatically>true</storeOutputAutomatically>
+</fields>
+<fields>
+<name>Phone_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Phone&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Phone</name>
+<extensionName>flowruntime:phone</extensionName>
+<fieldType>ComponentInstance</fieldType>
+<inputParameters>
+<name>label</name>
+<value>
+<stringValue>SFUIC Phone</stringValue>
+</value>
+</inputParameters>
+<inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+<isRequired>true</isRequired>
+<storeOutputAutomatically>true</storeOutputAutomatically>
+</fields>
+<fields>
+<name>Url_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: URL&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Url</name>
+<extensionName>flowruntime:url</extensionName>
+<fieldType>ComponentInstance</fieldType>
+<inputParameters>
+<name>label</name>
+<value>
+<stringValue>SFUIC Url</stringValue>
+</value>
+</inputParameters>
+<inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+<isRequired>true</isRequired>
+<storeOutputAutomatically>true</storeOutputAutomatically>
+</fields>
+<fields>
+<name>Slider_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Slider&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Slider</name>
+<extensionName>flowruntime:slider</extensionName>
+<fieldType>ComponentInstance</fieldType>
+<inputParameters>
+<name>label</name>
+<value>
+<stringValue>SFUIC Slider</stringValue>
+</value>
+</inputParameters>
+<inputParameters>
+<name>min</name>
+<value>
+<numberValue>0.0</numberValue>
+</value>
+</inputParameters>
+<inputParameters>
+<name>max</name>
+<value>
+<numberValue>100.0</numberValue>
+</value>
+</inputParameters>
+<inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+<isRequired>true</isRequired>
+<storeOutputAutomatically>true</storeOutputAutomatically>
+</fields>
+<fields>
+<name>Toggle_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Toggle&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Toggle</name>
+<extensionName>flowruntime:toggle</extensionName>
+<fieldType>ComponentInstance</fieldType>
+<inputParameters>
+<name>label</name>
+<value>
+<stringValue>SFUIC Toggle</stringValue>
+</value>
+</inputParameters>
+<inputParameters>
+<name>messageToggleActive</name>
+<value>
+<stringValue>On</stringValue>
+</value>
+</inputParameters>
+<inputParameters>
+<name>messageToggleInactive</name>
+<value>
+<stringValue>Off</stringValue>
+</value>
+</inputParameters>
+<inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+<isRequired>true</isRequired>
+<storeOutputAutomatically>true</storeOutputAutomatically>
+</fields>
+<pausedText>&lt;p&gt;SFUIC flow paused&lt;/p&gt;</pausedText>
+<showFooter>true</showFooter>
+<showHeader>true</showHeader>
+</screens>
+<screens>
+<name>S2_Display</name>
+<label>SFUIC Screens 2: display and layout</label>
+<locationX>0</locationX>
+<locationY>0</locationY>
+<allowBack>true</allowBack>
+<allowFinish>true</allowFinish>
+<allowPause>true</allowPause>
+<fields>
+<name>Image_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Display Image&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Image</name>
+<extensionName>flowruntime:image</extensionName>
+<fieldType>ComponentInstance</fieldType>
+<inputParameters>
+<name>imageName</name>
+<value>
+<stringValue>SfUiC_Logo</stringValue>
+</value>
+</inputParameters>
+<inputParameters>
+<name>imageAlt</name>
+<value>
+<stringValue>SFUIC Image</stringValue>
+</value>
+</inputParameters>
+<inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+<isRequired>true</isRequired>
+<storeOutputAutomatically>true</storeOutputAutomatically>
+</fields>
+<fields>
+<name>Message_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Message&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Message</name>
+<extensionName>flowruntime:message</extensionName>
+<fieldType>ComponentInstance</fieldType>
+<inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+<isRequired>true</isRequired>
+<storeOutputAutomatically>true</storeOutputAutomatically>
+</fields>
+<fields>
+<name>Section_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Section&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Section</name>
+<fieldText>SFUIC Section</fieldText>
+<fieldType>RegionContainer</fieldType>
+<fields>
+<name>Section_Col1</name>
+<fieldType>Region</fieldType>
+<fields>
+<name>Section_Text1</name>
+<dataType>String</dataType>
+<fieldText>SFUIC Section Left</fieldText>
+<fieldType>InputField</fieldType>
+<isRequired>false</isRequired>
+</fields>
+<inputParameters>
+<name>width</name>
+<value>
+<stringValue>6</stringValue>
+</value>
+</inputParameters>
+<isRequired>false</isRequired>
+</fields>
+<fields>
+<name>Section_Col2</name>
+<fieldType>Region</fieldType>
+<fields>
+<name>Section_Text2</name>
+<dataType>String</dataType>
+<fieldText>SFUIC Section Right</fieldText>
+<fieldType>InputField</fieldType>
+<isRequired>false</isRequired>
+</fields>
+<inputParameters>
+<name>width</name>
+<value>
+<stringValue>6</stringValue>
+</value>
+</inputParameters>
+<isRequired>false</isRequired>
+</fields>
+<isRequired>false</isRequired>
+<regionContainerType>SectionWithHeader</regionContainerType>
+</fields>
+<fields>
+<name>Repeater_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Repeater&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Repeater</name>
+<fieldText>SFUIC Repeater</fieldText>
+<fieldType>Repeater</fieldType>
+<fields>
+<name>Repeater_Item</name>
+<dataType>String</dataType>
+<fieldText>SFUIC Repeated Item</fieldText>
+<fieldType>InputField</fieldType>
+<isRequired>false</isRequired>
+</fields>
+<isRequired>false</isRequired>
+</fields>
+<pausedText>&lt;p&gt;SFUIC flow paused&lt;/p&gt;</pausedText>
+<showFooter>true</showFooter>
+<showHeader>true</showHeader>
+</screens>
+<start>
+<locationX>0</locationX>
+<locationY>0</locationY>
+<connector>
+<targetReference>S2_Contact</targetReference>
+</connector>
+</start>
+<status>Active</status>
+</Flow>

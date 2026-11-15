@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FlexiPage xmlns="http://soap.sforce.com/2006/04/metadata">
+    <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>height</name><value>400</value></componentInstanceProperties>
+                <componentInstanceProperties><name>label</name><value>SFUIC Visualforce</value></componentInstanceProperties>
+                <componentInstanceProperties><name>pageName</name><value>SfUiC_Slds</value></componentInstanceProperties>
+                <componentName>flexipage:visualforcePage</componentName>
+                <identifier>vfPage</identifier>
+            </componentInstance>
+        </itemInstances>
+        <name>main</name>
+        <type>Region</type>
+    </flexiPageRegions>
+    <masterLabel>SFUIC Vf App Page</masterLabel>
+    <template>
+        <name>flexipage:defaultAppHomeTemplate</name>
+    </template>
+    <type>AppPage</type>
+</FlexiPage>

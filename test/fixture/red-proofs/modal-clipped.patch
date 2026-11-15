@@ -1,0 +1,11 @@
+diff --git a/test/fixture/force-app/main/default/lwc/sfUiProbeModal/sfUiProbeModal.css b/test/fixture/force-app/main/default/lwc/sfUiProbeModal/sfUiProbeModal.css
+new file mode 100644
+index 0000000..1493d67
+--- /dev/null
++++ b/test/fixture/force-app/main/default/lwc/sfUiProbeModal/sfUiProbeModal.css
+@@ -0,0 +1,5 @@
++/* Red proof: the whole dialog sits 94 px above the window. */
++:host {
++    position: relative;
++    top: -431px;
++}

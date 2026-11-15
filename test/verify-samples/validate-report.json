@@ -1,0 +1,36 @@
+{
+  "status": 0,
+  "result": {
+    "id": "0Af9H000009Y79xSAC",
+    "checkOnly": true,
+    "success": false,
+    "status": "Failed",
+    "numberTestsCompleted": 2,
+    "numberTestErrors": 1,
+    "details": {
+      "componentFailures": [],
+      "runTestResult": {
+        "numTestsRun": 3,
+        "numFailures": 1,
+        "successes": [
+          {
+            "name": "VerifyProbeE1Test",
+            "methodName": "ruleAcceptsZero"
+          },
+          {
+            "name": "VerifyProbeE1Test",
+            "methodName": "ruleRejectsNegative"
+          }
+        ],
+        "failures": [
+          {
+            "name": "VerifyProbeE1Test",
+            "methodName": "controlMustGoRed",
+            "message": "System.AssertException: Assertion Failed: E1 CONTROL: Count cannot be negative",
+            "stackTrace": "Class.VerifyProbeE1Test.controlMustGoRed: line 38, column 1"
+          }
+        ]
+      }
+    }
+  }
+}

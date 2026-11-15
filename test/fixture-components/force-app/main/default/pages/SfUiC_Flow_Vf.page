@@ -1,0 +1,6 @@
+<apex:page lightningStylesheets="true">
+    <!-- Heading for the Visualforce flow page -->
+    <h1>SFUIC Flow Vf</h1>
+    <!-- The flow SFUIC Launch Flow in the Classic flow runtime -->
+    <flow:interview name="SfUiC_Launch_Flow"/>
+</apex:page>

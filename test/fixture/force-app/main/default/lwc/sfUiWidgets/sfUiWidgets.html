@@ -1,0 +1,26 @@
+<template>
+    <!-- Typed inputs, stateful buttons and a vertical navigation -->
+    <div class="slds-p-top_small">
+        <lightning-input type="number" label="Quantity" step="1" onchange={handleQuantity}></lightning-input>
+        <p lwc:if={quantity}>Quantity: {quantity}</p>
+        <lightning-input type="email" label="Contact email" onchange={handleEmail}></lightning-input>
+        <p lwc:if={email}>Email: {email}</p>
+        <lightning-input type="time" label="Start time" onchange={handleTime}></lightning-input>
+        <p lwc:if={time}>Start time: {time}</p>
+        <lightning-input type="datetime" label="Meeting at" timezone="UTC" onchange={handleMeeting}></lightning-input>
+        <p lwc:if={meeting}>Meeting at: {meeting}</p>
+        <lightning-input type="search" label="Find place" onchange={handleFind}></lightning-input>
+        <p lwc:if={find}>Search: {find}</p>
+        <lightning-button-stateful label-when-off="Follow" label-when-on="Following" label-when-hover="Unfollow" selected={following} onclick={handleFollow}></lightning-button-stateful>
+        <p lwc:if={following}>Following: yes</p>
+        <lightning-button-icon-stateful icon-name="utility:like" alternative-text="Like" selected={liked} onclick={handleLike}></lightning-button-icon-stateful>
+        <p lwc:if={liked}>Liked: yes</p>
+        <lightning-vertical-navigation selected-item={navItem} onselect={handleNav}>
+            <lightning-vertical-navigation-section label="Views">
+                <lightning-vertical-navigation-item label="Recent" name="recent"></lightning-vertical-navigation-item>
+                <lightning-vertical-navigation-item label="Archived" name="archived"></lightning-vertical-navigation-item>
+            </lightning-vertical-navigation-section>
+        </lightning-vertical-navigation>
+        <p lwc:if={navChosen}>Nav chose: {navItem}</p>
+    </div>
+</template>

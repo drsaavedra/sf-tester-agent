@@ -1,0 +1,11 @@
+<template>
+    <lightning-modal-header label="SF UI Probe Dialog"></lightning-modal-header>
+    <lightning-modal-body>
+        <lightning-input label="Note" onchange={handleNote}></lightning-input>
+        <lightning-input type="file" label="Pick file" onchange={handleFile}></lightning-input>
+        <p lwc:if={fileName}>Picked file {fileName}</p>
+    </lightning-modal-body>
+    <lightning-modal-footer>
+        <lightning-button label="Done with dialog" onclick={handleDone}></lightning-button>
+    </lightning-modal-footer>
+</template>

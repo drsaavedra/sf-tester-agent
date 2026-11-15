@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>New</actionName>
+        <content>sfUiCAuraNew</content>
+        <formFactor>Large</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>LightningComponent</type>
+    </actionOverrides>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <enableActivities>false</enableActivities>
+    <enableFeeds>true</enableFeeds>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <label>SFUIC Aura</label>
+    <nameField>
+        <label>Aura Name</label>
+        <type>Text</type>
+    </nameField>
+    <pluralLabel>SFUIC Auras</pluralLabel>
+    <sharingModel>ReadWrite</sharingModel>
+</CustomObject>

@@ -1,0 +1,17 @@
+<template>
+    <lightning-card title="SFUIC Base Actions">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small">lightning-button-group</h3>
+            <lightning-button-group data-id="lightning-button-group">
+                <lightning-button label="SFUIC Left" onclick={press}></lightning-button>
+                <lightning-button label="SFUIC Middle" onclick={press}></lightning-button>
+                <lightning-button label="SFUIC Right" onclick={press}></lightning-button>
+            </lightning-button-group>
+            <p data-id="button-group-result">Last pressed: {pressed}</p>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-click-to-dial</h3>
+            <!-- Without a softphone or Open CTI this renders as plain phone text, not a dial link -->
+            <lightning-click-to-dial data-id="lightning-click-to-dial" value="4155550100"></lightning-click-to-dial>
+        </div>
+    </lightning-card>
+</template>

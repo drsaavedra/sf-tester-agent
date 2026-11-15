@@ -1,0 +1,3 @@
+<aura:component implements="lightning:backgroundUtilityItem">
+    <!-- SFUIC background utility item: renders nothing, lives in the utility bar. -->
+</aura:component>

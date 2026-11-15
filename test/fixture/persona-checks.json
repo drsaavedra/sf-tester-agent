@@ -1,0 +1,16 @@
+{
+  "checks": [
+    {
+      "id": "standard-user-case-access", "kind": "apex", "requirement": "A Standard User can read and create a Case but cannot delete it",
+      "covers": ["classes/SfUiProbeController"],
+      "persona": { "profile": "Standard User", "permissionSets": [] },
+      "act": "Schema.DescribeSObjectResult d = Schema.sObjectType.Case;\nString op = (String) input.get('op');\nif (op == 'read') return d.isAccessible();\nif (op == 'create') return d.isCreateable();\nif (op != 'delete') throw new IllegalArgumentException('unknown op ' + op);\nreturn d.isDeletable();",
+      "cases": [
+        { "name": "can read", "input": { "op": "read" }, "expect": { "returns": true } },
+        { "name": "can create", "input": { "op": "create" }, "expect": { "returns": true } },
+        { "name": "cannot delete", "input": { "op": "delete" }, "expect": { "returns": false } },
+        { "name": "an unknown op throws", "input": { "op": "edit" }, "expect": { "throws": "unknown op edit" } }
+      ]
+    }
+  ]
+}

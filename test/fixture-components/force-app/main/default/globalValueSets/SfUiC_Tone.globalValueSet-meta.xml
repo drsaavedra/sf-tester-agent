@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customValue><fullName>Calm</fullName><default>false</default><label>Calm</label></customValue>
+    <customValue><fullName>Bright</fullName><default>false</default><label>Bright</label></customValue>
+    <customValue><fullName>Loud</fullName><default>false</default><label>Loud</label></customValue>
+    <masterLabel>SFUIC Tone</masterLabel>
+    <sorted>false</sorted>
+</GlobalValueSet>

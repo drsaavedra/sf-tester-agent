@@ -1,0 +1,8 @@
+<apex:page standardController="SfUiC_Shape__c" recordSetVar="shapes" lightningStylesheets="true">
+    <!-- The list button's target: it names the rows selected on the list view. -->
+    <apex:pageBlock title="SFUIC Mass Mark">
+        <apex:pageBlockTable value="{!selected}" var="s">
+            <apex:column value="{!s.Name}" />
+        </apex:pageBlockTable>
+    </apex:pageBlock>
+</apex:page>

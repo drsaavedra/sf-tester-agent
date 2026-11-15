@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>F_Date__c</fullName>
+    <label>F Date</label>
+    <formula>DATEVALUE(CreatedDate) + 7</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <type>Date</type>
+</CustomField>

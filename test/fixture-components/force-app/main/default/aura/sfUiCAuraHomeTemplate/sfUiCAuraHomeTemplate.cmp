@@ -1,0 +1,14 @@
+<aura:component implements="lightning:homeTemplate" description="SFUIC Aura Home page template: main and a narrow sidebar">
+    <aura:attribute name="main" type="Aura.Component[]"/>
+    <aura:attribute name="sidebar" type="Aura.Component[]"/>
+    <div data-id="lightning:homeTemplate">
+        <div class="slds-box slds-theme_shade slds-m-bottom_small">
+            <h3 class="slds-text-heading_small">lightning:homeTemplate</h3>
+            <p>SFUIC Aura Home Template: regions main and sidebar.</p>
+        </div>
+        <lightning:layout>
+            <lightning:layoutItem size="8" padding="around-small">{!v.main}</lightning:layoutItem>
+            <lightning:layoutItem size="4" padding="around-small">{!v.sidebar}</lightning:layoutItem>
+        </lightning:layout>
+    </div>
+</aura:component>

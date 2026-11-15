@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>SF UI Typed with one record type, Alpha Type, so New offers no picker.</description>
+    <fieldPermissions><editable>true</editable><field>SfUiTyped__c.Grade__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>SfUiTyped__c.Size__c</field><readable>true</readable></fieldPermissions>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>SF UI Typed One</label>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>SfUiTyped__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <recordTypeVisibilities><recordType>SfUiTyped__c.Alpha_Type</recordType><visible>true</visible></recordTypeVisibilities>
+</PermissionSet>

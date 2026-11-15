@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>68.0</apiVersion>
+    <environments>Default</environments>
+    <interviewLabel>SFUIC Call Script {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>SFUIC Call Script</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value><stringValue>LightningFlowBuilder</stringValue></value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    <screens>
+        <name>SfUiC_Call_Script_Screen</name>
+        <label>SFUIC Call Script Screen</label>
+        <locationX>176</locationX>
+        <locationY>134</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>SfUiC_Call_Script_Text</name>
+            <fieldText>&lt;p&gt;&lt;b&gt;Call Script (lbpm:flowScript)&lt;/b&gt;&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <fields>
+            <name>SfUiC_Call_Script_Field</name>
+            <extensionName>lbpm:flowScript</extensionName>
+            <fieldType>ComponentInstance</fieldType>
+            <inputParameters>
+                <name>script</name>
+                <value>
+                    <stringValue>SFUIC call script text: greet the caller and confirm the account.</stringValue>
+                </value>
+            </inputParameters>
+            <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+            <isRequired>true</isRequired>
+            <storeOutputAutomatically>true</storeOutputAutomatically>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>SfUiC_Call_Script_Screen</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+</Flow>

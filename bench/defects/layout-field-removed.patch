@@ -1,0 +1,12 @@
+diff --git a/test/fixture/force-app/main/default/layouts/SfUiProbe__c-SF UI Probe Layout.layout-meta.xml b/test/fixture/force-app/main/default/layouts/SfUiProbe__c-SF UI Probe Layout.layout-meta.xml
+index bab925f..d80a756 100644
+--- a/test/fixture/force-app/main/default/layouts/SfUiProbe__c-SF UI Probe Layout.layout-meta.xml	
++++ b/test/fixture/force-app/main/default/layouts/SfUiProbe__c-SF UI Probe Layout.layout-meta.xml	
+@@ -17,7 +17,6 @@
+             <layoutItems><behavior>Required</behavior><field>Tags__c</field></layoutItems>
+             <layoutItems><behavior>Edit</behavior><field>Kind__c</field></layoutItems>
+             <layoutItems><behavior>Edit</behavior><field>Detail__c</field></layoutItems>
+-            <layoutItems><behavior>Edit</behavior><field>Count__c</field></layoutItems>
+             <layoutItems><behavior>Readonly</behavior><field>OwnerId</field></layoutItems>
+         </layoutColumns>
+         <style>TwoColumnsTopToBottom</style>

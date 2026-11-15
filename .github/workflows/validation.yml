@@ -1,0 +1,186 @@
+name: validation
+
+# A pull request runs the node:test files its diff reaches; main and a manual run run them all.
+# The weekly run (cron '0 16 * * 0') is off in the preview: add it back under `on:` with the org secret.
+# The org tests skip without SF_TESTER_ORG and SF_TESTER_USER, and the browser tests use the runner's Chrome.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Read-only token: no job here writes to the repo.
+permissions:
+  contents: read
+
+jobs:
+  # test/select-tests.js names the test files the PR's diff reaches: all, a list, or none. --no-renames keeps a
+  # renamed file's old path, which reads as deleted and selects all. A selector failure fails this job.
+  select:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      mode: ${{ steps.select.outputs.mode }}
+      files: ${{ steps.select.outputs.files }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - name: Select the test files this pull request affects
+        id: select
+        shell: bash
+        env:
+          SINCE: origin/${{ github.base_ref }}
+        run: |
+          git diff --no-renames --name-only "$SINCE...HEAD" > "$RUNNER_TEMP/changed.txt"
+          echo "Changed since $SINCE: $(wc -l < "$RUNNER_TEMP/changed.txt") files"
+          selected=$(node test/select-tests.js < "$RUNNER_TEMP/changed.txt") || { echo "The test selector failed"; exit 1; }
+          if [ "$selected" = ALL ]; then
+            echo "The diff reaches a shared or unmapped file: the whole suite runs in shards"; echo "mode=all" >> "$GITHUB_OUTPUT"
+          elif [ -z "$selected" ]; then
+            echo "No unit test is affected by this pull request"; echo "mode=none" >> "$GITHUB_OUTPUT"
+          else
+            files=($selected)
+            echo "Selected ${#files[@]} of $(ls test/*.test.js | wc -l) test files:"; printf '  %s\n' "${files[@]}"
+            echo "mode=list" >> "$GITHUB_OUTPUT"; echo "files=${files[*]}" >> "$GITHUB_OUTPUT"
+          fi
+
+  # The whole suite in 4 shards, each on its own runner and one file at a time: on main, by hand, and on a
+  # PR whose selection is all. A failed select skips it, and the failed select keeps the PR red.
+  npm-tests:
+    needs: select
+    if: >-
+      !cancelled() && (github.event_name != 'pull_request'
+      || (needs.select.result == 'success' && needs.select.outputs.mode == 'all'))
+    runs-on: ubuntu-latest
+    # 22.10.0 is the engines floor: the newest 22 alone would pass a dependency that needs a later one.
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22.10.0, 22.x]
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install dependencies
+        run: npm ci
+      # The files npm test runs; node sorts them before it shards, so the 4 shards cover each file once.
+      - name: Run shard ${{ matrix.shard }} of the test suite
+        run: node --test --test-concurrency=1 --test-shard=${{ matrix.shard }}/4 test/*.test.js
+
+  npm-tests-selected:
+    needs: select
+    if: github.event_name == 'pull_request' && needs.select.result == 'success' && needs.select.outputs.mode == 'list'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22.10.0, 22.x]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Run the selected test files
+        env:
+          FILES: ${{ needs.select.outputs.files }}
+        run: node --test --test-concurrency=1 $FILES
+
+  # A PR replays only the routes its diff affects (--since its base); a fork's PR gets no secrets, so it skips.
+  # The full suite replays main by hand (and weekly once the schedule is back); a manual run off main does not.
+  plan:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      count: ${{ steps.plan.outputs.count }}
+      since: ${{ steps.plan.outputs.since }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - name: Install dependencies
+        run: npm ci
+      - name: Select the routes this pull request affects
+        id: plan
+        shell: bash
+        env:
+          SINCE: origin/${{ github.base_ref }}
+        run: |
+          node src/cli.js replay --plan --catalogue src/combinations.json --since "$SINCE" | tee plan.txt
+          count=$(sed -n 's/^total \([0-9]*\).*/\1/p' plan.txt)
+          if [ -z "$count" ]; then echo "The plan printed no total line"; exit 1; fi
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          echo "since=$SINCE" >> "$GITHUB_OUTPUT"
+
+  # One run at a time on the shared org (column-sort saves a list view's sort). GitHub keeps one pending run per
+  # concurrency group and cancels an older pending one, so the plan runs outside it and only org work queues here.
+  replay-routes:
+    needs: plan
+    if: >-
+      !cancelled() && github.event_name != 'push'
+      && (github.event_name != 'pull_request' || (needs.plan.result == 'success' && needs.plan.outputs.count != '0'))
+      && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    # Full runs: 28 to 40 min (20 nightlies to 2026-11-10). A red route reruns once, so all red is an estimated 80 min
+    # (2 x 40), more if reds hang. Kept well past: a kill skips cleanup and leaves records in the long-lived org.
+    timeout-minutes: 150
+    concurrency:
+      group: validation-org
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          # The Salesforce CLI 2.154 needs Node 22.10: below it its login dies on webidl.util.markAsUncloneable.
+          node-version: 22.x
+      - name: Install dependencies
+        run: npm ci
+      - name: Install the Salesforce CLI
+        run: npm install --global @salesforce/cli@2.154.4
+      - name: Log in to the validation org
+        env:
+          AUTH_URL: ${{ secrets.SF_TESTER_VALIDATION_AUTH_URL }}
+        run: |
+          if [ -z "$AUTH_URL" ]; then echo "Set the SF_TESTER_VALIDATION_AUTH_URL secret (sf org auth show-sfdx-auth-url)"; exit 1; fi
+          printf '%s' "$AUTH_URL" | sf org login sfdx-url --sfdx-url-stdin - --alias sf-tester-validation
+      # Each deploy sends all of force-app and adds a version to every flow, and Salesforce stops at 50 per flow. So a PR
+      # deploys only if its diff touches the fixture, and a run on main only if main's did in the last 8 days (a week plus one).
+      - name: Deploy the fixture if it changed
+        working-directory: test/fixture
+        env:
+          SINCE: ${{ needs.plan.outputs.since }}
+        run: |
+          paths=(force-app sfdx-project.json)
+          if [ -n "$SINCE" ]; then
+            changed=$(git diff --name-only "$SINCE...HEAD" -- "${paths[@]}")
+          else
+            changed=$(git log --first-parent --since='8 days ago' --format=%h -- "${paths[@]}")
+          fi
+          if [ -z "$changed" ]; then echo "No fixture change to deploy"; exit 0; fi
+          echo "Deploying for: $changed"
+          sf project deploy start -o sf-tester-validation --source-dir force-app --test-level RunLocalTests --wait 30
+      # The plan job's ref on a PR, so both select the same routes; empty outside a PR, which replays every route.
+      # --app opens Sales whatever app the last run left the CI user in (a red app-switch route).
+      - name: Replay the selected routes, or every tested route outside a pull request
+        env:
+          SINCE: ${{ needs.plan.outputs.since }}
+        run: node src/cli.js replay --org sf-tester-validation --app LightningSales --catalogue src/combinations.json --junit replay.xml ${SINCE:+--since "$SINCE"}
+      - name: Keep the replay report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: replay-report
+          path: replay.xml
+          if-no-files-found: ignore

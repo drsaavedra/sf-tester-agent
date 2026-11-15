@@ -1,0 +1,9 @@
+<template>
+    <!-- Hosted flow card -->
+    <lightning-card title="SF UI Flow Host">
+        <div class="slds-p-around_small">
+            <p lwc:if={finished}>Host saw the flow finish</p>
+            <lightning-flow lwc:else flow-api-name="SfUi_Steps_Flow" onstatuschange={handleStatus}></lightning-flow>
+        </div>
+    </lightning-card>
+</template>

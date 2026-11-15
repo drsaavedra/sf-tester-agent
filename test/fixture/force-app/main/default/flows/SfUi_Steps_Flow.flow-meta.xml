@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <choices>
+        <name>Fault_Choice</name>
+        <choiceText>Fault</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Fault</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Long_Choice</name>
+        <choiceText>Long</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Long</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Short_Choice</name>
+        <choiceText>Short</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Short</stringValue>
+        </value>
+    </choices>
+    <decisions>
+        <name>Path_Decision</name>
+        <label>Path Decision</label>
+        <locationX>176</locationX>
+        <locationY>242</locationY>
+        <defaultConnector>
+            <targetReference>Fault_Create</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Fault</defaultConnectorLabel>
+        <rules>
+            <name>Is_Short</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Steps_path</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Short</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Short_End</targetReference>
+            </connector>
+            <label>Is Short</label>
+        </rules>
+        <rules>
+            <name>Is_Long</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Steps_path</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Long</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Long_Two</targetReference>
+            </connector>
+            <label>Is Long</label>
+        </rules>
+    </decisions>
+    <interviewLabel>SF UI Steps Flow {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>SF UI Steps Flow</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    <recordCreates>
+        <description>Faults on purpose: an Account with no Name, and no fault path, so the runtime shows its unhandled fault screen.</description>
+        <name>Fault_Create</name>
+        <label>Fault Create</label>
+        <locationX>440</locationX>
+        <locationY>350</locationY>
+        <inputAssignments>
+            <field>Description</field>
+            <value>
+                <stringValue>sf-ui steps flow fault</stringValue>
+            </value>
+        </inputAssignments>
+        <object>Account</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordCreates>
+    <screens>
+        <name>Long_End</name>
+        <label>Long End</label>
+        <locationX>308</locationX>
+        <locationY>458</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>Long_Finished</name>
+            <fieldText>&lt;p&gt;Long path finished: {!Steps_comment}&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>false</showHeader>
+    </screens>
+    <screens>
+        <name>Long_Two</name>
+        <label>Long Two</label>
+        <locationX>308</locationX>
+        <locationY>350</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <connector>
+            <targetReference>Long_End</targetReference>
+        </connector>
+        <fields>
+            <name>Long_Step_Two</name>
+            <fieldText>&lt;p&gt;Long path: step two&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <fields>
+            <name>Steps_comment</name>
+            <dataType>String</dataType>
+            <fieldText>Steps comment</fieldText>
+            <fieldType>InputField</fieldType>
+            <isRequired>true</isRequired>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>false</showHeader>
+    </screens>
+    <screens>
+        <name>Short_End</name>
+        <label>Short End</label>
+        <locationX>50</locationX>
+        <locationY>350</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>Short_Reached</name>
+            <fieldText>&lt;p&gt;Short path reached&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>false</showHeader>
+    </screens>
+    <screens>
+        <name>Steps_Start</name>
+        <label>Steps Start</label>
+        <locationX>176</locationX>
+        <locationY>134</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <connector>
+            <targetReference>Path_Decision</targetReference>
+        </connector>
+        <fields>
+            <name>Steps_Intro</name>
+            <fieldText>&lt;p&gt;Steps flow: pick a path&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <fields>
+            <name>Steps_path</name>
+            <choiceReferences>Short_Choice</choiceReferences>
+            <choiceReferences>Long_Choice</choiceReferences>
+            <choiceReferences>Fault_Choice</choiceReferences>
+            <dataType>String</dataType>
+            <fieldText>Steps path</fieldText>
+            <fieldType>RadioButtons</fieldType>
+            <isRequired>true</isRequired>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>false</showHeader>
+    </screens>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Steps_Start</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+</Flow>

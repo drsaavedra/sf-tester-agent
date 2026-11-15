@@ -1,0 +1,43 @@
+<template>
+    <!-- Dialogs -->
+    <lightning-card title="SFUIC Modules: dialogs">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small">lightning/alert</h3>
+            <lightning-button data-id="lightning-alert" label="SFUIC Open Alert" onclick={openAlert}></lightning-button>
+            <p data-id="alert-result">Alert result: {alertResult}</p>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning/confirm</h3>
+            <lightning-button data-id="lightning-confirm" label="SFUIC Open Confirm" onclick={openConfirm}></lightning-button>
+            <p data-id="confirm-result">Confirm result: {confirmResult}</p>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning/prompt</h3>
+            <lightning-button data-id="lightning-prompt" label="SFUIC Open Prompt" onclick={openPrompt}></lightning-button>
+            <p data-id="prompt-result">Prompt result: {promptResult}</p>
+        </div>
+    </lightning-card>
+
+    <!-- Toasts -->
+    <lightning-card title="SFUIC Modules: toast">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small">lightning/toast with lightning/toastContainer</h3>
+            <lightning-button data-id="lightning-toast" label="SFUIC Show Toast" onclick={showToast}></lightning-button>
+            <lightning-button data-id="lightning-toast-sticky" label="SFUIC Show Sticky Toast" onclick={showStickyToast}></lightning-button>
+            <p data-id="toast-result">Toasts shown: {toastCount} (container max 3, position top-right)</p>
+        </div>
+    </lightning-card>
+
+    <!-- Navigation -->
+    <lightning-card title="SFUIC Modules: navigation">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small">lightning/navigation</h3>
+            <p data-id="nav-record">Record: SFUIC Shape 1 {recordStatus}</p>
+            <lightning-button data-id="nav-record-view" label="SFUIC Nav Record View" data-target="recordView" onclick={go}></lightning-button>
+            <lightning-button data-id="nav-record-edit" label="SFUIC Nav Record Edit" data-target="recordEdit" onclick={go}></lightning-button>
+            <lightning-button data-id="nav-new-record" label="SFUIC Nav New Record" data-target="newRecord" onclick={go}></lightning-button>
+            <lightning-button data-id="nav-object-home" label="SFUIC Nav Object Home" data-target="objectHome" onclick={go}></lightning-button>
+            <lightning-button data-id="nav-list-view" label="SFUIC Nav List View" data-target="listView" onclick={go}></lightning-button>
+            <lightning-button data-id="nav-named-page" label="SFUIC Nav Named Page" data-target="namedPage" onclick={go}></lightning-button>
+            <lightning-button data-id="nav-web-page" label="SFUIC Nav Web Page" data-target="webPage" onclick={go}></lightning-button>
+        </div>
+    </lightning-card>
+</template>

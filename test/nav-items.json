@@ -1,0 +1,10 @@
+{
+  "_note": "GET /ui-api/nav-items?formFactor=Large&pageSize=100 on sfui-defects. The shape of SfUi_Inputs_App (TabFlexiPage) and SfUi_Vf (TabApexPage) was confirmed as a Standard Platform User under Login As, so the list is per user.",
+  "navItems": [
+    { "custom": true, "developerName": "SfUi_Inputs_App", "itemType": "TabFlexiPage", "label": "SF UI Inputs App", "content": "SfUi_Inputs_App_Page", "objectApiName": "0M0C1000000rXls", "pageReference": { "attributes": { "apiName": "SfUi_Inputs_App" }, "state": {}, "type": "standard__navItemPage" } },
+    { "custom": true, "developerName": "SfUi_Vf", "itemType": "TabApexPage", "label": "SF UI VF", "objectApiName": "066C1000000p1Rt", "pageReference": { "attributes": { "apiName": "SfUi_Vf" }, "state": {}, "type": "standard__navItemPage" } },
+    { "custom": true, "developerName": "SfUiProbe__c", "itemType": "Entity", "label": "SF UI Probes", "objectApiName": "SfUiProbe__c", "pageReference": { "attributes": { "objectApiName": "SfUiProbe__c", "actionName": "home" }, "state": {}, "type": "standard__objectPage" } },
+    { "custom": false, "developerName": "standard-ActionHub", "itemType": "Standard", "label": "Action Hub", "objectApiName": "ActionHub", "pageReference": { "attributes": { "apiName": "standard-ActionHub" }, "state": {}, "type": "standard__navItemPage" } },
+    { "custom": false, "developerName": "standard-home", "itemType": "Standard", "label": "Home", "objectApiName": "Home", "pageReference": { "attributes": { "pageName": "home" }, "state": {}, "type": "standard__namedPage" } }
+  ]
+}

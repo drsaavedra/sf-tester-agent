@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Probe__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <label>Probe</label>
+    <referenceTo>SfUiProbe__c</referenceTo>
+    <relationshipLabel>Probe Children</relationshipLabel>
+    <relationshipName>ProbeChildren</relationshipName>
+    <type>Lookup</type>
+</CustomField>

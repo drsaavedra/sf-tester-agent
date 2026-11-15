@@ -1,0 +1,36 @@
+<template>
+    <lightning-card title="SFUIC Child Components">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small">lightning-menu-divider</h3>
+            <h3 class="slds-text-heading_small">lightning-menu-subheader</h3>
+            <lightning-button-menu data-id="lightning-menu-divider" alternative-text="SFUIC Menu With Groups" label="SFUIC Menu" onselect={handleMenu}>
+                <lightning-menu-subheader data-id="lightning-menu-subheader" label="SFUIC Subheader One"></lightning-menu-subheader>
+                <lightning-menu-item value="alpha" label="SFUIC Alpha"></lightning-menu-item>
+                <lightning-menu-item value="beta" label="SFUIC Beta"></lightning-menu-item>
+                <lightning-menu-divider></lightning-menu-divider>
+                <lightning-menu-subheader label="SFUIC Subheader Two"></lightning-menu-subheader>
+                <lightning-menu-item value="gamma" label="SFUIC Gamma"></lightning-menu-item>
+            </lightning-button-menu>
+            <p data-id="menu-result">Menu chose: {menuChoice}</p>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-rich-text-toolbar-button-group</h3>
+            <h3 class="slds-text-heading_small">lightning-rich-text-toolbar-button</h3>
+            <lightning-input-rich-text data-id="lightning-rich-text-toolbar-button-group" label="SFUIC Rich Text With Custom Button" label-visible value={richText} onchange={handleRich}>
+                <lightning-rich-text-toolbar-button-group slot="toolbar" aria-label="SFUIC Custom Group">
+                    <lightning-rich-text-toolbar-button data-id="lightning-rich-text-toolbar-button" icon-name="utility:refresh" icon-alternative-text="SFUIC Clear Text" onclick={clearRich}></lightning-rich-text-toolbar-button>
+                </lightning-rich-text-toolbar-button-group>
+            </lightning-input-rich-text>
+            <p data-id="rich-result">Custom button clicks: {richClicks}</p>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-vertical-navigation-item-badge</h3>
+            <h3 class="slds-text-heading_small">lightning-vertical-navigation-item-icon</h3>
+            <lightning-vertical-navigation data-id="lightning-vertical-navigation-item-badge" selected-item={navItem} onselect={handleNav}>
+                <lightning-vertical-navigation-section label="SFUIC Folders">
+                    <lightning-vertical-navigation-item-badge data-id="nav-badge" label="SFUIC Inbox" name="inbox" badge-count="7"></lightning-vertical-navigation-item-badge>
+                    <lightning-vertical-navigation-item-icon data-id="lightning-vertical-navigation-item-icon" label="SFUIC Starred" name="starred" icon-name="utility:favorite"></lightning-vertical-navigation-item-icon>
+                </lightning-vertical-navigation-section>
+            </lightning-vertical-navigation>
+            <p data-id="nav-result">Nav chose: {navItem}</p>
+        </div>
+    </lightning-card>
+</template>

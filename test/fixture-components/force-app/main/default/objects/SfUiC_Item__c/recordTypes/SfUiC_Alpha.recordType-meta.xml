@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RecordType xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SfUiC_Alpha</fullName>
+    <active>true</active>
+    <label>SFUIC Alpha</label>
+    <picklistValues>
+        <picklist>Kind__c</picklist>
+        <values><fullName>Todo</fullName><default>true</default></values>
+        <values><fullName>Doing</fullName><default>false</default></values>
+        <values><fullName>Done</fullName><default>false</default></values>
+    </picklistValues>
+</RecordType>

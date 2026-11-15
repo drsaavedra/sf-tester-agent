@@ -1,0 +1,9 @@
+<template>
+    <!-- Custom flow navigation -->
+    <div class="slds-box" data-id="lightning-flowSupport">
+        <h3 class="slds-text-heading_small">lightning/flowSupport</h3>
+        <p>SFUIC custom navigation: {label}</p>
+        <lightning-button lwc:if={canBack} data-id="flow-nav-back" label="SFUIC Custom Back" onclick={back}></lightning-button>
+        <lightning-button lwc:if={canNext} data-id="flow-nav-next" label="SFUIC Custom Next" variant="brand" onclick={next}></lightning-button>
+    </div>
+</template>

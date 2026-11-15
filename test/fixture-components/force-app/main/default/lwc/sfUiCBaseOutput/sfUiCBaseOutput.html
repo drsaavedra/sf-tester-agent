@@ -1,0 +1,41 @@
+<template>
+    <lightning-card title="SFUIC Base Output">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small">lightning-formatted-address</h3>
+            <lightning-formatted-address data-id="lightning-formatted-address" street="1 Market St" city="San Francisco" province="CA" postal-code="94105" country="US"></lightning-formatted-address>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-formatted-date-time</h3>
+            <lightning-formatted-date-time data-id="lightning-formatted-date-time" value={stamp} year="numeric" month="long" day="2-digit" hour="2-digit" minute="2-digit"></lightning-formatted-date-time>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-formatted-email</h3>
+            <lightning-formatted-email data-id="lightning-formatted-email" value="sfuic@example.com" label="SFUIC Email"></lightning-formatted-email>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-formatted-location</h3>
+            <lightning-formatted-location data-id="lightning-formatted-location" latitude="37.7938" longitude="-122.3948"></lightning-formatted-location>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-formatted-name</h3>
+            <lightning-formatted-name data-id="lightning-formatted-name" salutation="Dr." first-name="Ada" middle-name="B" last-name="Sfuic" format="long"></lightning-formatted-name>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-formatted-number</h3>
+            <lightning-formatted-number data-id="lightning-formatted-number" value="1234.5" format-style="currency" currency-code="USD"></lightning-formatted-number>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-formatted-phone</h3>
+            <lightning-formatted-phone data-id="lightning-formatted-phone" value="4155550100"></lightning-formatted-phone>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-formatted-rich-text</h3>
+            <lightning-formatted-rich-text data-id="lightning-formatted-rich-text" value={richText}></lightning-formatted-rich-text>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-formatted-text</h3>
+            <lightning-formatted-text data-id="lightning-formatted-text" value="SFUIC text with a link www.example.com" linkify></lightning-formatted-text>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-formatted-time</h3>
+            <lightning-formatted-time data-id="lightning-formatted-time" value="14:30:00.000Z"></lightning-formatted-time>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-formatted-url</h3>
+            <lightning-formatted-url data-id="lightning-formatted-url" value="https://www.example.com" label="SFUIC Url" target="_blank"></lightning-formatted-url>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-relative-date-time</h3>
+            <lightning-relative-date-time data-id="lightning-relative-date-time" value={hourAgo}></lightning-relative-date-time>
+        </div>
+    </lightning-card>
+</template>

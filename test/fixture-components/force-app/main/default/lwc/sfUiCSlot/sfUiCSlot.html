@@ -1,0 +1,7 @@
+<template>
+    <!-- Slot frame: a named header slot over the default slot, each with fallback text -->
+    <div class="slds-box slds-p-around_x-small">
+        <div data-id="slot-header"><slot name="header">SFUIC slot header fallback</slot></div>
+        <div data-id="slot-default"><slot>SFUIC slot default fallback</slot></div>
+    </div>
+</template>

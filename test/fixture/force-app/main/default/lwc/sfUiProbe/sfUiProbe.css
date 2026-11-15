@@ -1,0 +1,15 @@
+.high {
+    position: relative;
+    z-index: 9999;
+}
+
+.clip {
+    width: 25px;
+    overflow: hidden;
+}
+
+.wide {
+    display: block;
+    width: 50px;
+    white-space: nowrap;
+}

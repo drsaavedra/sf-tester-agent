@@ -1,0 +1,7 @@
+[
+  { "id": "visibility-rule", "target": "combobox@record-tab", "expected": "FAIL", "kind": "patch", "patch": "defects/visibility-rule.patch" },
+  { "id": "layout-field-removed", "target": "checkbox-number@edit-dialog", "expected": "FAIL", "kind": "patch", "patch": "defects/layout-field-removed.patch" },
+  { "id": "overlay-over-status", "target": "combobox@record-tab", "expected": "FAIL", "kind": "patch", "patch": "defects/overlay-over-status.patch" },
+  { "id": "tab-renamed", "target": "combobox@app-page", "expected": "FAIL", "kind": "patch", "patch": "defects/tab-renamed.patch", "note": "B and C open the tab by the quoted label, so the rename fails their sf_open_tab step; an sf-tester ends BLOCKED asking the source label, which the bench session answers (README)" },
+  { "id": "non-english-user", "target": "checkbox-number@edit-dialog", "expected": "PASS", "kind": "user", "user": { "field": "LanguageLocaleKey", "value": "de" } }
+]

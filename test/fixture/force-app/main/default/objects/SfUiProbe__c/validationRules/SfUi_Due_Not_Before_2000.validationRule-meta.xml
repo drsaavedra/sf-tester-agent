@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SfUi_Due_Not_Before_2000</fullName>
+    <active>true</active>
+    <description>A date rule, so verify checks the date type.</description>
+    <errorConditionFormula>Due__c &lt; DATE(2000,1,1)</errorConditionFormula>
+    <errorDisplayField>Due__c</errorDisplayField>
+    <errorMessage>Due date cannot be before 2000</errorMessage>
+</ValidationRule>

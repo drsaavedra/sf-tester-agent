@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SfUiC_Note_Not_Top</fullName>
+    <active>true</active>
+    <errorConditionFormula>Note__c = &quot;top&quot;</errorConditionFormula>
+    <errorMessage>SFUIC page-top error: Note cannot be top</errorMessage>
+</ValidationRule>

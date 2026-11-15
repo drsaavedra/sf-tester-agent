@@ -1,0 +1,22 @@
+<template>
+    <!-- A datatable button column, a vertical tabset, an accordion that opens several sections, and checkable menu items -->
+    <div class="slds-p-top_small">
+        <lightning-datatable key-field="id" data={orders} columns={orderColumns} onrowaction={handleApprove} hide-checkbox-column></lightning-datatable>
+        <p lwc:if={approved}>Approved: {approved}</p>
+        <lightning-tabset variant="vertical">
+            <lightning-tab label="Side one">Side one body</lightning-tab>
+            <lightning-tab label="Side two" onactive={handleSide}>Side two body</lightning-tab>
+        </lightning-tabset>
+        <p lwc:if={sideTwo}>Side tab two shown</p>
+        <lightning-accordion allow-multiple-sections-open onsectiontoggle={handleSections}>
+            <lightning-accordion-section name="north" label="North">North body</lightning-accordion-section>
+            <lightning-accordion-section name="south" label="South">South body</lightning-accordion-section>
+        </lightning-accordion>
+        <p lwc:if={openSections}>Open sections: {openSections}</p>
+        <lightning-button-menu alternative-text="View options" onselect={handleView}>
+            <lightning-menu-item value="compact" label="Compact" checked={compact}></lightning-menu-item>
+            <lightning-menu-item value="wide" label="Wide" checked={wide}></lightning-menu-item>
+        </lightning-button-menu>
+        <p lwc:if={viewChosen}>View checked: {viewChosen}</p>
+    </div>
+</template>

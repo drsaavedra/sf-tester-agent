@@ -1,0 +1,16 @@
+<aura:component implements="lightning:appHomeTemplate" description="SFUIC Aura app page template: a banner over two columns">
+    <aura:attribute name="top" type="Aura.Component[]"/>
+    <aura:attribute name="left" type="Aura.Component[]"/>
+    <aura:attribute name="right" type="Aura.Component[]"/>
+    <div data-id="lightning:appHomeTemplate">
+        <div class="slds-box slds-theme_shade slds-m-bottom_small">
+            <h3 class="slds-text-heading_small">lightning:appHomeTemplate</h3>
+            <p>SFUIC Aura App Template: regions top, left and right.</p>
+        </div>
+        <div class="slds-m-bottom_small">{!v.top}</div>
+        <lightning:layout>
+            <lightning:layoutItem size="6" padding="around-small">{!v.left}</lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">{!v.right}</lightning:layoutItem>
+        </lightning:layout>
+    </div>
+</aura:component>

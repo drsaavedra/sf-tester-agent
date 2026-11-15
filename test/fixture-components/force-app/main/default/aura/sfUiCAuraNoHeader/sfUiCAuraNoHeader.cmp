@@ -1,0 +1,12 @@
+<aura:component implements="force:lightningQuickActionWithoutHeader,force:hasRecordId">
+    <div class="slds-p-around_small">
+        <div data-id="force:lightningQuickActionWithoutHeader">
+            <h3 class="slds-text-heading_small">force:lightningQuickActionWithoutHeader</h3>
+            <p>SFUIC Aura No Header action for {!v.recordId}. This panel has no standard header or footer.</p>
+        </div>
+        <div data-id="force:closeQuickAction" class="slds-m-top_small">
+            <h3 class="slds-text-heading_small">force:closeQuickAction</h3>
+            <lightning:button name="force:closeQuickAction" label="force:closeQuickAction" onclick="{!c.close}"/>
+        </div>
+    </div>
+</aura:component>

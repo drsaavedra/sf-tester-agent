@@ -1,0 +1,29 @@
+<template>
+    <!-- SFUIC Gated card: components the reference marks as preview or licensed -->
+    <lightning-card title="SFUIC Gated">
+        <div class="slds-p-horizontal_small">
+            <h3 class="slds-text-heading_small">lightning-dynamic-list-container</h3>
+            <h3 class="slds-text-heading_small">lightning-dynamic-list-item</h3>
+            <div style="height: 8rem">
+                <lightning-dynamic-list-container data-id="lightning-dynamic-list-container" list-items={items}>
+                    <template for:each={items} for:item="item">
+                        <lightning-dynamic-list-item data-id="lightning-dynamic-list-item" key={item.id} item-id={item.id}>{item.name}</lightning-dynamic-list-item>
+                    </template>
+                </lightning-dynamic-list-container>
+            </div>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-omnistudio-flexcard</h3>
+            <lightning-omnistudio-flexcard data-id="lightning-omnistudio-flexcard" flexcard-name="SfUiCCard"></lightning-omnistudio-flexcard>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-omnistudio-omniscript</h3>
+            <lightning-omnistudio-omniscript data-id="lightning-omnistudio-omniscript" type="SfUiC" sub-type="Gated" language="English"></lightning-omnistudio-omniscript>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning-ui-embedding</h3>
+            <lightning-ui-embedding data-id="lightning-ui-embedding"></lightning-ui-embedding>
+
+            <h3 class="slds-text-heading_small slds-m-top_small">lightning/distributedMarketing</h3>
+            <lightning-button data-id="lightning-distributed-marketing" label="SFUIC Open Distributed Marketing" onclick={openMarketing}></lightning-button>
+            <p data-id="marketing-result">Distributed Marketing: {marketingResult}</p>
+        </div>
+    </lightning-card>
+</template>

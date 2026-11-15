@@ -1,0 +1,7 @@
+<design:component label="SFUIC Aura App Template">
+    <flexipage:template>
+        <flexipage:region name="top" defaultWidth="LARGE"/>
+        <flexipage:region name="left" defaultWidth="MEDIUM"/>
+        <flexipage:region name="right" defaultWidth="MEDIUM"/>
+    </flexipage:template>
+</design:component>

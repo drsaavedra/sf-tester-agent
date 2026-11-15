@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <environments>Default</environments>
+    <interviewLabel>SFUIC Action Button {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>SFUIC Action Button</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value><stringValue>LightningFlowBuilder</stringValue></value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    <screens>
+        <name>SfUiC_Action_Screen</name>
+        <label>SFUIC Action Screen</label>
+        <locationX>176</locationX>
+        <locationY>134</locationY>
+        <actions>
+            <name>SfUiC_Action_Run</name>
+            <actionName>SfUiC_Action_Sub</actionName>
+            <actionType>flow</actionType>
+            <label>SFUIC Action Sub</label>
+            <nameSegment>SfUiC_Action_Sub</nameSegment>
+        </actions>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>SfUiC_Action_Label</name>
+            <fieldText>&lt;p&gt;Flow: Action Button&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <fields>
+            <name>SfUiC_Action_Btn</name>
+            <extensionName>flowruntime:actionButtonField</extensionName>
+            <fieldType>ComponentInstance</fieldType>
+            <inputParameters>
+                <name>label</name>
+                <value>
+                    <stringValue>SFUIC Run Action</stringValue>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>isSuccess</name>
+                <value>
+                    <elementReference>SfUiC_Action_Run.IsSuccess</elementReference>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>inProgress</name>
+                <value>
+                    <elementReference>SfUiC_Action_Run.InProgress</elementReference>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>errorMessage</name>
+                <value>
+                    <elementReference>SfUiC_Action_Run.ErrorMessage</elementReference>
+                </value>
+            </inputParameters>
+            <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+            <isRequired>true</isRequired>
+            <storeOutputAutomatically>true</storeOutputAutomatically>
+        </fields>
+        <fields>
+            <name>SfUiC_Action_Result</name>
+            <fieldText>&lt;p&gt;SFUIC result: {!SfUiC_Action_Run.Results.outText}&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+        <triggers>
+            <eventName>flow__screenfieldclick</eventName>
+            <eventSource>SfUiC_Action_Btn</eventSource>
+            <handlers>
+                <screenActionName>SfUiC_Action_Run</screenActionName>
+            </handlers>
+        </triggers>
+    </screens>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>SfUiC_Action_Screen</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+</Flow>

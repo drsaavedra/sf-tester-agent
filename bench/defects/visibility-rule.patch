@@ -1,0 +1,18 @@
+diff --git a/test/fixture/force-app/main/default/flexipages/SfUi_Probe_Record_Page.flexipage-meta.xml b/test/fixture/force-app/main/default/flexipages/SfUi_Probe_Record_Page.flexipage-meta.xml
+index 11bb98a..5c9b65b 100644
+--- a/test/fixture/force-app/main/default/flexipages/SfUi_Probe_Record_Page.flexipage-meta.xml
++++ b/test/fixture/force-app/main/default/flexipages/SfUi_Probe_Record_Page.flexipage-meta.xml
+@@ -35,6 +35,13 @@
+             <componentInstance>
+                 <componentName>c:sfUiInputs</componentName>
+                 <identifier>c_sfUiInputs</identifier>
++                <visibilityRule>
++                    <criteria>
++                        <leftValue>{!Record.Count__c}</leftValue>
++                        <operator>GE</operator>
++                        <rightValue>100</rightValue>
++                    </criteria>
++                </visibilityRule>
+             </componentInstance>
+         </itemInstances>
+         <name>inputsTabContent</name>

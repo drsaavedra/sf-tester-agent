@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FlexiPage xmlns="http://soap.sforce.com/2006/04/metadata">
+    <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentName>console:history</componentName>
+                <identifier>u_history</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>notes:utilityBarNoteList</componentName>
+                <identifier>u_notes</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties>
+                    <name>entityNames</name>
+                    <valueList>
+                        <valueListItems><value>SfUiC_Item__c</value></valueListItems>
+                        <valueListItems><value>SfUiC_Hub__c</value></valueListItems>
+                    </valueList>
+                </componentInstanceProperties>
+                <componentInstanceProperties><name>height</name><type>decorator</type><value>400</value></componentInstanceProperties>
+                <componentInstanceProperties><name>icon</name><type>decorator</type><value>recent</value></componentInstanceProperties>
+                <componentInstanceProperties><name>label</name><type>decorator</type><value>SFUIC Recent Items</value></componentInstanceProperties>
+                <componentInstanceProperties><name>width</name><type>decorator</type><value>400</value></componentInstanceProperties>
+                <componentName>flexipage:recentItems</componentName>
+                <identifier>u_recent</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>flowName</name><value>SfUiC_Utility_Flow</value></componentInstanceProperties>
+                <componentInstanceProperties><name>flowLayout</name><value>oneColumn</value></componentInstanceProperties>
+                <componentInstanceProperties><name>height</name><type>decorator</type><value>400</value></componentInstanceProperties>
+                <componentInstanceProperties><name>icon</name><type>decorator</type><value>flow</value></componentInstanceProperties>
+                <componentInstanceProperties><name>label</name><type>decorator</type><value>SFUIC Flow</value></componentInstanceProperties>
+                <componentInstanceProperties><name>width</name><type>decorator</type><value>400</value></componentInstanceProperties>
+                <componentName>flowruntime:interview</componentName>
+                <identifier>u_flow</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>entityName</name><value>SfUiC_Item__c</value></componentInstanceProperties>
+                <componentInstanceProperties><name>filterName</name><value>SfUiC_Mixed</value></componentInstanceProperties>
+                <componentInstanceProperties><name>hideActionBar</name><value>false</value></componentInstanceProperties>
+                <componentInstanceProperties><name>hideSearchBar</name><value>false</value></componentInstanceProperties>
+                <componentInstanceProperties><name>pageSize</name><value>10</value></componentInstanceProperties>
+                <componentInstanceProperties><name>height</name><type>decorator</type><value>400</value></componentInstanceProperties>
+                <componentInstanceProperties><name>icon</name><type>decorator</type><value>list</value></componentInstanceProperties>
+                <componentInstanceProperties><name>label</name><type>decorator</type><value>SFUIC List View</value></componentInstanceProperties>
+                <componentInstanceProperties><name>width</name><type>decorator</type><value>400</value></componentInstanceProperties>
+                <componentName>flexipage:filterListCard</componentName>
+                <identifier>u_list</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>decorate</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>richTextValue</name><value>&lt;p&gt;&lt;b&gt;SFUIC utility rich text&lt;/b&gt;&lt;/p&gt;</value></componentInstanceProperties>
+                <componentInstanceProperties><name>height</name><type>decorator</type><value>400</value></componentInstanceProperties>
+                <componentInstanceProperties><name>icon</name><type>decorator</type><value>text</value></componentInstanceProperties>
+                <componentInstanceProperties><name>label</name><type>decorator</type><value>SFUIC Rich Text</value></componentInstanceProperties>
+                <componentInstanceProperties><name>width</name><type>decorator</type><value>400</value></componentInstanceProperties>
+                <componentName>flexipage:richText</componentName>
+                <identifier>u_rich</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>reportName</name><value>SfUiC_Items_By_Kind</value></componentInstanceProperties>
+                <componentInstanceProperties><name>showRefreshButton</name><value>true</value></componentInstanceProperties>
+                <componentInstanceProperties><name>height</name><type>decorator</type><value>400</value></componentInstanceProperties>
+                <componentInstanceProperties><name>icon</name><type>decorator</type><value>chart</value></componentInstanceProperties>
+                <componentInstanceProperties><name>label</name><type>decorator</type><value>SFUIC Report Chart</value></componentInstanceProperties>
+                <componentInstanceProperties><name>width</name><type>decorator</type><value>400</value></componentInstanceProperties>
+                <componentName>flexipage:reportChart</componentName>
+                <identifier>u_report</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties><name>label</name><type>decorator</type><value>SFUIC Softphone</value></componentInstanceProperties>
+                <componentName>opencti:softPhone</componentName>
+                <identifier>sfuic_softphone</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>macros:macroUtilityItem</componentName>
+                <identifier>sfuic_macros</identifier>
+            </componentInstance>
+        </itemInstances>
+        <name>utilityItems</name>
+        <type>Region</type>
+    </flexiPageRegions>
+    <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentName>c:sfUiCBackground</componentName>
+                <identifier>c_sfUiCBackground</identifier>
+            </componentInstance>
+        </itemInstances>
+        <name>backgroundComponents</name>
+        <type>Background</type>
+    </flexiPageRegions>
+    <masterLabel>SFUIC Console UtilityBar</masterLabel>
+    <template>
+        <name>one:utilityBarTemplateDesktop</name>
+        <properties><name>isLeftAligned</name><value>false</value></properties>
+    </template>
+    <type>UtilityBar</type>
+</FlexiPage>

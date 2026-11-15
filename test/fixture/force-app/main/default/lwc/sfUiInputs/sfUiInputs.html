@@ -1,0 +1,13 @@
+<template>
+    <lightning-card title="SF UI Inputs">
+        <div class="slds-p-around_small">
+            <lightning-combobox label="Size" options={sizes} value={size} onchange={handleSize}></lightning-combobox>
+            <p lwc:if={size}>Size chosen: {size}</p>
+            <lightning-datatable key-field="id" data={rows} columns={columns} onrowaction={handleRowAction} hide-checkbox-column></lightning-datatable>
+            <p lwc:if={rowAction}>Row action: {rowAction}</p>
+            <lightning-record-picker label="Company" object-api-name="Account" onchange={handlePick}></lightning-record-picker>
+            <p lwc:if={companyName}>Company chosen: {companyName}</p>
+            <lightning-button lwc:if={recordId} label="Open inputs dialog" onclick={handleOpen}></lightning-button>
+        </div>
+    </lightning-card>
+</template>

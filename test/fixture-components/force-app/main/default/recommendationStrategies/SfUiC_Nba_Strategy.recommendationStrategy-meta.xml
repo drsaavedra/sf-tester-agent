@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RecommendationStrategy xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>SFUIC Nba Strategy</label>
+    <recommendationLoad>
+        <label>SFUIC Recommendations</label>
+        <name>SfUiC_Load</name>
+        <condition>
+            <field>Name</field>
+            <operator>CONTAINS</operator>
+            <value>
+                <type>TEXT</type>
+                <value>SFUIC</value>
+            </value>
+        </condition>
+        <conditionLogic>and</conditionLogic>
+        <object>Recommendation</object>
+    </recommendationLoad>
+    <union>
+        <childNode>SfUiC_Load</childNode>
+        <label>Output</label>
+        <name>SfUiC_Output</name>
+    </union>
+</RecommendationStrategy>

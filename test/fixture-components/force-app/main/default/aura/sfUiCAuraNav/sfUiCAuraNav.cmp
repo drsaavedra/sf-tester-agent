@@ -1,0 +1,102 @@
+<aura:component implements="flexipage:availableForAllPageTypes">
+    <aura:attribute name="crumb" type="String" default="none"/>
+    <aura:attribute name="percent" type="Integer" default="40"/>
+    <aura:attribute name="step" type="String" default="2"/>
+    <aura:attribute name="navItem" type="String" default="home"/>
+    <aura:attribute name="treeItems" type="List"/>
+    <aura:attribute name="treePick" type="String" default="none"/>
+    <aura:attribute name="gridColumns" type="List"/>
+    <aura:attribute name="gridData" type="List"/>
+    <aura:attribute name="gridExpanded" type="List"/>
+    <aura:attribute name="tableColumns" type="List"/>
+    <aura:attribute name="tableData" type="List"/>
+    <aura:attribute name="tableRows" type="String" default="none"/>
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+
+    <!-- SFUIC Aura Navigation card -->
+    <lightning:card title="SFUIC Aura Navigation">
+        <div class="slds-p-horizontal_small">
+            <div data-id="lightning:breadcrumbs">
+                <h3 class="slds-text-heading_small">lightning:breadcrumbs</h3>
+                <lightning:breadcrumbs>
+                    <lightning:breadcrumb label="SFUIC Parent" name="parent" onclick="{!c.crumb}"/>
+                    <lightning:breadcrumb label="SFUIC Child" name="child" onclick="{!c.crumb}"/>
+                </lightning:breadcrumbs>
+                <div data-id="lightning:breadcrumb">
+                    <h3 class="slds-text-heading_small slds-m-top_x-small">lightning:breadcrumb</h3>
+                    <p>Breadcrumb clicked: {!v.crumb}</p>
+                </div>
+            </div>
+
+            <div data-id="lightning:progressBar" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:progressBar</h3>
+                <lightning:progressBar value="{!v.percent}" size="large" variant="circular"/>
+            </div>
+
+            <div data-id="lightning:progressIndicator" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:progressIndicator</h3>
+                <lightning:progressIndicator currentStep="{!v.step}" type="base" variant="base">
+                    <lightning:progressStep label="SFUIC Step One" value="1" onclick="{!c.pickStep}"/>
+                    <lightning:progressStep label="SFUIC Step Two" value="2" onclick="{!c.pickStep}"/>
+                    <lightning:progressStep label="SFUIC Step Three" value="3" onclick="{!c.pickStep}"/>
+                </lightning:progressIndicator>
+                <lightning:progressIndicator currentStep="{!v.step}" type="path" variant="base">
+                    <lightning:progressStep label="SFUIC Path One" value="1"/>
+                    <lightning:progressStep label="SFUIC Path Two" value="2"/>
+                    <lightning:progressStep label="SFUIC Path Three" value="3"/>
+                </lightning:progressIndicator>
+                <div data-id="lightning:progressStep">
+                    <h3 class="slds-text-heading_small slds-m-top_x-small">lightning:progressStep</h3>
+                    <p>Current step: {!v.step}</p>
+                </div>
+            </div>
+
+            <div data-id="lightning:progressRing" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:progressRing</h3>
+                <lightning:progressRing value="{!v.percent}" variant="base-autocomplete" size="large"/>
+            </div>
+            <div class="slds-m-top_small">
+                <lightning:button label="SFUIC Aura Advance" onclick="{!c.advance}"/>
+                <span class="slds-m-left_small">{!v.percent}%</span>
+            </div>
+
+            <div data-id="lightning:verticalNavigation" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:verticalNavigation</h3>
+                <p class="slds-text-body_small">Holds lightning:verticalNavigationSection, lightning:verticalNavigationItem, lightning:verticalNavigationItemBadge, lightning:verticalNavigationItemIcon and lightning:verticalNavigationOverflow.</p>
+                <lightning:verticalNavigation selectedItem="{!v.navItem}" onselect="{!c.navSelect}">
+                    <lightning:verticalNavigationSection label="SFUIC Section (lightning:verticalNavigationSection)">
+                        <lightning:verticalNavigationItem label="SFUIC Home (lightning:verticalNavigationItem)" name="home"/>
+                        <lightning:verticalNavigationItemBadge label="SFUIC Inbox (lightning:verticalNavigationItemBadge)" name="inbox" badgeCount="3" assistiveText="3 new items"/>
+                        <lightning:verticalNavigationItemIcon label="SFUIC Reports (lightning:verticalNavigationItemIcon)" name="reports" iconName="utility:chart"/>
+                    </lightning:verticalNavigationSection>
+                    <lightning:verticalNavigationOverflow>
+                        <lightning:verticalNavigationItem label="SFUIC Overflow Item (lightning:verticalNavigationOverflow)" name="overflow"/>
+                    </lightning:verticalNavigationOverflow>
+                </lightning:verticalNavigation>
+                <p>Selected nav item: {!v.navItem}</p>
+                <div data-id="lightning:verticalNavigationSection"><h3 class="slds-text-heading_small">lightning:verticalNavigationSection</h3></div>
+                <div data-id="lightning:verticalNavigationItem"><h3 class="slds-text-heading_small">lightning:verticalNavigationItem</h3></div>
+                <div data-id="lightning:verticalNavigationItemBadge"><h3 class="slds-text-heading_small">lightning:verticalNavigationItemBadge</h3></div>
+                <div data-id="lightning:verticalNavigationItemIcon"><h3 class="slds-text-heading_small">lightning:verticalNavigationItemIcon</h3></div>
+                <div data-id="lightning:verticalNavigationOverflow"><h3 class="slds-text-heading_small">lightning:verticalNavigationOverflow</h3></div>
+            </div>
+
+            <div data-id="lightning:tree" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:tree</h3>
+                <lightning:tree items="{!v.treeItems}" header="SFUIC Tree" onselect="{!c.treeSelect}"/>
+                <p>Tree pick: {!v.treePick}</p>
+            </div>
+
+            <div data-id="lightning:treeGrid" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:treeGrid</h3>
+                <lightning:treeGrid columns="{!v.gridColumns}" data="{!v.gridData}" keyField="name" expandedRows="{!v.gridExpanded}" hideCheckboxColumn="true"/>
+            </div>
+
+            <div data-id="lightning:datatable" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:datatable</h3>
+                <lightning:datatable columns="{!v.tableColumns}" data="{!v.tableData}" keyField="id" onrowselection="{!c.rowSelect}"/>
+                <p>Selected rows: {!v.tableRows}</p>
+            </div>
+        </div>
+    </lightning:card>
+</aura:component>

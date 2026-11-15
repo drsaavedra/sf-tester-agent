@@ -1,0 +1,90 @@
+<aura:component implements="flexipage:availableForAllPageTypes">
+    <aura:attribute name="pressed" type="Integer" default="0"/>
+    <aura:attribute name="check" type="Boolean" default="true"/>
+    <aura:attribute name="money" type="Decimal" default="1234.5"/>
+    <aura:attribute name="day" type="Date" default="2026-11-13"/>
+    <aura:attribute name="stamp" type="DateTime" default="2026-11-13T09:30:00.000Z"/>
+    <aura:attribute name="errs" type="List"/>
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+    <aura:attribute name="rich" type="String" default="&lt;p&gt;SFUIC &lt;b&gt;rich&lt;/b&gt; text&lt;/p&gt;"/>
+    <aura:attribute name="size" type="String" default="Medium"/>
+    <!-- ui: components are deprecated; the org accepted them at API 68.0 -->
+    <lightning:card title="SFUIC Aura ui Inputs">
+        <div class="slds-p-horizontal_small">
+            <div data-id="ui:button" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:button</h3>
+                <ui:button label="SFUIC ui Button" press="{!c.press}"/>
+                <p>Pressed: {!v.pressed}</p>
+            </div>
+            <div data-id="ui:inputCheckbox" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputCheckbox</h3>
+                <ui:inputCheckbox label="SFUIC ui Checkbox" value="{!v.check}"/>
+            </div>
+            <div data-id="ui:inputCurrency" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputCurrency</h3>
+                <ui:inputCurrency label="SFUIC ui Currency" value="{!v.money}"/>
+            </div>
+            <div data-id="ui:inputDate" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputDate</h3>
+                <ui:inputDate label="SFUIC ui Date" value="{!v.day}" displayDatePicker="true"/>
+            </div>
+            <div data-id="ui:inputDateTime" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputDateTime</h3>
+                <ui:inputDateTime label="SFUIC ui Date Time" value="{!v.stamp}" displayDatePicker="true"/>
+            </div>
+            <div data-id="ui:inputDefaultError" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputDefaultError</h3>
+                <ui:inputDefaultError value="{!v.errs}"/>
+            </div>
+            <div data-id="ui:inputEmail" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputEmail</h3>
+                <ui:inputEmail label="SFUIC ui Email" value="sfuic@example.com"/>
+            </div>
+            <div data-id="ui:inputNumber" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputNumber</h3>
+                <ui:inputNumber label="SFUIC ui Number" value="42"/>
+            </div>
+            <div data-id="ui:inputPhone" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputPhone</h3>
+                <ui:inputPhone label="SFUIC ui Phone" value="+1 415 555 0100"/>
+            </div>
+            <div data-id="ui:inputRadio" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputRadio</h3>
+                <ui:inputRadio label="SFUIC ui Radio Small" name="sfuicSize" text="Small" value="false"/>
+                <ui:inputRadio label="SFUIC ui Radio Medium" name="sfuicSize" text="Medium" value="true"/>
+            </div>
+            <div data-id="ui:inputRichText" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputRichText</h3>
+                <ui:inputRichText label="SFUIC ui Rich Text" value="{!v.rich}"/>
+            </div>
+            <div data-id="ui:inputSecret" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputSecret</h3>
+                <ui:inputSecret label="SFUIC ui Secret" value="sfuic-secret"/>
+            </div>
+            <div data-id="ui:inputSelect" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputSelect</h3>
+                <ui:inputSelect label="SFUIC ui Select" value="{!v.size}">
+                    <ui:inputSelectOption text="Small" label="Small"/>
+                    <ui:inputSelectOption text="Medium" label="Medium" value="true"/>
+                    <ui:inputSelectOption text="Large" label="Large"/>
+                </ui:inputSelect>
+            </div>
+            <div data-id="ui:inputSelectOption" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputSelectOption</h3>
+                <p class="slds-text-body_small">The three options of the ui:inputSelect above are ui:inputSelectOption.</p>
+            </div>
+            <div data-id="ui:inputText" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputText</h3>
+                <ui:inputText label="SFUIC ui Text" value="SFUIC text" placeholder="SFUIC placeholder"/>
+            </div>
+            <div data-id="ui:inputTextArea" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputTextArea</h3>
+                <ui:inputTextArea label="SFUIC ui Text Area" value="SFUIC first line" rows="3"/>
+            </div>
+            <div data-id="ui:inputURL" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:inputURL</h3>
+                <ui:inputURL label="SFUIC ui URL" value="https://example.com"/>
+            </div>
+        </div>
+    </lightning:card>
+</aura:component>

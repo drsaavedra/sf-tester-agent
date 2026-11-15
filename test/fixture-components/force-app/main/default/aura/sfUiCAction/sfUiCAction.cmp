@@ -1,0 +1,4 @@
+<aura:component implements="force:lightningQuickAction,force:hasRecordId">
+    <p>SFUIC Aura Action for {!v.recordId}</p>
+    <lightning:button label="SFUIC Close" onclick="{!c.close}"/>
+</aura:component>

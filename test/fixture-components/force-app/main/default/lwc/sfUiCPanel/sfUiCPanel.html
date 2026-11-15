@@ -1,0 +1,17 @@
+<template>
+    <lightning-card title="SFUIC Panel">
+        <div class="slds-p-horizontal_small">
+            <lightning-button label="Toast success" data-variant="success" onclick={toast}></lightning-button>
+            <lightning-button label="Toast error" data-variant="error" onclick={toast}></lightning-button>
+            <lightning-button label="Toast warning" data-variant="warning" onclick={toast}></lightning-button>
+            <lightning-button label="Toast info" data-variant="info" onclick={toast}></lightning-button>
+            <lightning-button label="Toast sticky" data-variant="info" data-mode="sticky" onclick={toast}></lightning-button>
+            <lightning-button label="Toast with link" onclick={toastLink}></lightning-button>
+            <lightning-input type="file" label="SFUIC file" onchange={pickFile}></lightning-input>
+            <p lwc:if={fileName}>Got file {fileName}</p>
+            <lightning-select name="sfuicSize" label="SFUIC Size" value={size} options={sizes} onchange={pickSize}></lightning-select>
+            <p>Size chosen: {size}</p>
+            <a href={sampleHref} download="sfuic-sample.txt">SFUIC Download sample</a>
+        </div>
+    </lightning-card>
+</template>

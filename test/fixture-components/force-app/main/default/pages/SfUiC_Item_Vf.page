@@ -1,0 +1,4 @@
+<apex:page standardController="SfUiC_Item__c" lightningStylesheets="true">
+    <h1>SFUIC Item Vf</h1>
+    <p>SFUIC Item: {!SfUiC_Item__c.Name}</p>
+</apex:page>

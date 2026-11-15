@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Ref__c</fullName>
+    <inlineHelpText>SFUIC auto number, set on save.</inlineHelpText>
+    <label>Ref</label>
+    <displayFormat>SFUIC-{0000}</displayFormat>
+    <type>AutoNumber</type>
+</CustomField>

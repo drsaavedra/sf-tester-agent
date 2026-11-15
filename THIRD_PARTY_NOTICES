@@ -1,0 +1,24 @@
+Third-party notices and credits for sf-tester-agent
+
+No source code from another project is copied into this repository.
+
+Dependencies (npm installs them; they are not in this repository)
+
+- playwright-core 1.56.1. Apache-2.0. Copyright (c) Microsoft Corporation, portions Copyright 2017 Google Inc.
+  https://github.com/microsoft/playwright
+- @modelcontextprotocol/sdk 1.31.0. MIT. Copyright (c) 2024 Anthropic, PBC.
+  https://github.com/modelcontextprotocol/typescript-sdk
+- zod 3.25.76. MIT. Copyright (c) 2025 Colin McDonnell.
+  https://github.com/colinhacks/zod
+
+Files in this repository that hold third-party material
+
+- docs/call.excalidraw.svg, docs/loop.excalidraw.svg, docs/runs.excalidraw.svg: drawn with Excalidraw. Each file
+  embeds a subset of the Excalifont font. SIL Open Font License 1.1. https://plus.excalidraw.com/excalifont
+
+Credits (references only, no code copied)
+
+- UTAM, by Salesforce. The comments in src/anchors.js name the UTAM page objects that show which Lightning elements
+  make a record page. https://developer.salesforce.com/docs/platform/utam/overview
+- sfdx-browserforce-plugin. MIT. Copyright (c) 2018 Matthias Rolke. sf-tester does not automate Setup pages; the
+  README points to this plugin for that. https://github.com/amtrack/sfdx-browserforce-plugin

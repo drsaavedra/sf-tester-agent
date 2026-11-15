@@ -1,0 +1,12 @@
+diff --git a/test/fixture/force-app/main/default/tabs/SfUi_Inputs_App.tab-meta.xml b/test/fixture/force-app/main/default/tabs/SfUi_Inputs_App.tab-meta.xml
+index 63ce2a1..72d9439 100644
+--- a/test/fixture/force-app/main/default/tabs/SfUi_Inputs_App.tab-meta.xml
++++ b/test/fixture/force-app/main/default/tabs/SfUi_Inputs_App.tab-meta.xml
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <CustomTab xmlns="http://soap.sforce.com/2006/04/metadata">
+     <flexiPage>SfUi_Inputs_App_Page</flexiPage>
+-    <label>SF UI Inputs App</label>
++    <label>SF UI Widgets Hub</label>
+     <motif>Custom20: Airplane</motif>
+ </CustomTab>

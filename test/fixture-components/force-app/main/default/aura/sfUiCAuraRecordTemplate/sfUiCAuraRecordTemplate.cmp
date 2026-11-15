@@ -1,0 +1,16 @@
+<aura:component implements="lightning:recordHomeTemplate" description="SFUIC Aura record page template: header, main and sidebar">
+    <aura:attribute name="header" type="Aura.Component[]"/>
+    <aura:attribute name="main" type="Aura.Component[]"/>
+    <aura:attribute name="sidebar" type="Aura.Component[]"/>
+    <div data-id="lightning:recordHomeTemplate">
+        <div class="slds-box slds-theme_shade slds-m-bottom_small">
+            <h3 class="slds-text-heading_small">lightning:recordHomeTemplate</h3>
+            <p>SFUIC Aura Record Template: regions header, main and sidebar.</p>
+        </div>
+        <div class="slds-m-bottom_small">{!v.header}</div>
+        <lightning:layout>
+            <lightning:layoutItem size="8" padding="around-small">{!v.main}</lightning:layoutItem>
+            <lightning:layoutItem size="4" padding="around-small">{!v.sidebar}</lightning:layoutItem>
+        </lightning:layout>
+    </div>
+</aura:component>

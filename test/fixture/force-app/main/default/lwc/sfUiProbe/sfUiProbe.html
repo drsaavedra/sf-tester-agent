@@ -1,0 +1,47 @@
+<template>
+    <lightning-card title="SF UI Probe">
+        <div class="slds-p-around_small">
+            <p>sf-ui probe build 1</p>
+            <button class="high">High layer</button>
+            <button>Low layer</button>
+            <lightning-button label="Open inline dialog" onclick={toggleInline}></lightning-button>
+            <div class="clip"><button class="wide">Half clipped</button></div>
+            <button>Not clipped</button>
+            <template lwc:if={inline}>
+                <section role="dialog" aria-modal="true" aria-label="Inline dialog" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <div class="slds-modal__content slds-p-around_medium">
+                            <p>Inline dialog</p>
+                            <lightning-button label="Close inline dialog" onclick={toggleInline}></lightning-button>
+                        </div>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </template>
+            <lightning-button label="Ping" onclick={handlePing}></lightning-button>
+            <lightning-button label="Open dialog" onclick={handleOpen}></lightning-button>
+            <p lwc:if={pong}>{pong}</p>
+            <p lwc:if={note}>Note: {note}</p>
+            <table class="slds-table">
+                <thead>
+                    <tr><th scope="col">Name</th><th scope="col">Pick</th><th scope="col">Edit</th><th scope="col">Inline</th></tr>
+                </thead>
+                <tbody>
+                    <template for:each={rows} for:item="row">
+                        <tr key={row.key}>
+                            <td>{row.name}</td>
+                            <td><lightning-button label="Pick" data-name={row.name} onclick={handlePick}></lightning-button></td>
+                            <td><lightning-button-icon icon-name="utility:edit" data-name={row.name} onclick={handleEdit}></lightning-button-icon></td>
+                            <td><lightning-button-icon icon-name="utility:new_window" onclick={toggleInline}></lightning-button-icon></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+            <p lwc:if={picked}>Picked {picked}</p>
+            <p lwc:if={edited}>Edited {edited}</p>
+            <lightning-file-upload label="Attach" record-id={recordId} onuploadfinished={handleUploaded}></lightning-file-upload>
+            <p lwc:if={uploaded}>Uploaded {uploaded}</p>
+            <c-sf-ui-probe-help></c-sf-ui-probe-help>
+        </div>
+    </lightning-card>
+</template>

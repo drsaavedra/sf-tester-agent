@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SfUi_Count_Not_Negative</fullName>
+    <active>true</active>
+    <description>A business rule for sf_object_context to report and a tester to propose as a negative check.</description>
+    <errorConditionFormula>Count__c &lt; 0</errorConditionFormula>
+    <errorDisplayField>Count__c</errorDisplayField>
+    <errorMessage>Count cannot be negative</errorMessage>
+</ValidationRule>

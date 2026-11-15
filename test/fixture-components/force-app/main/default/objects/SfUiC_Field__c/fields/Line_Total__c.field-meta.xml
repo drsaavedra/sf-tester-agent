@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Line_Total__c</fullName>
+    <inlineHelpText>SFUIC roll-up: the sum of Qty on the SFUIC Lines.</inlineHelpText>
+    <label>Line Total</label>
+    <summarizedField>SfUiC_Line__c.Qty__c</summarizedField>
+    <summaryForeignKey>SfUiC_Line__c.Field__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+    <type>Summary</type>
+</CustomField>

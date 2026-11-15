@@ -1,0 +1,6 @@
+{
+  "packageDirectories": [{ "path": "force-app", "default": true }],
+  "name": "sf-ui-fixture-components",
+  "namespace": "",
+  "sourceApiVersion": "68.0"
+}

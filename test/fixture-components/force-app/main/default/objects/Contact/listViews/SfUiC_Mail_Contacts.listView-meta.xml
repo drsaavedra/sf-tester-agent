@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SfUiC_Mail_Contacts</fullName>
+    <columns>FULL_NAME</columns>
+    <columns>CONTACT.EMAIL</columns>
+    <columns>ACCOUNT.NAME</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>CONTACT.LAST_NAME</field>
+        <operation>startsWith</operation>
+        <value>SFUIC</value>
+    </filters>
+    <label>SFUIC Mail Contacts</label>
+</ListView>

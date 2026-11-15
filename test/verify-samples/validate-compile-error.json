@@ -1,0 +1,8 @@
+{
+  "status": 1,
+  "name": "FailedValidationError",
+  "message": "Failed to validate the deployment (0Af9H000009Y6fKSAS). Due To:\nError in VerifyProbeE4Test - Invalid type: Schema.RestrictionRule (33:25)\n\n1 component error(s)",
+  "data": {
+    "deployId": "0Af9H000009Y6fKSAS"
+  }
+}

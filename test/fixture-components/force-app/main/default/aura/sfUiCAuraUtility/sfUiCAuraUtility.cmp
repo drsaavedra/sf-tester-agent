@@ -1,0 +1,9 @@
+<aura:component implements="lightning:utilityItem">
+    <aura:attribute name="count" type="Integer" default="0"/>
+    <div class="slds-p-around_small" data-id="lightning:utilityItem">
+        <h3 class="slds-text-heading_small">lightning:utilityItem</h3>
+        <p>SFUIC Aura Utility: an Aura component in the utility bar.</p>
+        <lightning:button label="SFUIC Aura Utility Ping" onclick="{!c.ping}"/>
+        <p>Pings: {!v.count}</p>
+    </div>
+</aura:component>

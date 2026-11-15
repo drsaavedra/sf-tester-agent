@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>68.0</apiVersion>
+    <customErrors>
+        <name>SfUiC_Window_Error</name>
+        <label>SFUIC Window Error</label>
+        <locationX>50</locationX>
+        <locationY>400</locationY>
+        <customErrorMessages>
+            <errorMessage>SFUIC window error: Check is window</errorMessage>
+            <isFieldError>false</isFieldError>
+        </customErrorMessages>
+    </customErrors>
+    <customErrors>
+        <name>SfUiC_Field_Error</name>
+        <label>SFUIC Field Error</label>
+        <locationX>314</locationX>
+        <locationY>400</locationY>
+        <customErrorMessages>
+            <errorMessage>SFUIC field error: Check is field</errorMessage>
+            <fieldSelection>Check__c</fieldSelection>
+            <isFieldError>true</isFieldError>
+        </customErrorMessages>
+    </customErrors>
+    <decisions>
+        <name>SfUiC_Guard_Decision</name>
+        <label>SFUIC Guard Decision</label>
+        <locationX>182</locationX>
+        <locationY>200</locationY>
+        <defaultConnectorLabel>No error</defaultConnectorLabel>
+        <rules>
+            <name>SfUiC_Is_Window</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Check__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue><stringValue>window</stringValue></rightValue>
+            </conditions>
+            <connector><targetReference>SfUiC_Window_Error</targetReference></connector>
+            <label>Check is window</label>
+        </rules>
+        <rules>
+            <name>SfUiC_Is_Field</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Check__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue><stringValue>field</stringValue></rightValue>
+            </conditions>
+            <connector><targetReference>SfUiC_Field_Error</targetReference></connector>
+            <label>Check is field</label>
+        </rules>
+    </decisions>
+    <environments>Default</environments>
+    <interviewLabel>SFUIC Guard Check {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>SFUIC Guard Check</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value><stringValue>LightningFlowBuilder</stringValue></value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <start>
+        <locationX>56</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>SfUiC_Guard_Decision</targetReference>
+        </connector>
+        <object>SfUiC_Guard__c</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <triggerType>RecordBeforeSave</triggerType>
+    </start>
+    <status>Active</status>
+</Flow>

@@ -1,0 +1,18 @@
+<template>
+    <lightning-card title="SF UI Clip Card">
+        <div class="frame slds-p-around_small">
+            <lightning-button label="Show details" onclick={handleShow}></lightning-button>
+            <span class="hover-host slds-m-left_small">Shipment
+                <span class="hover-card slds-box">Hover card: three parcels, one pallet</span>
+            </span>
+            <div lwc:if={shown} class="details slds-box slds-m-top_small">
+                <p>Shipment details</p>
+                <p>Line one of the details</p>
+                <p>Line two of the details</p>
+                <p>Line three of the details</p>
+                <p>Line four of the details</p>
+                <lightning-button label="Close details" onclick={handleClose}></lightning-button>
+            </div>
+        </div>
+    </lightning-card>
+</template>

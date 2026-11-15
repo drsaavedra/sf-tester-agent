@@ -1,0 +1,8 @@
+<aura:component implements="lightning:availableForFlowScreens">
+    <aura:attribute name="note" type="String" default="SFUIC flow note"/>
+    <div data-id="lightning:availableForFlowScreens">
+        <h3 class="slds-text-heading_small">lightning:availableForFlowScreens</h3>
+        <p>SFUIC Aura Flow Screen: an Aura component on a flow screen.</p>
+        <lightning:input label="SFUIC Aura Flow Note" value="{!v.note}"/>
+    </div>
+</aura:component>

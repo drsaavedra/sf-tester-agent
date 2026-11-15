@@ -1,0 +1,66 @@
+<aura:component implements="flexipage:availableForAllPageTypes">
+    <aura:import library="lightning:alert" property="LightningAlert"/>
+    <aura:import library="lightning:confirm" property="LightningConfirm"/>
+    <aura:import library="lightning:prompt" property="LightningPrompt"/>
+    <aura:attribute name="result" type="String" default="none"/>
+    <aura:attribute name="dirty" type="Boolean" default="false"/>
+    <aura:attribute name="flowStatus" type="String" default="not started"/>
+
+    <lightning:overlayLibrary aura:id="overlay"/>
+    <lightning:notificationsLibrary aura:id="notify"/>
+    <lightning:navigation aura:id="nav"/>
+    <lightning:unsavedChanges aura:id="unsaved" onsave="{!c.unsavedSave}" ondiscard="{!c.unsavedDiscard}"/>
+
+    <!-- SFUIC Aura Calls card -->
+    <lightning:card title="SFUIC Aura Calls">
+        <div class="slds-p-horizontal_small">
+            <p data-id="aura-call-result">Last result: {!v.result}</p>
+
+            <div data-id="lightning:alert" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:alert</h3>
+                <lightning:button label="SFUIC Open Alert" onclick="{!c.openAlert}"/>
+            </div>
+
+            <div data-id="lightning:confirm" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:confirm</h3>
+                <lightning:button label="SFUIC Open Confirm" onclick="{!c.openConfirm}"/>
+            </div>
+
+            <div data-id="lightning:prompt" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:prompt</h3>
+                <lightning:button label="SFUIC Open Prompt" onclick="{!c.openPrompt}"/>
+            </div>
+
+            <div data-id="lightning:overlayLibrary" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:overlayLibrary</h3>
+                <lightning:button label="SFUIC Open Modal" onclick="{!c.openModal}"/>
+                <lightning:button aura:id="popoverAnchor" label="SFUIC Open Popover" onclick="{!c.openPopover}" class="popover-anchor"/>
+            </div>
+
+            <div data-id="lightning:notificationsLibrary" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:notificationsLibrary</h3>
+                <lightning:button label="SFUIC Show Toast" onclick="{!c.showToast}"/>
+                <lightning:button label="SFUIC Show Notice" onclick="{!c.showNotice}"/>
+            </div>
+
+            <div data-id="lightning:navigation" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:navigation</h3>
+                <lightning:button label="SFUIC Go To Aura List" onclick="{!c.navigate}"/>
+            </div>
+
+            <div data-id="lightning:unsavedChanges" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:unsavedChanges</h3>
+                <lightning:button label="SFUIC Mark Unsaved" onclick="{!c.markDirty}"/>
+                <lightning:button label="SFUIC Clear Unsaved" onclick="{!c.clearDirty}"/>
+                <p>Unsaved changes: {!v.dirty ? 'yes' : 'no'}. Mark, then leave the tab to see the dialog.</p>
+            </div>
+
+            <div data-id="lightning:flow" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:flow</h3>
+                <lightning:button label="SFUIC Start Flow" onclick="{!c.startFlow}"/>
+                <p>Flow status: {!v.flowStatus}</p>
+                <lightning:flow aura:id="flow" onstatuschange="{!c.flowStatus}"/>
+            </div>
+        </div>
+    </lightning:card>
+</aura:component>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QuickAction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <height>250</height>
+    <page>SfUiC_Item_Vf</page>
+    <width>500</width>
+    <label>SFUIC Vf Action</label>
+    <optionsCreateFeedItem>false</optionsCreateFeedItem>
+    <type>VisualforcePage</type>
+</QuickAction>

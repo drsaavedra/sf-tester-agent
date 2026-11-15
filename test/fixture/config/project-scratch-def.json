@@ -1,0 +1,10 @@
+{
+  "orgName": "sf-ui fixture",
+  "edition": "Developer",
+  "features": [],
+  "settings": {
+    "lightningExperienceSettings": { "enableS1DesktopEnabled": true },
+    "securitySettings": { "enableAdminLoginAsAnyUser": true },
+    "communitiesSettings": { "enableNetworksEnabled": true }
+  }
+}

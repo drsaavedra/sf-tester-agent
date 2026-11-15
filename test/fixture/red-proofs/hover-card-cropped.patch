@@ -1,0 +1,15 @@
+diff --git a/test/fixture/force-app/main/default/lwc/sfUiClipCard/sfUiClipCard.css b/test/fixture/force-app/main/default/lwc/sfUiClipCard/sfUiClipCard.css
+index 0ff6f0c..c0d6d48 100644
+--- a/test/fixture/force-app/main/default/lwc/sfUiClipCard/sfUiClipCard.css
++++ b/test/fixture/force-app/main/default/lwc/sfUiClipCard/sfUiClipCard.css
+@@ -19,3 +19,10 @@
+ .hover-host:hover .hover-card {
+     display: block;
+ }
++
++/* Red proof: the frame crops what opens below its label. */
++.frame {
++    overflow: hidden;
++    min-height: 0;
++    height: 50px;
++}

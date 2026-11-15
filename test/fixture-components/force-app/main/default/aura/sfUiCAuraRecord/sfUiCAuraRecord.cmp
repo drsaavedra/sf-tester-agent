@@ -1,0 +1,90 @@
+<aura:component implements="flexipage:availableForRecordHome,force:hasRecordId">
+    <aura:attribute name="rec" type="Object"/>
+    <aura:attribute name="recError" type="String"/>
+    <aura:attribute name="formFields" type="List" default="['Name', 'Stage__c', 'Amount__c', 'Note__c']"/>
+    <aura:attribute name="saved" type="String" default="none"/>
+    <aura:attribute name="uploadedId" type="String"/>
+    <aura:attribute name="uploaded" type="String" default="none"/>
+    <aura:attribute name="recordId15" type="String"/>
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+    <!-- Reads the seed file id so lightning:fileCard needs no Apex -->
+    <force:recordData recordId="{!v.recordId}" fields="File_Id__c" targetFields="{!v.rec}" targetError="{!v.recError}"/>
+
+    <!-- SFUIC Aura Record card -->
+    <lightning:card title="SFUIC Aura Record">
+        <div class="slds-p-horizontal_small">
+            <div data-id="lightning:path">
+                <h3 class="slds-text-heading_small">lightning:path</h3>
+                <lightning:path recordId="{!v.recordId}" variant="non-linear"/>
+            </div>
+
+            <div data-id="lightning:picklistPath" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:picklistPath</h3>
+                <lightning:picklistPath recordId="{!v.recordId}" variant="non-linear" picklistFieldApiName="Stage__c"/>
+            </div>
+
+            <div data-id="lightning:recordForm" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:recordForm</h3>
+                <lightning:recordForm recordId="{!v.recordId}" objectApiName="SfUiC_Aura__c" fields="{!v.formFields}" columns="2" mode="view"/>
+            </div>
+
+            <div data-id="lightning:recordViewForm" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:recordViewForm</h3>
+                <lightning:recordViewForm recordId="{!v.recordId}" objectApiName="SfUiC_Aura__c">
+                    <lightning:outputField fieldName="Name"/>
+                    <lightning:outputField fieldName="Stage__c"/>
+                    <lightning:outputField fieldName="Amount__c"/>
+                </lightning:recordViewForm>
+                <div data-id="lightning:outputField">
+                    <h3 class="slds-text-heading_small slds-m-top_x-small">lightning:outputField</h3>
+                    <p class="slds-text-body_small">The three fields in the view form above are lightning:outputField.</p>
+                </div>
+            </div>
+
+            <div data-id="lightning:recordEditForm" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:recordEditForm</h3>
+                <lightning:recordEditForm recordId="{!v.recordId}" objectApiName="SfUiC_Aura__c" onsuccess="{!c.saved}">
+                    <lightning:messages/>
+                    <lightning:inputField fieldName="Name"/>
+                    <lightning:inputField fieldName="Stage__c"/>
+                    <lightning:inputField fieldName="Note__c"/>
+                    <lightning:button type="submit" label="SFUIC Aura Save" variant="brand" class="slds-m-top_x-small"/>
+                </lightning:recordEditForm>
+                <p>Saved: {!v.saved}</p>
+                <div data-id="lightning:inputField">
+                    <h3 class="slds-text-heading_small slds-m-top_x-small">lightning:inputField</h3>
+                    <p class="slds-text-body_small">The three fields in the edit form above are lightning:inputField.</p>
+                </div>
+            </div>
+
+            <div data-id="lightning:fileUpload" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:fileUpload</h3>
+                <lightning:fileUpload label="SFUIC Aura Upload" name="sfuicUpload" multiple="false" recordId="{!v.recordId}" onuploadfinished="{!c.uploaded}"/>
+                <p>Uploaded: {!v.uploaded}</p>
+            </div>
+
+            <div data-id="lightning:fileCard" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:fileCard</h3>
+                <aura:if isTrue="{!not(empty(v.rec.File_Id__c))}">
+                    <lightning:fileCard fileId="{!v.rec.File_Id__c}" description="SFUIC seed file"/>
+                    <aura:set attribute="else"><p>No seed file id on this record: run seed-slice-8.apex. {!v.recError}</p></aura:set>
+                </aura:if>
+                <aura:if isTrue="{!not(empty(v.uploadedId))}">
+                    <lightning:fileCard fileId="{!v.uploadedId}" description="SFUIC uploaded file"/>
+                </aura:if>
+            </div>
+
+            <div data-id="lightning:quipCard" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:quipCard</h3>
+                <aura:if isTrue="{!not(empty(v.recordId))}">
+                    <lightning:quipCard parentRecordId="{!v.recordId15}"/>
+                </aura:if>
+            </div>
+
+            <div data-id="lightning:listView" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">lightning:listView</h3>
+                <lightning:listView objectApiName="SfUiC_Aura__c" listName="All" rows="5" showActionBar="true" enableInlineEdit="true" showRowLevelActions="true"/>
+            </div>
+        </div>
+    </lightning:card>
+</aura:component>

@@ -1,0 +1,30 @@
+<apex:page showHeader="false" sidebar="false" standardStylesheets="false" applyHtmlTag="true" applyBodyTag="false" docType="html-5.0">
+    <!-- SLDS radio group and checkbox: the native inputs are visually hidden, the faux spans take the click. -->
+    <apex:slds />
+    <body class="slds-scope">
+        <div class="slds-p-around_medium">
+            <h2 class="slds-text-heading_small">SFUIC Visualforce controls</h2>
+            <fieldset class="slds-form-element">
+                <legend class="slds-form-element__legend slds-form-element__label">SFUIC Shade</legend>
+                <div class="slds-form-element__control">
+                    <span class="slds-radio">
+                        <input type="radio" id="sfuic-red" value="Red" name="sfuicShade" />
+                        <label class="slds-radio__label" for="sfuic-red"><span class="slds-radio_faux"></span><span class="slds-form-element__label">Red</span></label>
+                    </span>
+                    <span class="slds-radio">
+                        <input type="radio" id="sfuic-blue" value="Blue" name="sfuicShade" />
+                        <label class="slds-radio__label" for="sfuic-blue"><span class="slds-radio_faux"></span><span class="slds-form-element__label">Blue</span></label>
+                    </span>
+                </div>
+            </fieldset>
+            <div class="slds-form-element">
+                <div class="slds-form-element__control">
+                    <div class="slds-checkbox">
+                        <input type="checkbox" name="sfuicAgree" id="sfuic-agree" value="agree" />
+                        <label class="slds-checkbox__label" for="sfuic-agree"><span class="slds-checkbox_faux"></span><span class="slds-form-element__label">SFUIC Agree</span></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</apex:page>

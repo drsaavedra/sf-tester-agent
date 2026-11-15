@@ -1,0 +1,37 @@
+<aura:component implements="flexipage:availableForRecordHome,force:hasRecordId">
+    <aura:attribute name="draft" type="SfUiC_Aura__c" default="{'sobjectType': 'SfUiC_Aura__c', 'Name': 'SFUIC Aura Draft', 'Stage__c': 'Working', 'Amount__c': 42, 'Note__c': 'SFUIC draft note'}"/>
+    <aura:attribute name="saved" type="String" default="none"/>
+    <aura:handler name="onSaveSuccess" event="force:recordSaveSuccess" action="{!c.saved}"/>
+
+    <lightning:card title="SFUIC Aura Force">
+        <div class="slds-p-horizontal_small">
+            <div data-id="force:inputField">
+                <h3 class="slds-text-heading_small">force:inputField</h3>
+                <force:inputField value="{!v.draft.Note__c}"/>
+                <force:inputField value="{!v.draft.Stage__c}"/>
+            </div>
+
+            <div data-id="force:outputField" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">force:outputField</h3>
+                <force:outputField value="{!v.draft.Amount__c}"/>
+                <force:outputField value="{!v.draft.Note__c}"/>
+            </div>
+
+            <div data-id="force:recordView" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">force:recordView</h3>
+                <force:recordView recordId="{!v.recordId}" type="FULL"/>
+            </div>
+
+            <div data-id="force:recordEdit" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">force:recordEdit</h3>
+                <force:recordEdit aura:id="edit" recordId="{!v.recordId}"/>
+            </div>
+
+            <div data-id="force:recordSave" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">force:recordSave</h3>
+                <lightning:button name="force:recordSave" label="force:recordSave" variant="brand" onclick="{!c.save}"/>
+                <p>Saved: {!v.saved}</p>
+            </div>
+        </div>
+    </lightning:card>
+</aura:component>

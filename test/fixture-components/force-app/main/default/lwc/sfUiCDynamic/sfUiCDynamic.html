@@ -1,0 +1,8 @@
+<template>
+    <!-- Dynamic component: the button imports sfUiCSlot and renders it through lwc:is -->
+    <div>
+        <lightning-button data-id="dynamic-load" label="SFUIC Load Dynamic" onclick={load}></lightning-button>
+        <p data-id="dynamic-result">Dynamic component: {status}</p>
+        <lwc:component lwc:is={ctor}></lwc:component>
+    </div>
+</template>

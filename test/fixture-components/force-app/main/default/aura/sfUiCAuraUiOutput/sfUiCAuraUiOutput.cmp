@@ -1,0 +1,119 @@
+<aura:component implements="flexipage:availableForAllPageTypes">
+    <aura:attribute name="picked" type="String" default="none"/>
+    <!-- ui: components are deprecated; the org accepted them at API 68.0 -->
+    <lightning:card title="SFUIC Aura ui Output">
+        <div class="slds-p-horizontal_small">
+            <div data-id="ui:outputCheckbox" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:outputCheckbox</h3>
+                <ui:outputCheckbox value="true"/>
+            </div>
+            <div data-id="ui:outputCurrency" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:outputCurrency</h3>
+                <ui:outputCurrency value="1234.5"/>
+            </div>
+            <div data-id="ui:outputDate" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:outputDate</h3>
+                <ui:outputDate value="2026-11-13"/>
+            </div>
+            <div data-id="ui:outputDateTime" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:outputDateTime</h3>
+                <ui:outputDateTime value="2026-11-13T09:30:00.000Z"/>
+            </div>
+            <div data-id="ui:outputEmail" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:outputEmail</h3>
+                <ui:outputEmail value="sfuic@example.com"/>
+            </div>
+            <div data-id="ui:outputNumber" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:outputNumber</h3>
+                <ui:outputNumber value="1234.567" format="0.00"/>
+            </div>
+            <div data-id="ui:outputPhone" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:outputPhone</h3>
+                <ui:outputPhone value="+1 415 555 0100"/>
+            </div>
+            <div data-id="ui:outputRichText" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:outputRichText</h3>
+                <ui:outputRichText value="&lt;p&gt;SFUIC &lt;b&gt;rich&lt;/b&gt; output&lt;/p&gt;"/>
+            </div>
+            <div data-id="ui:outputText" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:outputText</h3>
+                <ui:outputText value="SFUIC output text"/>
+            </div>
+            <div data-id="ui:outputTextArea" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:outputTextArea</h3>
+                <ui:outputTextArea value="SFUIC first line&#10;SFUIC second line"/>
+            </div>
+            <div data-id="ui:outputURL" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:outputURL</h3>
+                <ui:outputURL value="https://example.com" label="SFUIC ui link"/>
+            </div>
+            <div data-id="ui:message" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:message</h3>
+                <ui:message title="SFUIC ui Message" severity="info" closable="true">SFUIC ui message body</ui:message>
+            </div>
+            <div data-id="ui:spinner" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:spinner</h3>
+                <div style="position: relative; height: 60px;"><ui:spinner isVisible="true"/></div>
+            </div>
+            <div data-id="ui:scrollerWrapper" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:scrollerWrapper</h3>
+                <div style="height: 80px;">
+                    <ui:scrollerWrapper class="slds-scrollable_y" >
+                        <p>SFUIC scroll line 1</p><p>SFUIC scroll line 2</p><p>SFUIC scroll line 3</p><p>SFUIC scroll line 4</p><p>SFUIC scroll line 5</p><p>SFUIC scroll line 6</p>
+                    </ui:scrollerWrapper>
+                </div>
+            </div>
+            <div data-id="ui:menu" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:menu</h3>
+                <ui:menu>
+                    <ui:menuTriggerLink label="SFUIC ui Menu"/>
+                    <ui:menuList>
+                        <ui:actionMenuItem label="SFUIC Action Item" click="{!c.pick}"/>
+                        <ui:menuItemSeparator/>
+                        <ui:checkboxMenuItem label="SFUIC Checkbox Item" selected="true"/>
+                        <ui:radioMenuItem label="SFUIC Radio One"/>
+                        <ui:radioMenuItem label="SFUIC Radio Two"/>
+                    </ui:menuList>
+                </ui:menu>
+                <p>Picked: {!v.picked}</p>
+            </div>
+            <div data-id="ui:menuTriggerLink" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:menuTriggerLink</h3>
+                <p class="slds-text-body_small">Inside the ui:menu above.</p>
+            </div>
+            <div data-id="ui:menuList" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:menuList</h3>
+                <p class="slds-text-body_small">Inside the ui:menu above.</p>
+            </div>
+            <div data-id="ui:actionMenuItem" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:actionMenuItem</h3>
+                <p class="slds-text-body_small">Inside the ui:menu above.</p>
+            </div>
+            <div data-id="ui:menuItemSeparator" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:menuItemSeparator</h3>
+                <p class="slds-text-body_small">Inside the ui:menu above.</p>
+            </div>
+            <div data-id="ui:checkboxMenuItem" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:checkboxMenuItem</h3>
+                <p class="slds-text-body_small">Inside the ui:menu above.</p>
+            </div>
+            <div data-id="ui:radioMenuItem" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:radioMenuItem</h3>
+                <p class="slds-text-body_small">Inside the ui:menu above.</p>
+            </div>
+            <div data-id="ui:menuTrigger" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:menuTrigger</h3>
+                <ui:menu>
+                    <ui:menuTrigger label="SFUIC ui Menu Trigger"/>
+                    <ui:menuList>
+                        <ui:menuItem label="SFUIC Menu Item"/>
+                    </ui:menuList>
+                </ui:menu>
+            </div>
+            <div data-id="ui:menuItem" class="slds-m-top_small">
+                <h3 class="slds-text-heading_small">ui:menuItem</h3>
+                <p class="slds-text-body_small">Inside the ui:menuTrigger menu above.</p>
+            </div>
+        </div>
+    </lightning:card>
+</aura:component>

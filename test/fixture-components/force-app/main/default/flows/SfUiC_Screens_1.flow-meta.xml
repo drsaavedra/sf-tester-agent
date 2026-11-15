@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+<apiVersion>66.0</apiVersion>
+<choices>
+<name>Ch_One</name>
+<choiceText>SFUIC One</choiceText>
+<dataType>String</dataType>
+<value>
+<stringValue>One</stringValue>
+</value>
+</choices>
+<choices>
+<name>Ch_Two</name>
+<choiceText>SFUIC Two</choiceText>
+<dataType>String</dataType>
+<value>
+<stringValue>Two</stringValue>
+</value>
+</choices>
+<choices>
+<name>Ch_Three</name>
+<choiceText>SFUIC Three</choiceText>
+<dataType>String</dataType>
+<value>
+<stringValue>Three</stringValue>
+</value>
+</choices>
+<environments>Default</environments>
+<interviewLabel>SFUIC Screens 1 {!$Flow.CurrentDateTime}</interviewLabel>
+<label>SFUIC Screens 1</label>
+<processMetadataValues>
+<name>BuilderType</name>
+<value>
+<stringValue>LightningFlowBuilder</stringValue>
+</value>
+</processMetadataValues>
+<processType>Flow</processType>
+<screens>
+<name>S1_Inputs</name>
+<label>SFUIC Screens 1: inputs</label>
+<locationX>0</locationX>
+<locationY>0</locationY>
+<allowBack>false</allowBack>
+<allowFinish>true</allowFinish>
+<allowPause>true</allowPause>
+<connector>
+<targetReference>S1_Choices</targetReference>
+</connector>
+<fields>
+<name>Checkbox_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Checkbox&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Checkbox</name>
+<dataType>Boolean</dataType>
+<fieldText>SFUIC Checkbox</fieldText>
+<fieldType>InputField</fieldType>
+<isRequired>true</isRequired>
+</fields>
+<fields>
+<name>Currency_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Currency&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Currency</name>
+<dataType>Currency</dataType>
+<fieldText>SFUIC Currency</fieldText>
+<fieldType>InputField</fieldType>
+<isRequired>false</isRequired>
+<scale>2</scale>
+</fields>
+<fields>
+<name>Date_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Date&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Date</name>
+<dataType>Date</dataType>
+<fieldText>SFUIC Date</fieldText>
+<fieldType>InputField</fieldType>
+<isRequired>false</isRequired>
+</fields>
+<fields>
+<name>DateTime_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Date/Time&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>DateTime</name>
+<dataType>DateTime</dataType>
+<fieldText>SFUIC Date Time</fieldText>
+<fieldType>InputField</fieldType>
+<isRequired>false</isRequired>
+</fields>
+<fields>
+<name>Time_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Time&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Time</name>
+<dataType>Time</dataType>
+<fieldText>SFUIC Time</fieldText>
+<fieldType>InputField</fieldType>
+<isRequired>false</isRequired>
+</fields>
+<fields>
+<name>Password_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Password&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Password</name>
+<dataType>String</dataType>
+<fieldText>SFUIC Password</fieldText>
+<fieldType>PasswordField</fieldType>
+<isRequired>false</isRequired>
+</fields>
+<fields>
+<name>LongText_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Long Text Area&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>LongText</name>
+<dataType>String</dataType>
+<fieldText>SFUIC Long Text</fieldText>
+<fieldType>LargeTextArea</fieldType>
+<isRequired>false</isRequired>
+</fields>
+<fields>
+<name>FlowNav_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;lightning/flowSupport&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>FlowNav</name>
+<extensionName>c:sfUiCFlowNav</extensionName>
+<fieldType>ComponentInstance</fieldType>
+<inputParameters>
+<name>label</name>
+<value>
+<stringValue>SFUIC Screens 1 custom nav</stringValue>
+</value>
+</inputParameters>
+<inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+<isRequired>true</isRequired>
+<storeOutputAutomatically>true</storeOutputAutomatically>
+</fields>
+<pausedText>&lt;p&gt;SFUIC flow paused&lt;/p&gt;</pausedText>
+<showFooter>true</showFooter>
+<showHeader>true</showHeader>
+</screens>
+<screens>
+<name>S1_Choices</name>
+<label>SFUIC Screens 1: choices</label>
+<locationX>0</locationX>
+<locationY>0</locationY>
+<allowBack>true</allowBack>
+<allowFinish>true</allowFinish>
+<allowPause>true</allowPause>
+<fields>
+<name>Picklist_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Picklist&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Picklist</name>
+<choiceReferences>Ch_One</choiceReferences>
+<choiceReferences>Ch_Two</choiceReferences>
+<choiceReferences>Ch_Three</choiceReferences>
+<dataType>String</dataType>
+<fieldText>SFUIC Picklist</fieldText>
+<fieldType>DropdownBox</fieldType>
+<isRequired>false</isRequired>
+</fields>
+<fields>
+<name>Radio_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Radio Button Group&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>Radio</name>
+<choiceReferences>Ch_One</choiceReferences>
+<choiceReferences>Ch_Two</choiceReferences>
+<choiceReferences>Ch_Three</choiceReferences>
+<dataType>String</dataType>
+<fieldText>SFUIC Radio</fieldText>
+<fieldType>RadioButtons</fieldType>
+<isRequired>false</isRequired>
+</fields>
+<fields>
+<name>CheckGroup_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Checkbox Group&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>CheckGroup</name>
+<choiceReferences>Ch_One</choiceReferences>
+<choiceReferences>Ch_Two</choiceReferences>
+<choiceReferences>Ch_Three</choiceReferences>
+<dataType>String</dataType>
+<fieldText>SFUIC Checkbox Group</fieldText>
+<fieldType>MultiSelectCheckboxes</fieldType>
+<isRequired>false</isRequired>
+</fields>
+<fields>
+<name>MultiPick_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Multi-Select Picklist&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>MultiPick</name>
+<choiceReferences>Ch_One</choiceReferences>
+<choiceReferences>Ch_Two</choiceReferences>
+<choiceReferences>Ch_Three</choiceReferences>
+<dataType>String</dataType>
+<fieldText>SFUIC Multi Pick</fieldText>
+<fieldType>MultiSelectPicklist</fieldType>
+<isRequired>false</isRequired>
+</fields>
+<fields>
+<name>ChoiceLookup_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Choice Lookup&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>ChoiceLookup</name>
+<choiceReferences>Ch_One</choiceReferences>
+<choiceReferences>Ch_Two</choiceReferences>
+<choiceReferences>Ch_Three</choiceReferences>
+<extensionName>flowruntime:choiceLookup</extensionName>
+<fieldText>SFUIC Choice Lookup</fieldText>
+<fieldType>ComponentChoice</fieldType>
+<inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+<isRequired>false</isRequired>
+<storeOutputAutomatically>true</storeOutputAutomatically>
+</fields>
+<fields>
+<name>VisualPicker_Label</name>
+<fieldText>&lt;p&gt;&lt;b&gt;Flow: Visual Picker&lt;/b&gt;&lt;/p&gt;</fieldText>
+<fieldType>DisplayText</fieldType>
+</fields>
+<fields>
+<name>VisualPicker</name>
+<choiceReferences>Ch_One</choiceReferences>
+<choiceReferences>Ch_Two</choiceReferences>
+<choiceReferences>Ch_Three</choiceReferences>
+<extensionName>flowruntime:visualPicker</extensionName>
+<fieldText>SFUIC Visual Picker</fieldText>
+<fieldType>ComponentMultiChoice</fieldType>
+<inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+<isRequired>false</isRequired>
+<storeOutputAutomatically>true</storeOutputAutomatically>
+</fields>
+<pausedText>&lt;p&gt;SFUIC flow paused&lt;/p&gt;</pausedText>
+<showFooter>true</showFooter>
+<showHeader>true</showHeader>
+</screens>
+<start>
+<locationX>0</locationX>
+<locationY>0</locationY>
+<connector>
+<targetReference>S1_Inputs</targetReference>
+</connector>
+</start>
+<status>Active</status>
+</Flow>

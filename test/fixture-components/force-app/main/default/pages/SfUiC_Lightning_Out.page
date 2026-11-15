@@ -1,0 +1,12 @@
+<apex:page lightningStylesheets="true">
+    <apex:includeLightning/>
+    <!-- Heading for the Lightning Out page -->
+    <h1>SFUIC Lightning Out</h1>
+    <!-- The Aura component sfUiCAuraOut, created by $Lightning.use -->
+    <div id="sfuic-out"></div>
+    <script>
+        $Lightning.use("c:sfUiCOutApp", function () {
+            $Lightning.createComponent("c:sfUiCAuraOut", {}, "sfuic-out", function () {});
+        });
+    </script>
+</apex:page>

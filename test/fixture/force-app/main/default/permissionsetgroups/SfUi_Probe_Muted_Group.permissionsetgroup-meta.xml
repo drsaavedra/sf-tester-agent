@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSetGroup xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>A group with a muting set, which verify cannot apply to a branch member.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>SF UI Probe Muted Group</label>
+    <mutingPermissionSets>SfUi_Probe_Mute</mutingPermissionSets>
+    <permissionSets>SfUi_Probe</permissionSets>
+    <status>Updated</status>
+</PermissionSetGroup>

@@ -1,0 +1,16 @@
+<template>
+    <!-- Probe record form card -->
+    <lightning-card title="SF UI Record Form">
+        <div class="slds-p-around_small">
+            <lightning-record-edit-form object-api-name="SfUiProbe__c" record-id={recordId} onsuccess={handleSuccess}>
+                <lightning-messages></lightning-messages>
+                <lightning-input-field field-name="Count__c"></lightning-input-field>
+                <lightning-input-field field-name="Kind__c"></lightning-input-field>
+                <lightning-input-field field-name="Detail__c"></lightning-input-field>
+                <lightning-input-field field-name="Account__c"></lightning-input-field>
+                <lightning-button type="submit" label="Save probe form"></lightning-button>
+            </lightning-record-edit-form>
+            <p lwc:if={saved}>Probe form saved</p>
+        </div>
+    </lightning-card>
+</template>
