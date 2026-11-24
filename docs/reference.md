@@ -9,7 +9,7 @@ This page holds the detail that the [README](../README.md) leaves out. Start wit
 - [What it refuses, and why](#what-it-refuses-and-why)
 - [Experience Cloud sites](#experience-cloud-sites): why a site cannot be tested yet
 - [What is in the repo](#what-is-in-the-repo)
-- [Setup](#setup): what the install commands rely on, and the optional pane
+- [Setup](#setup): what the install commands rely on
 - [Running a test](#running-a-test): the brief, headed runs and production orgs
 - [Verify a metadata change with no browser](#verify-a-metadata-change-with-no-browser): the six check kinds, `--matrix`, `--cascade` and the cascade map
   - [Tested versions](#tested-versions)
