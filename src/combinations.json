@@ -20718,8 +20718,7 @@
       "validity": {
         "persona": {
           "profile": "Standard User",
-          "permissionSets": [],
-          "permissionSetHashes": {}
+          "permissionSets": []
         }
       },
       "status": "tested",
