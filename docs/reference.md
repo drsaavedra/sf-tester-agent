@@ -60,7 +60,8 @@ FlexiPage it ends on, and of what each persona permission set grants (object, fi
 page, custom permission, flow, app and system permissions, by name, so a catalogue still checks on another org). The
 profile's own set is hashed too, but a standard profile's grants depend on the org's edition and features, so its hash
 can differ between orgs (Standard User did, between a scratch org and a Developer Edition org). The fixture's persona
-routes keep none. That decides what happens next:
+routes keep no profile hash, so their check is `unknown`, and each route's own steps check the persona's access. The
+check decides what happens next:
 
 | Check | What happens |
 |---|---|
