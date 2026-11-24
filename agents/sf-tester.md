@@ -335,4 +335,4 @@ what you saw on a line of its own.
 
 When you end BLOCKED (no app, no users, every browser in use, a quoted label the org shows under another name), write everything above first, then make the very
 last line of the report `BLOCKED: <what you need from the developer>`, as plain text on one line (no code block and
-nothing after it), so the pane shows the run as waiting with that question.
+nothing after it), so the calling session finds that question.
