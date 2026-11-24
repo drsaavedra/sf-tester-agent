@@ -135,8 +135,9 @@ back as a FAIL with its cause, for you to fix and run it again. Past the stated 
 with checks it picks from the org's own rules. A requirement that names no user runs as every user the brief names.
 
 The report is what you read. Every step the tester took, each tool call with its input and its result, stays in the
-tester's Claude Code transcript (`<session>/subagents/agent-*.jsonl` under the project's folder in `~/.claude/projects/`),
-for you or an agent to retrace a run when a result needs explaining.
+tester's Claude Code transcript (`<session>/subagents/agent-*.jsonl` under the project's folder in `~/.claude/projects/`,
+or in `$CLAUDE_CONFIG_DIR/projects/` when that is set), for you or an agent to retrace a run when a result needs
+explaining.
 
 ```
 Org alias: my-scratch. App: Service Console. Personas: the alias owner and qa-user.
