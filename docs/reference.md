@@ -570,7 +570,7 @@ The safety class says what a tool can do to the org and the disk. The classes ar
 | `sf_verify_checks` | `apiRead` | Check access before the UI, with no browser: runs sf-tester verify, each check as its persona, on a check file kept in the project (checksFile) or on checks you write (checks, with project). |
 | `sf_fix_improvement` | `localFile` | Mark a recorded improvement fixed by a commit, so testing stops working around it. |
 | `sf_record_improvement` | `localFile` | Record something the sf-tester tools could not do, or did only by a workaround, so the tools improve. |
-| `sf_scenario` | `localFile` | Mark the scenarios you test the requirements with, so a person following the run sees each one under its requirement and its result. |
+| `sf_scenario` | `localFile` | Mark the scenarios you test the requirements with, so the transcript shows each one under its requirement and `end` can judge it. |
 | `sf_start` | `login` | Start a browser session logged into Lightning as the owner of an sf CLI alias, ending that session first if open. |
 | `sf_login_as` | `login` | Become another user for this whole session (needs Login As enabled). |
 | `sf_whoami` | `read` | The user Id the page runs as, app (the Lightning app the page is in) and apps (the Lightning apps this user can open: label, developerName, console); app null and appReason when they cannot be read. |
