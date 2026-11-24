@@ -57,8 +57,9 @@ sf-tester exploring took 10 and 455k, and sf-tester replaying the saved route to
 
 Before a saved route runs, `sf_run_route` checks it against the org with no browser: the hash of its app, of the
 FlexiPage it ends on, and of what each persona permission set grants (object, field, tab, Apex class, Visualforce
-page, custom permission, flow, app and system permissions, by name, so a catalogue still checks on another org). That decides
-what happens next:
+page, custom permission, flow, app and system permissions, by name, so a catalogue still checks on another org). A
+standard profile's own grants differ between a scratch org and a Developer Edition org, so its hash holds only on the
+kind of org it was read on. That decides what happens next:
 
 | Check | What happens |
 |---|---|
