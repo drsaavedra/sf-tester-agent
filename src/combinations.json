@@ -20719,9 +20719,7 @@
         "persona": {
           "profile": "Standard User",
           "permissionSets": [],
-          "permissionSetHashes": {
-            "~profile": "23ec93c797fd"
-          }
+          "permissionSetHashes": {}
         }
       },
       "status": "tested",
