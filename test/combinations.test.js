@@ -12,6 +12,7 @@ const { Client } = require('@modelcontextprotocol/sdk/client/index.js');
 const { StdioClientTransport } = require('@modelcontextprotocol/sdk/client/stdio.js');
 const { combinations } = require('..');
 const { replay } = require('../src/replay');
+const { PROFILE } = require('../src/validity');
 const { auth, env, skip } = require('./helpers');
 
 test('combinations list filters by component and container, any case', () => {
@@ -32,7 +33,14 @@ test('a fixture baseline holds only what the fixture ships', () => {
   assert.ok(held.length >= 200, `${held.length} baselines`);
   for (const { id, validity } of held) {
     // A persona route (id ~persona) keeps only its persona: the replay needs it to log in as a matching user.
-    if (id.includes('~')) { assert.deepEqual(Object.keys(validity), ['persona'], `${id}: persona only`); continue; }
+    // A standard profile's own set hashes differently on those two orgs too (Standard User), so no profile hash; an empty
+    // map reads as a route hashed before profiles were.
+    if (id.includes('~')) {
+      assert.deepEqual(Object.keys(validity), ['persona'], `${id}: persona only`);
+      const hashes = validity.persona.permissionSetHashes;
+      if (hashes) assert.ok(Object.keys(hashes).length && !(PROFILE in hashes), `${id}: no profile hash, no empty map`);
+      continue;
+    }
     assert.deepEqual(Object.keys(validity), ['page'], `${id}: no app part`);
     assert.match(validity.page.object, /__c$/, `${id}: a custom object`);
   }

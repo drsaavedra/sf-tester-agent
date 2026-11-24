@@ -57,8 +57,11 @@ sf-tester exploring took 10 and 455k, and sf-tester replaying the saved route to
 
 Before a saved route runs, `sf_run_route` checks it against the org with no browser: the hash of its app, of the
 FlexiPage it ends on, and of what each persona permission set grants (object, field, tab, Apex class, Visualforce
-page, custom permission, flow, app and system permissions, by name, so a catalogue still checks on another org). That decides
-what happens next:
+page, custom permission, flow, app and system permissions, by name, so a catalogue still checks on another org). The
+profile's own set is hashed too, but a standard profile's grants depend on the org's edition and features, so its hash
+can differ between orgs (Standard User did, between a scratch org and a Developer Edition org). The fixture's persona
+routes keep no profile hash, so their check is `unknown`, and each route's own steps check the persona's access. The
+check decides what happens next:
 
 | Check | What happens |
 |---|---|
@@ -553,6 +556,8 @@ why it holds the routes between pushes. One-time setup, for whoever owns the org
 5. Create the fixture's platform user ("Probe Platform", Standard Platform User profile, `SfUi_Probe_Read`), then
    open its user record once as the admin. The owner picker in `mass-action@list-view` suggests only users the admin
    viewed recently.
+6. Create the persona route's user ("Probe Standard", Standard User profile, no permission sets). The replay logs in as
+   it for `case-persona-access@record-page~standard-user`.
 
 ## All tools
 
@@ -780,7 +785,7 @@ Before you open a pull request that changes `src/` (other than `src/combinations
 on that scratch org. The pull request's CI replays only the smoke slice for such a change, so a change that breaks
 any other route is found first by the next full run on `main`.
 
-1. Once for the org: do steps 1, 2 and 4 of "This repo's validation org", then open the `SF_TESTER_USER` record
+1. Once for the org: do steps 1, 2, 4 and 6 of "This repo's validation org", then open the `SF_TESTER_USER` record
    once as the admin (the second half of step 5; the user already exists).
 2. Run the replay. The two empty variables stop values left in your shell from changing the run:
 
