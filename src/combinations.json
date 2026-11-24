@@ -20718,16 +20718,13 @@
       "validity": {
         "persona": {
           "profile": "Standard User",
-          "permissionSets": [],
-          "permissionSetHashes": {
-            "~profile": "e0d520f807ef"
-          }
+          "permissionSets": []
         }
       },
       "status": "tested",
       "verified": {
-        "on": "2026-11-15",
-        "by": "sf-tester run",
+        "on": "2026-11-24",
+        "by": "replay on sf-tester-validation",
         "promoted": {
           "on": "2026-11-15",
           "by": "a person"
