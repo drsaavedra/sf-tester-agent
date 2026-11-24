@@ -68,8 +68,8 @@ test('an unknown path, a deleted src file, or a file with a dynamic require runs
   assert.equal(run('src/loader.js'), 'ALL');
 });
 
-test('a diff of docs, Markdown, LICENSE, claude-mod or an unread bench file selects nothing', () => {
-  assert.deepEqual(run('docs/x.md', 'README.md', 'LICENSE', 'claude-mod/hooks/hooks.json', 'bench/README.md'), []);
+test('a diff of docs, Markdown, LICENSE or an unread bench file selects nothing', () => {
+  assert.deepEqual(run('docs/x.md', 'README.md', 'LICENSE', 'bench/README.md'), []);
   assert.deepEqual(run('docs/x.md', 'src/c.js'), ['test/one.test.js'], 'control: a src file beside them still selects');
 });
 

@@ -8,7 +8,7 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const ALL_OF = [/^package(-lock)?\.json$/, /^\.github\//, /^test\/select-tests\.js$/, /^test\/helpers\.js$/];
 // Selects nothing unless a test reaches it: the graph comes first, so agents/sf-tester.md or bench/bench.js still select.
-const OUTSIDE = [/\.md$/, /^docs\//, /^LICENSE$/, /^claude-mod\//, /^bench\//];
+const OUTSIDE = [/\.md$/, /^docs\//, /^LICENSE$/, /^bench\//];
 const SHARE = 0.6;
 
 // One file's own edges: relative requires, and path.join or path.resolve on __dirname, or on a name built from it,
