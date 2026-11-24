@@ -553,6 +553,8 @@ why it holds the routes between pushes. One-time setup, for whoever owns the org
 5. Create the fixture's platform user ("Probe Platform", Standard Platform User profile, `SfUi_Probe_Read`), then
    open its user record once as the admin. The owner picker in `mass-action@list-view` suggests only users the admin
    viewed recently.
+6. Create the persona route's user ("Probe Standard", Standard User profile, no permission sets). The replay logs in as
+   it for `case-persona-access@record-page~standard-user`.
 
 ## All tools
 
