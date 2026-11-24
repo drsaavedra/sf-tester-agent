@@ -32,7 +32,12 @@ test('a fixture baseline holds only what the fixture ships', () => {
   assert.ok(held.length >= 200, `${held.length} baselines`);
   for (const { id, validity } of held) {
     // A persona route (id ~persona) keeps only its persona: the replay needs it to log in as a matching user.
-    if (id.includes('~')) { assert.deepEqual(Object.keys(validity), ['persona'], `${id}: persona only`); continue; }
+    // A standard profile's own set hashed differently there too (Standard User, 2026-11-24), so no profile hash.
+    if (id.includes('~')) {
+      assert.deepEqual(Object.keys(validity), ['persona'], `${id}: persona only`);
+      assert.equal(validity.persona.permissionSetHashes?.['~profile'], undefined, `${id}: no profile hash`);
+      continue;
+    }
     assert.deepEqual(Object.keys(validity), ['page'], `${id}: no app part`);
     assert.match(validity.page.object, /__c$/, `${id}: a custom object`);
   }
