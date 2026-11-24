@@ -782,7 +782,7 @@ Before you open a pull request that changes `src/` (other than `src/combinations
 on that scratch org. The pull request's CI replays only the smoke slice for such a change, so a change that breaks
 any other route is found first by the next full run on `main`.
 
-1. Once for the org: do steps 1, 2 and 4 of "This repo's validation org", then open the `SF_TESTER_USER` record
+1. Once for the org: do steps 1, 2, 4 and 6 of "This repo's validation org", then open the `SF_TESTER_USER` record
    once as the admin (the second half of step 5; the user already exists).
 2. Run the replay. The two empty variables stop values left in your shell from changing the run:
 
