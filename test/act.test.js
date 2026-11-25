@@ -1448,3 +1448,42 @@ test('toasts reads a rendered toast that no force:showToast announced, once, no 
   assert.deepEqual((await act.toasts(page)).map(({ type, title, message }) => ({ type, title, message })),
     [{ type: 'info', title: 'Plain', message: 'From the event' }]);
 });
+
+// A lightning/toast toast fires no force:showToast and no .forceToastMessage: it renders as a lightning-toast inside
+// lightning-toastContainer's shadow, so the recorder reads it there. A sticky one still on screen is not read again.
+test('toasts records a toast shown with the lightning/toast module', { skip, timeout: 180_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const tab = await nav.openTab(s, 'SfUiC_Modules').catch((e) => { if (e.code === 'TAB_UNAVAILABLE') return null; throw e; });
+  if (!tab) return t.skip('the org has no test/fixture-components tab SfUiC_Modules');
+  const seen = async () => (await act.toasts(s.page, { timeout: 4_000 })).map(({ type, title, message }) => ({ type, title, message }));
+  await act.click(tab.main, { name: 'SFUIC Show Sticky Toast' });
+  assert.deepEqual(await seen(), [{ type: 'warning', title: 'SFUIC Sticky Toast 1', message: 'SFUIC sticky toast' }]);
+  await act.click(tab.main, { name: 'SFUIC Show Toast' });
+  const r = await act.waitFor(tab.main, { any: [{ toast: 'SFUIC Toast 2' }, { text: 'never on this page' }], timeout: 4_000 });
+  assert.equal(r.matched.index, 0, JSON.stringify(r));
+  assert.deepEqual(await seen(), [{ type: 'success', title: 'SFUIC Toast 2', message: 'SFUIC lightning/toast message' }]);
+});
+
+// No org: the same shape on a local page, lightning-toast in the container in the overlay container, as Lightning nests it.
+test('toasts reads a lightning/toast toast in its container, once, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.goto(`data:text/html,${encodeURIComponent('<main><c-modules></c-modules></main><lightning-overlay-container></lightning-overlay-container>')}`);
+  await act.armToasts(page);
+  await page.evaluate(() => {
+    document.querySelector('c-modules').dispatchEvent(new CustomEvent('lightning__showtoast',
+      { detail: { label: 'Sticky', message: 'It stays', variant: 'warning', mode: 'sticky' }, bubbles: true, composed: true }));
+    setTimeout(() => {
+      const toast = document.createElement('lightning-toast');
+      toast.attachShadow({ mode: 'open' }).innerHTML = `<div role="alert"><div class="slds-notify slds-notify_toast slds-theme_warning">
+        <div class="slds-notify__content"><h2 class="slds-text-heading_small"><slot>Sticky</slot></h2><slot name="message">It  stays</slot>
+        <span class="slds-assistive-text">Press Command + F6 to navigate to the next toast notification or focusable region.</span></div></div></div>`;
+      const box = document.createElement('lightning-toast-container');
+      box.attachShadow({ mode: 'open' }).append(toast);
+      document.querySelector('lightning-overlay-container').attachShadow({ mode: 'open' }).append(box);
+    }, 300);
+  });
+  await new Promise((done) => setTimeout(done, 1_000)); // a second copy would come from a later look
+  assert.deepEqual((await act.toasts(page, { timeout: 2_000 })).map(({ type, title, message }) => ({ type, title, message })),
+    [{ type: 'warning', title: 'Sticky', message: 'It stays' }]);
+});
