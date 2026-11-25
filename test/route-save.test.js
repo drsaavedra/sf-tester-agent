@@ -404,7 +404,7 @@ test('an sf_verify_checks step runs on the session\'s org, takes absolute paths 
   }
   const red = await step({ checksFile: '/abs/red.json' });
   assert.deepEqual([red.body.code, red.body.evidence.code, red.body.evidence.evidence.lines], ['ROUTE_STEP_FAILED', 'VERIFY_NOT_GREEN', ['FAIL stub /abs/red.json']], JSON.stringify(red.body));
-  for (const [file, message] of [['/abs/notrun.json', 'verdict not run: stub: git diffs past 60 s'], ['/abs/none.json', 'verdict nothing checked: no check passed']]) {
+  for (const [file, message] of [['/abs/notrun.json', 'verdict not run: stub: git diffs past 60 s'], ['/abs/none.json', 'verdict nothing checked: no check passed'], ['/abs/timed.json', 'verdict not run: changed 0, covered 0']]) { // timed: the time line is never the reason
     const out = await step({ checksFile: file });
     assert.deepEqual([out.body.evidence.code, out.body.evidence.error], ['VERIFY_NOT_RUN', `VERIFY_NOT_RUN: ${message}`], JSON.stringify(out.body));
   }

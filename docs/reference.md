@@ -172,6 +172,20 @@ cover what changed, and exits 0 green, 1 red, 2 bad usage or an org it could not
 node path/to/sf-tester/src/cli.js verify --org my-scratch --checks verify-checks.json --since origin/main
 ```
 
+The line before the counts shows where the time of the run went, in milliseconds:
+
+```
+time: connect 812 ms, diff 40 ms, generate 6 ms, validate 11920 ms (queue 1000 ms, deploy 6000 ms, tests 4000 ms), report 1 ms, total 12790 ms
+```
+
+`diff` shows only with `--since`. `generate` and `validate` show only when a `record`, `apex` or `flow` check deploys a
+validate. A `flow` check that verify hands off to the browser deploys none. The
+three times in brackets are from the deploy result of the org: the wait before the deploy started, the deploy, and the
+test run. The dates of the org are to the second, so the wait and the deploy are correct to about one second, and a deploy shorter
+than that can show `0 ms`. They do not show when the deploy result has no dates. `report`
+includes the write of the `--junit` file. `total` is the full run, and it also includes the time that no stage names,
+for example the load of the check file and the reads of a `pageRequired` check.
+
 - **`record` checks** (validation rules, fields required at field level) become one generated Apex test, run by a
   check-only `sf project deploy validate --test-level RunSpecifiedTests`. The test makes the persona user from
   `{ profile, permissionSets }`, saves each case as that user and asserts saved or rejected, and the error text.
@@ -623,6 +637,22 @@ The safety class says what a tool can do to the org and the disk. The classes ar
 | `sf_end` | `read` | Close the browser session: the default one, or the one session names. |
 
 Every tool also takes `session`: the session id sf_start returned; leave out for the one default session.
+
+### Timings
+
+`sf_start`, `sf_login_as` and `sf_run_route` return `timings`: the milliseconds of each stage of the call, measured in
+the server. When `sf_start` or `sf_login_as` fails with a coded error, `timings` is in the evidence of the error. It has the
+stages that the call completed, and `failed` is the time of the stage that failed. An `sf_start` that is refused before
+it holds a session (`NO_SESSION`, `TOO_MANY_SESSIONS`) has no `timings`. When a route fails after its checks, its
+evidence has `timings` with no `failed`: the last time in `stepMs` is the step that failed, and `end` is the read of
+what changed on the page. A route that is refused before its first step (`STALE_ROUTE`, or arguments that the first
+check refuses) has no `timings`.
+
+| Tool | Stages |
+|---|---|
+| `sf_start` | `close` (the end of the last session of this id, and of idle sessions), `auth` (the read of the alias), `browser` (the launch, the org reads and the first Lightning page), `app`, `policy` (the Login As setting) |
+| `sf_login_as` | `user` (the user id), `login`, `whoami` (the read of the user that the page runs as), `app` |
+| `sf_run_route` | `check` (the check of a saved validity), `steps`, `end` (the read of the app and page where the route ended), and `stepMs`, one time for each step in step order |
 
 ### `sf_start` parameters
 

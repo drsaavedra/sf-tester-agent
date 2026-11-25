@@ -348,6 +348,30 @@ test('a validate report maps each method: pass, fail with its message, and a met
   assert.match(m.out.at(-1), /passed 1, failed 1, errors 1$/);
 });
 
+test('a run prints its time per stage before the counts, and splits the validate by the deploy result\'s own dates', async (t) => {
+  const dated = JSON.parse(REPORT);
+  Object.assign(dated.result, { createdDate: '2026-11-25T00:00:00.000Z', startDate: '2026-11-25T00:00:02.000Z', completedDate: '2026-11-25T00:00:09.000Z' });
+  dated.result.details.runTestResult.totalTime = '4000.0';
+  const { file, sf } = selecting(t, { answers: [OK_ENVELOPE, JSON.stringify(dated)] });
+  const r = await run(['verify', '--org', 'o', '--checks', file], { sf });
+  assert.match(r.out.at(-2), /^time: connect \d+ ms, generate \d+ ms, validate \d+ ms \(queue 2000 ms, deploy 3000 ms, tests 4000 ms\), report \d+ ms, total \d+ ms$/);
+  assert.match(r.out.at(-1), /^changed 0, /, 'the counts stay the last line');
+  // A report with no dates prints the validate with no split.
+  const plain = selecting(t);
+  const p = await run(['verify', '--org', 'o', '--checks', plain.file], { sf: plain.sf });
+  assert.match(p.out.at(-2), /^time: connect \d+ ms, generate \d+ ms, validate \d+ ms, report \d+ ms, total \d+ ms$/);
+  // A junit path that cannot be written throws, after the time and the counts.
+  const bad = selecting(t);
+  const out = [];
+  await assert.rejects(cli.main(['verify', '--org', 'o', '--checks', bad.file, '--junit', path.join(bad.dir, 'no-such-dir', 'x.xml')], { log: (l) => out.push(l), warn: (l) => out.push(l), connect: async () => ({ production: false, orgApiVersion: '68.0' }), sf: bad.sf }), /ENOENT/);
+  assert.deepEqual([/^time: /.test(out.at(-2)), /^changed 0, /.test(out.at(-1))], [true, true], out.join('\n'));
+  // With --since, the diff has a stage of its own.
+  const since = selecting(t);
+  touch(since.dir, [`${D}${RULE}.validationRule-meta.xml`]);
+  const d = await run(['verify', '--org', 'o', '--checks', since.file, '--since', 'main'], { sf: since.sf, git: gitOf([`${D}${RULE}.validationRule-meta.xml`]) });
+  assert.match(d.out.at(-2), /^time: connect \d+ ms, diff \d+ ms, generate \d+ ms, /, d.out.join('\n'));
+});
+
 test('a compile error or refused metadata makes every record case ERROR with the problem; an envelope with no job id too', async (t) => {
   const failed = sample('validate-report.json');
   failed.result.details = { componentFailures: [{ fullName: 'SfTesterVerifyTest', problem: 'Invalid type: Schema.Nope (33:25)' }] };

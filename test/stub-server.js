@@ -53,6 +53,7 @@ lib.session.end = async (s) => { if (s.alias === 'noquit') throw new Error('stub
 require('../src/access').run = async ({ org, checksFile, project }) => {
   if (/slow\.json$/.test(checksFile ?? '')) await new Promise((r) => setTimeout(r, 1000));
   if (/notrun\.json$/.test(checksFile ?? '')) return { verdict: 'not run', exit: 2, lines: [], problems: ['stub: git diffs past 60 s'] };
+  if (/timed\.json$/.test(checksFile ?? '')) return { verdict: 'not run', exit: 2, lines: ['time: connect 1 ms, total 2 ms', 'changed 0, covered 0'], problems: ['no check ran'] };
   if (/none\.json$/.test(checksFile ?? '')) return { verdict: 'nothing checked', exit: 0, lines: [] };
   const red = /red\.json$/.test(checksFile ?? '');
   return { verdict: red ? 'red' : 'green', exit: Number(red), lines: [`${red ? 'FAIL' : 'PASS'} ${org} ${checksFile ?? project}`] };

@@ -289,6 +289,40 @@ test('an sf_api answer keeps its own at and its shape', async (t) => {
   assert.deepEqual(got, { '/own-at': { result: { at: 'x', n: 1 } }, '/string': { result: 'abc' }, '/number': { result: 0 }, '/list': { result: [1, 2] }, '/null': { result: null }, '/empty': { result: {} } });
 });
 
+// No org: the three calls a run spends most of its tool time in say where the time went.
+test('sf_start, sf_login_as and sf_run_route return timings, in milliseconds per stage', async (t) => {
+  const call = await serve(t, {}, ['-r', path.join(__dirname, 'stub-server.js')]);
+  const whole = (ms) => Object.values(ms).every((n) => Number.isInteger(n) && n >= 0);
+  const started = await call('sf_start', { org: 'stub' }, 10_000);
+  assert.deepEqual([Object.keys(started.body.timings), whole(started.body.timings)], [['close', 'auth', 'browser', 'app', 'policy'], true], JSON.stringify(started.body));
+  const login = await call('sf_login_as', { user: '005other' }, 10_000);
+  assert.deepEqual([Object.keys(login.body.timings), whole(login.body.timings)], [['user', 'login', 'whoami', 'app'], true], JSON.stringify(login.body));
+  // With an app asked for, the login returns by its other path.
+  const inApp = await call('sf_login_as', { user: '005other', app: 'SfUi_Console' }, 10_000);
+  assert.deepEqual([inApp.body.appKept, Object.keys(inApp.body.timings)], [undefined, ['user', 'login', 'whoami', 'app']], JSON.stringify(inApp.body));
+  const steps = [{ tool: 'sf_open_tab', args: { tab: 'SfUi_Vf' } }, { tool: 'sf_api', args: { path: '/list' } }];
+  const { body } = await call('sf_run_route', { steps }, 10_000);
+  const { stepMs, ...stages } = body.timings;
+  assert.deepEqual([Object.keys(stages), whole(stages), stepMs.length, whole(stepMs)], [['check', 'steps', 'end'], true, 2, true], JSON.stringify(body));
+});
+
+// No org: a call that fails is the one whose time is asked about, so its evidence carries the stages it reached.
+test('a failed sf_start, sf_login_as or sf_run_route carries timings in its evidence, with the stage that threw as failed', async (t) => {
+  const call = await serve(t, {}, ['-r', path.join(__dirname, 'stub-server.js')]);
+  const slow = await call('sf_start', { org: 'slowlogin' }, 10_000);
+  assert.deepEqual([slow.body.code, Object.keys(slow.body.evidence.timings ?? {})], ['START_TIMEOUT', ['close', 'auth', 'browser', 'app', 'failed']], JSON.stringify(slow.body));
+  await call('sf_start', { org: 'stub' }, 10_000);
+  const route = await call('sf_run_route', { steps: [{ tool: 'sf_api', args: { path: '/list' } }, { tool: 'sf_api', args: { path: '/fails' } }] }, 10_000);
+  assert.deepEqual([route.body.code, Object.keys(route.body.evidence.timings ?? {}), route.body.evidence.timings?.stepMs.length], ['ROUTE_STEP_FAILED', ['check', 'steps', 'end', 'stepMs'], 2], JSON.stringify(route.body));
+  const gap = await call('sf_run_route', { steps: [{ tool: 'sf_api', args: { path: '/list' } }, { tool: 'sf_api', args: { path: '{{step0.nope}}' } }] }, 10_000);
+  assert.deepEqual([gap.body.code, gap.body.evidence.timings?.stepMs.length], ['BAD_ARGS', 1], JSON.stringify(gap.body));
+  const wrong = await call('sf_login_as', { user: '005fail' }, 10_000);
+  assert.deepEqual([wrong.body.code, Object.keys(wrong.body.evidence.timings ?? {})], ['WRONG_USER', ['user', 'failed']], JSON.stringify(wrong.body));
+  await call('sf_start', { org: 'stub' }, 10_000); // the failed login left the session with no known user
+  const login = await call('sf_login_as', { user: '005noapps', app: 'SfUi_Console' }, 10_000);
+  assert.deepEqual([login.isError, Object.keys(login.body.evidence.timings ?? {})], [true, ['user', 'login', 'whoami', 'failed']], JSON.stringify(login.body));
+});
+
 // No org: a route says what it ended on, and what changed when it is given what it was saved against.
 test('sf_run_route returns its validity, and stale on a green or a red when the saved one differs', async (t) => {
   const call = await serve(t, {}, ['-r', path.join(__dirname, 'stub-server.js')]);
