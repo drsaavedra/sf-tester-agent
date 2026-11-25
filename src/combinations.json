@@ -4376,6 +4376,55 @@
       ]
     },
     {
+      "id": "textarea-lines@page-layout",
+      "component": "Text Area (Long) of several lines",
+      "container": "standard Edit dialog (page layout)",
+      "interaction": "set fields, save, assert via both",
+      "task": "On the Account {{accountId}}, edit the record, set Description to three lines with a blank middle line, save, and confirm through the API and the record page that it saved as typed.",
+      "needs": [
+        "accountId"
+      ],
+      "route": [
+        {
+          "tool": "sf_edit_record",
+          "args": {
+            "recordId": "{{accountId}}",
+            "source": "pageLayout"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "Description": "line one\n\nline three"
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{accountId}}",
+            "field": "Description",
+            "expected": "line one\n\nline three",
+            "via": "both"
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-2"
+      },
+      "notes": "a UI save stores CRLF line ends and the page keeps the blank line (F-cascade-2)",
+      "break": [
+        "F-cascade-2"
+      ]
+    },
+    {
       "id": "inline-edit@page-layout",
       "component": "number field",
       "container": "inline edit in the record detail panel (page layout)",

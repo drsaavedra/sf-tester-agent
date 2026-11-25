@@ -184,6 +184,27 @@ test('assert, no org: via ui, a Date, DateTime or Time given as ISO matches the 
   assert.equal(paths.length, 0);
 });
 
+// F-cascade-2, no org: the API holds a Text Area with CRLF line ends; the page shows its blank line and a tab as a space.
+test('assert, no org: a Text Area of several lines matches as typed, via api, ui and both', { timeout: 60_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const fields = [{ apiName: 'Memo__c', label: 'Memo', dataType: 'TextArea' }, { apiName: 'Long__c', label: 'Long', dataType: 'TextArea' }];
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'SfUiC_Field__c', fields }));
+  const stored = { Memo__c: 'line one\r\n\r\nline three', Long__c: 'lead\ttab\r\nsecond' };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => ({ fields: { [p.split('.').pop()]: { value: stored[p.split('.').pop()], displayValue: null } } }));
+  const item = (label, text) => `<${A.layoutItem} field-label="${label}"><div>${label}</div><div style="white-space: pre-line">${text}</div><div>Edit ${label}</div></${A.layoutItem}>`;
+  await page.setContent(item('Memo', 'line one\n\nline three') + item('Long', 'lead\ttab\nsecond'));
+  for (const via of ['api', 'ui', 'both']) {
+    await lib.assert.fieldValue({ page }, 'a0x', 'Memo__c', 'line one\n\nline three', { via });
+    await lib.assert.fieldValue({ page }, 'a0x', 'Long__c', 'lead\ttab\nsecond', { via });
+    await lib.assert.fieldValue({ page }, 'a0x', 'Memo__c', stored.Memo__c, { via }); // expected as the API stores it
+    // Control: a lost blank line, or a line break typed as a space, is still red.
+    await assert.rejects(lib.assert.fieldValue({ page }, 'a0x', 'Memo__c', 'line one\nline three', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+    await assert.rejects(lib.assert.fieldValue({ page }, 'a0x', 'Long__c', 'lead\ttab second', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+  }
+});
+
 // No org: a field only a Dynamic Forms page places is not in the layout's View model; the page is still read.
 test('assert, no org: a field off the layout is read from the Dynamic Forms page by its object-info label', { timeout: 30_000 }, async (t) => {
   const page = await localPage(t);
@@ -348,5 +369,19 @@ test('assert', { skip, timeout: 300_000 }, async (t) => {
       await open();
     }
     assert.equal((await memo()).ui, 'BREAK fix memo'); // control: open again, read again
+  });
+
+  // F-cascade-2: a UI save stores a Text Area with CRLF line ends; the page shows its blank line and a tab as a space.
+  await t.test('assert.fieldValue passes a Text Area of several lines as typed, via api, ui and both', async (st) => {
+    const id = await rec(s, t, 'SfUiC_Field__c', { Name: `BREAK fix lines ${stamp()}`, Memo__c: 'line one\r\n\r\nline three', Long__c: 'lead\ttab\r\nsecond' })
+      .catch((e) => { if (e.evidence?.status === 404) return null; throw e; });
+    if (!id) return st.skip('the org has no test/fixture-components object SfUiC_Field__c');
+    for (const via of ['api', 'ui', 'both']) {
+      await lib.assert.fieldValue(s, id, 'Memo__c', 'line one\n\nline three', { via });
+      await lib.assert.fieldValue(s, id, 'Long__c', 'lead\ttab\nsecond', { via });
+      // Control: a lost blank line, or a line break typed as a space, is still red.
+      await assert.rejects(lib.assert.fieldValue(s, id, 'Memo__c', 'line one\nline three', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+      await assert.rejects(lib.assert.fieldValue(s, id, 'Long__c', 'lead\ttab second', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+    }
   });
 });

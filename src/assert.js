@@ -31,14 +31,16 @@ async function uiValue(s, recordId, label, objectApiName, apiName) {
   // The first load after the user collapses a section shows it open, then closes it (~200 ms on sfui-s4-cascade).
   // ponytail: a fixed 1 s settle on every read; a page that closes the section later than that still passes.
   if (await item.waitFor({ state: 'hidden', timeout: 1_000 }).then(() => true, () => false)) throw await notShown();
-  const lines = (await item.innerText()).split('\n').map((l) => l.trim()).filter(Boolean);
+  const lines = (await item.innerText()).split('\n').map((l) => l.trim());
   // A lookup's link carries a visually hidden "Preview" control that innerText still reads.
   const lookup = (await item.locator(`${A.lookup}, ${A.hoverableLink}`).count()) > 0;
-  return lines.filter((l) => l !== label && l !== `Edit ${label}` && !(lookup && l === 'Preview')).join('\n');
+  // A blank line inside a Text Area's value is kept; blank lines around it are not.
+  return lines.filter((l) => l !== label && l !== `Edit ${label}` && !(lookup && l === 'Preview')).join('\n').replace(/^\n+|\n+$/g, '');
 }
 
 // The stored value is the wanted one: equal, the same record by a 15-char id (id), or a display name (name).
-const sameValue = (want, value, display, { id, name } = {}) => String(value ?? '') === want
+// A UI save stores a Text Area's line ends as CRLF, so the stored text reads as LF before it is compared.
+const sameValue = (want, value, display, { id, name } = {}) => String(value ?? '').replace(/\r\n/g, '\n') === want
   || (!!id && want.length === 15 && nav.isId(want) && /^[a-zA-Z0-9]{18}$/.test(String(value ?? '')) && String(value).slice(0, 15) === want)
   || (!!name && display === want);
 // A datetime or time stored as ...00.000Z is the same value typed as ...00Z, ...+0000 (as SOQL prints it) or 14:30. Only
@@ -75,7 +77,7 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
     if (!field) throw new SfUiError('FIELD_NOT_ON_FORM', `${apiName} is not a field of ${model.objectApiName} this user can see`, { apiName });
     result.ui = await uiValue(s, recordId, field.label, model.objectApiName, apiName);
   }
-  const want = expected === null ? '' : String(expected);
+  const want = expected === null ? '' : String(expected).replace(/\r\n/g, '\n');
   // A field off the View model (Dynamic Forms) has no known type, so a 15-char id may name its stored 18-char one.
   const storedOk = !!stored && (sameValue(want, stored.value, stored.display, { id: rel || !field, name: rel })
     || sameInstant(field && field.dataType, stored.value, want));
@@ -84,7 +86,9 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   const shown = field && field.dataType === 'Boolean' && result.ui != null ? result.ui.toLowerCase() : result.ui;
   // A time field's page shows the seconds (2:30:00 PM) that its API display value leaves out (2:30 PM).
   const page = field && field.dataType === 'Time' && result.ui != null ? result.ui.replace(/(\d:\d{2}):00\b/, '$1') : result.ui;
-  const uiOk = !('ui' in result) || shown === want
+  // The page renders a run of spaces or tabs as one space.
+  const spaced = (v) => v.replace(/[ \t]+/g, ' ');
+  const uiOk = !('ui' in result) || spaced(shown) === spaced(want)
     || (storedOk && ((stored.display != null && page === stored.display) || (dayDisplay != null && page === dayDisplay)));
   if (!apiOk || !uiOk) throw new SfUiError('FIELD_VALUE_MISMATCH', `${apiName} expected ${JSON.stringify(expected)}`, { expected, ...result });
   return result;
