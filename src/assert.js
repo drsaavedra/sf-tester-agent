@@ -49,6 +49,11 @@ const ISO = { DateTime: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\
 const instant = (type, v) => instantOf(type === 'Time' ? `1970-01-01T${v.replace(/Z$/, '')}Z` : v);
 const sameInstant = (type, stored, want) => !!ISO[type] && typeof stored === 'string' && ISO[type].test(want) && ISO[type].test(stored)
   && instant(type, stored) === instant(type, want);
+// The page groups a number's digits (12,345) and adds a Percent's sign (25%); the UI API gives neither a display value.
+// ponytail: en-style separators only; a comma-decimal locale's page text reads as no number and stays red.
+const NUMERIC = ['Double', 'Int', 'Long', 'Percent'];
+const num = (type, v) => (NUMERIC.includes(type) && new RegExp(`^-?(\\d{1,3}(,\\d{3})+|\\d+)(\\.\\d+)?${type === 'Percent' ? '%?' : ''}$`).test(v)
+  ? Number(v.replace(/[,%]/g, '')) : NaN);
 
 async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {}) {
   const model = await discover.formModel(s, recordId, { mode: 'View' });
@@ -80,7 +85,8 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   const want = expected === null ? '' : String(expected).replace(/\r\n/g, '\n');
   // A field off the View model (Dynamic Forms) has no known type, so a 15-char id may name its stored 18-char one.
   const storedOk = !!stored && (sameValue(want, stored.value, stored.display, { id: rel || !field, name: rel })
-    || sameInstant(field && field.dataType, stored.value, want));
+    || sameInstant(field && field.dataType, stored.value, want)
+    || num(field && field.dataType, want) === stored.value);
   const apiOk = !('api' in result) || storedOk;
   // A checkbox reads "True" or "False" on the page, with no API display value to bridge it to true or false.
   const shown = field && field.dataType === 'Boolean' && result.ui != null ? result.ui.toLowerCase() : result.ui;
@@ -88,7 +94,7 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   const page = field && field.dataType === 'Time' && result.ui != null ? result.ui.replace(/(\d:\d{2}):00\b/, '$1') : result.ui;
   // The page renders a run of spaces or tabs as one space.
   const spaced = (v) => v.replace(/[ \t]+/g, ' ');
-  const uiOk = !('ui' in result) || spaced(shown) === spaced(want)
+  const uiOk = !('ui' in result) || spaced(shown) === spaced(want) || num(field.dataType, result.ui) === num(field.dataType, want)
     || (storedOk && ((stored.display != null && page === stored.display) || (dayDisplay != null && page === dayDisplay)));
   if (!apiOk || !uiOk) throw new SfUiError('FIELD_VALUE_MISMATCH', `${apiName} expected ${JSON.stringify(expected)}`, { expected, ...result });
   return result;

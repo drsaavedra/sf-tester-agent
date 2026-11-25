@@ -4425,6 +4425,65 @@
       ]
     },
     {
+      "id": "number-grouped@page-layout",
+      "component": "Number of 1,000 or more",
+      "container": "standard Edit dialog (page layout)",
+      "interaction": "set fields, save, assert via both",
+      "task": "On the SF UI Probe record {{probeId}}, edit the record, set Count to 12345, save, and confirm through the API and the record page that it saved, typed as 12345 and as 12,345.",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_edit_record",
+          "args": {
+            "recordId": "{{probeId}}",
+            "source": "pageLayout"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "Count__c": 12345
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{probeId}}",
+            "field": "Count__c",
+            "expected": 12345,
+            "via": "both"
+          }
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{probeId}}",
+            "field": "Count__c",
+            "expected": "12,345",
+            "via": "both"
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-2"
+      },
+      "notes": "the page groups the digits (12,345) and the UI API gives no display value (F-cascade-5, F-flow-15)",
+      "break": [
+        "F-cascade-5",
+        "F-flow-15"
+      ]
+    },
+    {
       "id": "inline-edit@page-layout",
       "component": "number field",
       "container": "inline edit in the record detail panel (page layout)",

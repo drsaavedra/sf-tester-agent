@@ -205,6 +205,31 @@ test('assert, no org: a Text Area of several lines matches as typed, via api, ui
   }
 });
 
+// F-cascade-5, F-flow-15, no org: the page groups a Number's digits (12,345) and adds a Percent's sign (25%); the
+// API gives no display value for either. The number, typed either way, matches via api, ui and both.
+test('assert, no org: a Number of 1,000 or more and a Percent match as the number, via api, ui and both', { timeout: 60_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const fields = [{ apiName: 'Count__c', label: 'Count', dataType: 'Double' }, { apiName: 'F_Pct__c', label: 'F Pct', dataType: 'Percent' },
+    { apiName: 'Code__c', label: 'Code', dataType: 'String' }];
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'SfUiC_Field__c', fields }));
+  const stored = { Count__c: 12345, F_Pct__c: 25, Code__c: '12345' };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => ({ fields: { [p.split('.').pop()]: { value: stored[p.split('.').pop()], displayValue: null } } }));
+  const item = (label, text) => `<${A.layoutItem} field-label="${label}"><div>${label}</div><div>${text}</div><div>Edit ${label}</div></${A.layoutItem}>`;
+  await page.setContent(item('Count', '12,345') + item('F Pct', '25%') + item('Code', '12,345'));
+  const red = (f, v, via) => assert.rejects(lib.assert.fieldValue({ page }, 'a0x', f, v, { via }), { code: 'FIELD_VALUE_MISMATCH' });
+  for (const via of ['api', 'ui', 'both']) {
+    for (const v of [12345, '12345', '12,345']) await lib.assert.fieldValue({ page }, 'a0x', 'Count__c', v, { via });
+    for (const v of [25, '25', '25%']) await lib.assert.fieldValue({ page }, 'a0x', 'F_Pct__c', v, { via });
+    // Control: another number is still red.
+    await red('Count__c', 12346, via);
+    await red('F_Pct__c', 26, via);
+  }
+  for (const v of ['1,2345', '12345%', '']) await red('Count__c', v, 'api'); // digits grouped wrong, a % on a Number, empty
+  await red('Code__c', 12345, 'ui'); // a text field compares the page text whole
+});
+
 // No org: a field only a Dynamic Forms page places is not in the layout's View model; the page is still read.
 test('assert, no org: a field off the layout is read from the Dynamic Forms page by its object-info label', { timeout: 30_000 }, async (t) => {
   const page = await localPage(t);
@@ -369,6 +394,23 @@ test('assert', { skip, timeout: 300_000 }, async (t) => {
       await open();
     }
     assert.equal((await memo()).ui, 'BREAK fix memo'); // control: open again, read again
+  });
+
+  // F-cascade-5, F-flow-15: the page shows 12,345 and 25%; the API holds 12345 and 25 with no display value.
+  await t.test('assert.fieldValue passes a Number of 1,000 or more and a Percent as the number, via api, ui and both', async (st) => {
+    const id = await probe(s, t, { Name: `BREAK fix number ${stamp()}`, Count__c: 12345 });
+    for (const via of ['api', 'ui', 'both']) {
+      for (const v of [12345, '12,345']) await lib.assert.fieldValue(s, id, 'Count__c', v, { via });
+      await assert.rejects(lib.assert.fieldValue(s, id, 'Count__c', 12346, { via }), { code: 'FIELD_VALUE_MISMATCH' });
+    }
+    assert.equal((await lib.assert.fieldValue(s, id, 'Count__c', 12345)).ui, '12,345', 'the page groups the digits');
+    const pct = await rec(s, t, 'SfUiC_Field__c', { Name: `BREAK fix pct ${stamp()}` })
+      .catch((e) => { if (e.evidence?.status === 404) return null; throw e; });
+    if (!pct) return st.skip('the org has no test/fixture-components object SfUiC_Field__c');
+    for (const via of ['api', 'ui', 'both']) {
+      for (const v of [25, '25%']) await lib.assert.fieldValue(s, pct, 'F_Pct__c', v, { via });
+      await assert.rejects(lib.assert.fieldValue(s, pct, 'F_Pct__c', 26, { via }), { code: 'FIELD_VALUE_MISMATCH' });
+    }
   });
 
   // F-cascade-2: a UI save stores a Text Area with CRLF line ends; the page shows its blank line and a tab as a space.
