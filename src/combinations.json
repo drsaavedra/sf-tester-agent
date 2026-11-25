@@ -4253,6 +4253,55 @@
       }
     },
     {
+      "id": "multi-select-order@edit-dialog",
+      "component": "multi-select picklist",
+      "container": "standard Edit dialog (page layout)",
+      "interaction": "set fields, save, assert via both",
+      "task": "On the SF UI Probe record {{probeId}}, edit the record, set Tags to Gamma and Beta only, typed in that order, save, and confirm through the API and the record page that they saved.",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_edit_record",
+          "args": {
+            "recordId": "{{probeId}}",
+            "source": "pageLayout"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "Tags__c": "Gamma;Beta"
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{probeId}}",
+            "field": "Tags__c",
+            "expected": "Gamma;Beta",
+            "via": "both"
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-2"
+      },
+      "notes": "the org stores and shows a multi-select in picklist order, so it is asserted as a set (F-cascade-24)",
+      "break": [
+        "F-cascade-24"
+      ]
+    },
+    {
       "id": "time@edit-dialog",
       "component": "time field",
       "container": "standard Edit dialog (page layout)",

@@ -251,6 +251,28 @@ test('assert, no org: a checkbox matches as the page shows it, True or False, vi
   }
 });
 
+// F-cascade-24, no org: the org stores and shows a multi-select in picklist order, which need not be the order typed.
+test('assert, no org: a multi-select matches as a set, in any order, via api, ui and both', { timeout: 60_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const fields = [{ apiName: 'Tags__c', label: 'Tags', dataType: 'MultiPicklist' }, { apiName: 'Kinds__c', label: 'Kinds', dataType: 'MultiPicklist' }];
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'SfUiProbe__c', fields }));
+  // Kinds__c's picklist puts Gamma before Alpha, so its stored order is not the sorted one.
+  const stored = { Tags__c: 'Beta;Gamma', Kinds__c: 'Gamma;Alpha' };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => { const k = p.split('.').pop(); return { fields: { [k]: { value: stored[k], displayValue: stored[k] } } }; });
+  const item = (label, text) => `<${A.layoutItem} field-label="${label}"><div>${label}</div><div>${text}</div><div>Edit ${label}</div></${A.layoutItem}>`;
+  await page.setContent(item('Tags', 'Beta;Gamma') + item('Kinds', 'Gamma;Alpha'));
+  const red = (f, v, via) => assert.rejects(lib.assert.fieldValue({ page }, 'a0x', f, v, { via }), { code: 'FIELD_VALUE_MISMATCH' });
+  for (const via of ['api', 'ui', 'both']) {
+    for (const v of ['Gamma;Beta', 'Beta;Gamma']) await lib.assert.fieldValue({ page }, 'a0x', 'Tags__c', v, { via });
+    for (const v of ['Alpha;Gamma', 'Gamma;Alpha']) await lib.assert.fieldValue({ page }, 'a0x', 'Kinds__c', v, { via });
+    // Control: another set is still red, a subset and a superset included.
+    for (const v of ['Gamma', 'Alpha;Beta', 'Alpha;Beta;Gamma']) await red('Tags__c', v, via);
+    await red('Kinds__c', 'Alpha', via);
+  }
+});
+
 // No org: a field only a Dynamic Forms page places is not in the layout's View model; the page is still read.
 // F-cascade-6, no org: a field with help text carries a lightning-helptext whose text ("Help <label>") innerText reads.
 test('assert, no org: a field with help text is read without its help button, via ui and both', { timeout: 60_000 }, async (t) => {

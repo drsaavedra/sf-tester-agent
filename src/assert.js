@@ -99,8 +99,12 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   const typed = expected === null ? '' : String(expected).replace(/\r\n/g, '\n');
   // A checkbox is true or false in the API and "True" or "False" on the page: either spelling names the value.
   const want = field && field.dataType === 'Boolean' ? typed.toLowerCase() : typed;
+  // A multi-select is stored and shown in picklist order, so it matches as a set (as sf_save's read-back does).
+  const set = (v) => String(v ?? '').split(';').map((x) => x.trim()).filter(Boolean).sort().join(';');
+  const sameSet = (v) => !!field && field.dataType === 'MultiPicklist' && v != null && set(want) === set(v);
   // A field off the View model (Dynamic Forms) has no known type, so a 15-char id may name its stored 18-char one.
   const storedOk = !!stored && (sameValue(want, stored.value, stored.display, { id: rel || !field, name: rel })
+    || sameSet(stored.value) || sameSet(stored.display)
     || sameInstant(field && field.dataType, stored.value, want)
     || num(field && field.dataType, want) === stored.value);
   const apiOk = !('api' in result) || storedOk;
@@ -114,6 +118,7 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   // ponytail: a part that starts a longer one ("2 Break St" of "2 Break St\nSuite 9") passes via ui; via both catches it.
   const inWhole = () => want !== '' && new RegExp(`(^|[\\s,])${spaced(want).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[\\s,])`).test(spaced(result.ui));
   const uiOk = !('ui' in result) || (whole ? inWhole() : spaced(shown) === spaced(want)) || num(field.dataType, result.ui) === num(field.dataType, want)
+    || sameSet(result.ui)
     || (storedOk && ((stored.display != null && page === stored.display) || (dayDisplay != null && page === dayDisplay)));
   if (!apiOk || !uiOk) throw new SfUiError('FIELD_VALUE_MISMATCH', `${apiName} expected ${JSON.stringify(expected)}`, { expected, ...result });
   return result;
