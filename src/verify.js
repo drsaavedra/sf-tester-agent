@@ -607,8 +607,6 @@ function validate(methods, { rep, err, acts = [] }) {
   return out;
 }
 
-// Adds a stage's milliseconds to the run's times, which the last-but-one line of a run prints.
-const lap = (time, stage, ms) => { if (time) time[stage] = (time[stage] ?? 0) + ms; };
 // The org's own clock for a validate, from the deploy result: queue wait, deploy and test run. Null with a date missing.
 function deployTimes(rep) {
   const [made, began, ended] = ['createdDate', 'startDate', 'completedDate'].map((k) => Date.parse(rep?.[k]));
@@ -620,7 +618,7 @@ const timeLine = (t, total) => `time: ${[...['connect', 'diff', 'generate', 'val
   .map((k) => `${k} ${t[k]} ms${k === 'validate' && t.queue != null ? ` (queue ${t.queue} ms, deploy ${t.deploy} ms, tests ${t.tests} ms)` : ''}`), `total ${total} ms`].join(', ')}`;
 
 // Every selected record and apex check's cases in one validate: one deploy, one report.
-async function runRecords(checks, { s, proj, sf, org, items, files = [], signal, cascade: cas, time }) {
+async function runRecords(checks, { s, proj, sf, org, items, files = [], signal, cascade: cas, time = {} }) {
   // A flow check becomes an apex check, or a result of its own when verify cannot run that flow.
   const early = [];
   const notes = new Map();
@@ -652,10 +650,10 @@ async function runRecords(checks, { s, proj, sf, org, items, files = [], signal,
     let rep;
     let err;
     const t1 = Date.now();
-    lap(time, 'generate', t1 - t0);
+    time.generate = t1 - t0; // the run's times, which its last-but-one line prints
     try { rep = await report(); } catch (e) { err = e.message; }
-    lap(time, 'validate', Date.now() - t1);
-    for (const [k, ms] of Object.entries(deployTimes(rep) ?? {})) lap(time, k, ms);
+    time.validate = Date.now() - t1;
+    Object.assign(time, deployTimes(rep));
     const got = validate(methods, { rep, err, acts });
     const text = rep?.debugLog;
     const seen = text ? ranlog.parseLog(text, 'SfTesterVerifyTest') : null;
@@ -1425,7 +1423,7 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
   if (!a.plan) {
     try {
       s = await (connect || ((org) => defaultConnect(org, api)))(a.org);
-      lap(time, 'connect', Date.now() - began);
+      time.connect = Date.now() - began;
     } catch (e) {
       if (!['NO_AUTH', 'AUTH_UNREADABLE', 'API_ERROR'].includes(e.code)) throw e;
       // An API_ERROR is the org's answer, not the command line's, so it gets no usage line.
@@ -1494,7 +1492,7 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
       if (a.junit) fs.writeFileSync(a.junit, junit([], [], SUITE));
       return 0;
     }
-    lap(time, 'diff', Date.now() - tDiff);
+    time.diff = Date.now() - tDiff;
   }
   const uncovered = [...items.keys()].filter((k) => !covering(k).length);
   const wanted = (c) => (!a.since || [...items.keys()].some((k) => c.keys.includes(k) || c.selects.includes(k))) && (!only || only.test(c.id));
@@ -1584,7 +1582,7 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
   for (const u of unrun) log(`STOPPED ${u.check} ${u.name} (stopped by a signal)`);
   const nStopped = stopped.length + unrun.length;
   // Where the run's time went, before the counts so the counts stay the last line. total also holds what no stage names.
-  lap(time, 'report', Date.now() - tReport);
+  time.report = Date.now() - tReport;
   log(timeLine(time, Date.now() - began));
   log(`changed ${items.size}, covered ${covered}, uncovered ${uncovered.length}, ran ${results.filter((r) => !r.aside).length}, passed ${n('pass')}, failed ${n('fail')}${n('error') ? `, errors ${n('error')}` : ''}${n('handoff') ? `, needs browser ${n('handoff')}` : ''}${notRun.size ? `, not run ${notRun.size}` : ''}${nStopped ? `, stopped ${nStopped}` : ''}`);
   if (a.junit) {
