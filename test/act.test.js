@@ -257,6 +257,34 @@ test('modal.find takes an open aria-modal dialog over a later non-modal one, and
   assert.equal(await (await modal.find({ page }, { timeout: 2_000 })).getAttribute('aria-label'), 'SF UI Utility');
 });
 
+// No org: LightningAlert and LightningConfirm draw role="alertdialog", not dialog, so find and open missed them (F-fixtures-4).
+test('modal.find and modal.open take an alertdialog, over a later non-modal dialog too, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent(`<main></main><section role="alertdialog" aria-modal="true" aria-label="SFUIC Alert"><div class="slds-modal__content">SFUIC alert message</div><button>OK</button></section>
+    <footer><div role="dialog" aria-label="SF UI Utility"><input aria-label="Utility note"></div></footer>`);
+  assert.equal(await (await modal.find({ page }, { timeout: 2_000, body: true })).getAttribute('aria-label'), 'SFUIC Alert');
+  await page.setContent('<section role="alertdialog" aria-label="SFUIC Confirm"><button>OK</button><button>Cancel</button></section>');
+  assert.equal(await (await modal.open({ page }, { timeout: 500 })).getAttribute('aria-label'), 'SFUIC Confirm');
+});
+
+// The repro on the component fixture: LightningAlert and LightningConfirm on the Aura Calls tab, read and closed as modals.
+test('modal.open reads a LightningAlert and a LightningConfirm, and a click inside closes each', { skip, timeout: 300_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const app = await session.openApp(s, 'SfUiC_App').catch((e) => { if (e.code === 'APP_UNAVAILABLE') return null; throw e; });
+  if (!app) return t.skip('the org has no test/fixture-components app SfUiC_App');
+  await nav.openTab(s, 'SfUiC_Aura_Calls');
+  for (const [button, text, close] of [['SFUIC Open Alert', 'SFUIC alert message', 'OK'], ['SFUIC Open Confirm', 'SFUIC confirm message', 'Cancel']]) {
+    await act.click(s.page, { name: button });
+    const m = await modal.open(s, { timeout: 5_000, body: true });
+    assert.ok(m, `${button}: no dialog found`);
+    await m.getByText(text).waitFor({ timeout: 5_000 });
+    await act.click(m, { name: close });
+    await m.waitFor({ state: 'hidden', timeout: 10_000 }); // it fades out over about a second
+    assert.equal(await modal.open(s, { timeout: 0 }), null, `${button}: still open after ${close}`);
+  }
+});
+
 // No org: a click that starts a download (a file preview's Download) saves it and says what came down.
 test('a click with download saves the file it starts, and refuses a click that starts none', { timeout: 30_000 }, async (t) => {
   const page = await localPage(t);

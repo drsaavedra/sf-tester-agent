@@ -11,9 +11,11 @@ const { requireEnglish } = require('./session');
 async function find(s, { timeout = 30_000, body = false } = {}) {
   const until = Date.now() + timeout;
   const left = () => Math.max(100, until - Date.now());
-  const any = s.page.getByRole('dialog').locator('visible=true');
+  // LightningAlert and LightningConfirm are role alertdialog (F-fixtures-4).
+  const role = () => s.page.getByRole('dialog').or(s.page.getByRole('alertdialog'));
+  const any = role().locator('visible=true');
   await any.last().waitFor({ state: 'visible', timeout: left() });
-  const modal = s.page.locator('[aria-modal="true"]').and(s.page.getByRole('dialog')).locator('visible=true');
+  const modal = s.page.locator('[aria-modal="true"]').and(role()).locator('visible=true');
   const dialog = (await modal.count()) ? modal.last() : any.last();
   // body, for a caller that reads the dialog at once: its frame and footer (Submit, Next) show before its body, so wait
   // for the body to hold text or a field and no empty group, returning it either way. Steps inside wait on their own.
