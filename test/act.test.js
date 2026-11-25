@@ -908,6 +908,34 @@ test('with includeHidden, a name the page shows finds its element, no org', { ti
   await assert.rejects(act.resolve(page, { ...hidden, role: 'textbox', name: 'Nam' }), (e) => e.code === 'NOT_FOUND'); // still exact
 });
 
+// No org: two tables share a column label; the row names one table, so its own header is the column (F-fixtures-12).
+test('a column label shared by two tables is the one in the row\'s table, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent(`<table role="treegrid"><thead><tr><th scope="col">SFUIC Name</th><th scope="col">SFUIC Amount</th></tr></thead>
+    <tr><td>SFUIC Row One</td><td>$100.00</td></tr></table>
+    <table><thead><tr><th scope="col">SFUIC Note</th><th scope="col">SFUIC Name</th><th scope="col">SFUIC Amount</th></tr></thead>
+    <tr><td>$250.00</td><td>SFUIC Row Two</td><td><button>$250.00</button></td></tr></table>`);
+  const at = (o) => act.resolve(page, { timeout: 1_000, ...o }).then((l) => l.evaluate((e) => e.outerHTML));
+  assert.equal(await at({ text: '$250.00', row: 'SFUIC Row Two', column: 'SFUIC Amount' }), '<button>$250.00</button>');
+  assert.equal(await at({ text: '$100.00', row: 'SFUIC Row One', column: 'SFUIC Amount' }), '<td>$100.00</td>');
+  await act.hover(page, { role: 'button', name: '$250.00', row: 'SFUIC Row Two', column: 'SFUIC Amount', timeout: 1_000 });
+  // With no row, nothing names a table: the shared label is still AMBIGUOUS.
+  await assert.rejects(act.resolve(page, { text: '$250.00', column: 'SFUIC Amount', timeout: 500 }), (e) => e.code === 'AMBIGUOUS' && /2 columnheaders/.test(e.message));
+});
+
+// The repro on the component fixture: the Aura page's tree grid and datatable both have "SFUIC Amount".
+test('a column label shared by a tree grid and a datatable aims in the row\'s table', { skip, timeout: 300_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const app = await session.openApp(s, 'SfUiC_App').catch((e) => { if (e.code === 'APP_UNAVAILABLE') return null; throw e; });
+  if (!app) return t.skip('the org has no test/fixture-components app SfUiC_App');
+  await nav.openTab(s, 'SfUiC_Aura_Nav');
+  // The currency symbol is the org's locale ("$250.00", "₱250.00"), so the amount is matched without it.
+  const aim = { text: /250\.00/, row: 'SFUIC Row Two', column: 'SFUIC Amount', timeout: 15_000 };
+  assert.match(await (await act.resolve(s.page, aim)).innerText(), /^\D*250\.00$/);
+  await act.hover(s.page, aim);
+});
+
 // No org: a validation line that collapses on blur moves the button up between press and release, as on the
 // fixture's Check code, so no click reaches it; a click that lands and then moves its own button is not a miss.
 test('a click whose target moved before the release is TARGET_MOVED; one that lands and moves is not', { timeout: 30_000 }, async (t) => {

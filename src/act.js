@@ -107,7 +107,18 @@ async function resolve(scope, { name, role, text, row, column, nth, timeout, inc
     within = rows;
   }
   if (column) {
-    const header = await resolve(scope, { name: column, role: 'columnheader', timeout, includeHidden });
+    // With a row, the header is the one in that row's own table: two tables on a page can share a column label.
+    let headers = scope;
+    if (row) {
+      const m = `${(marks += 1)}`;
+      const table = await within.evaluate((el, k) => {
+        const t = el.closest('table,[role=grid],[role=treegrid],[role=table]');
+        t?.setAttribute('data-sf-ui-table', k);
+        return !!t;
+      }, m);
+      if (table) headers = scope.locator(`[data-sf-ui-table="${m}"]`);
+    }
+    const header = await resolve(headers, { name: column, role: 'columnheader', timeout, includeHidden });
     const at = await header.evaluate((th) => [...th.parentElement.children].indexOf(th) + 1);
     within = (row ? within : byRole(scope, 'row')).locator(`:scope > :nth-child(${at})`);
   }
