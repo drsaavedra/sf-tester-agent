@@ -607,8 +607,20 @@ function validate(methods, { rep, err, acts = [] }) {
   return out;
 }
 
+// Adds a stage's milliseconds to the run's times, which the last-but-one line of a run prints.
+const lap = (time, stage, ms) => { if (time) time[stage] = (time[stage] ?? 0) + ms; };
+// The org's own clock for a validate, from the deploy result: queue wait, deploy and test run. Null with a date missing.
+function deployTimes(rep) {
+  const [made, began, ended] = ['createdDate', 'startDate', 'completedDate'].map((k) => Date.parse(rep?.[k]));
+  if ([made, began, ended].some(Number.isNaN)) return null;
+  const tests = Number(rep.details?.runTestResult?.totalTime) || 0;
+  return { queue: began - made, deploy: Math.max(0, ended - began - tests), tests };
+}
+const timeLine = (t, total) => `time: ${[...['connect', 'diff', 'generate', 'validate', 'report'].filter((k) => t[k] != null)
+  .map((k) => `${k} ${t[k]} ms${k === 'validate' && t.queue != null ? ` (queue ${t.queue} ms, deploy ${t.deploy} ms, tests ${t.tests} ms)` : ''}`), `total ${total} ms`].join(', ')}`;
+
 // Every selected record and apex check's cases in one validate: one deploy, one report.
-async function runRecords(checks, { s, proj, sf, org, items, files = [], signal, cascade: cas }) {
+async function runRecords(checks, { s, proj, sf, org, items, files = [], signal, cascade: cas, time }) {
   // A flow check becomes an apex check, or a result of its own when verify cannot run that flow.
   const early = [];
   const notes = new Map();
@@ -623,6 +635,7 @@ async function runRecords(checks, { s, proj, sf, org, items, files = [], signal,
     return [p.apex];
   });
   if (!run.length) return early;
+  const t0 = Date.now();
   const { apex, methods, acts } = generate(run, proj.namespace);
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sf-tester-verify-'));
   try {
@@ -638,7 +651,11 @@ async function runRecords(checks, { s, proj, sf, org, items, files = [], signal,
     const report = cas ? () => soapReport(sf, { s, dir, signal, tests, cas }) : () => sfReport(sf, { org, dir, signal, tests });
     let rep;
     let err;
+    const t1 = Date.now();
+    lap(time, 'generate', t1 - t0);
     try { rep = await report(); } catch (e) { err = e.message; }
+    lap(time, 'validate', Date.now() - t1);
+    for (const [k, ms] of Object.entries(deployTimes(rep) ?? {})) lap(time, k, ms);
     const got = validate(methods, { rep, err, acts });
     const text = rep?.debugLog;
     const seen = text ? ranlog.parseLog(text, 'SfTesterVerifyTest') : null;
@@ -1403,9 +1420,12 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
   // selects: what else changes the verdict of a check, so --since runs it; unlike covers, it does not cover a gap.
   for (const c of file.checks) c.selects = c.kind === 'componentVisible' ? gateCovers(c, proj) : [];
   let s;
+  const time = {};
+  const began = Date.now();
   if (!a.plan) {
     try {
       s = await (connect || ((org) => defaultConnect(org, api)))(a.org);
+      lap(time, 'connect', Date.now() - began);
     } catch (e) {
       if (!['NO_AUTH', 'AUTH_UNREADABLE', 'API_ERROR'].includes(e.code)) throw e;
       // An API_ERROR is the org's answer, not the command line's, so it gets no usage line.
@@ -1430,6 +1450,7 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
   // The item keys the static map named, and its flows' labels, for the --cascade diff.
   let mapped = null;
   let labels;
+  const tDiff = Date.now();
   if (a.since) {
     try { files = changedFiles(a.since, proj.root, git); } catch (e) {
       if (e.stderr == null) throw e;
@@ -1473,6 +1494,7 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
       if (a.junit) fs.writeFileSync(a.junit, junit([], [], SUITE));
       return 0;
     }
+    lap(time, 'diff', Date.now() - tDiff);
   }
   const uncovered = [...items.keys()].filter((k) => !covering(k).length);
   const wanted = (c) => (!a.since || [...items.keys()].some((k) => c.keys.includes(k) || c.selects.includes(k))) && (!only || only.test(c.id));
@@ -1533,7 +1555,7 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
     if (signal?.aborted) break;
     const group = [...runnable, ...generated].filter((c) => RUNNERS[c.kind] === runner);
     if (!group.length) continue;
-    for (const r of await runner(group, { s, api, proj, sf: sf || execSf, org: a.org, items, files, signal, unrun, cascade: a.cascade ? { post: soap, sleep } : undefined })) {
+    for (const r of await runner(group, { s, api, proj, sf: sf || execSf, org: a.org, items, files, signal, unrun, time, cascade: a.cascade ? { post: soap, sleep } : undefined })) {
       r.id = `${r.check}/${r.name}`;
       if (!r.aside) r.requirement = group.find((c) => c.id === r.check).requirement;
       results.push(r);
@@ -1541,6 +1563,7 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
       if (r.cascade) log(`  RAN ${r.cascade}`);
     }
   }
+  const tReport = Date.now();
   // What the map said could run against what did, over every case that ran.
   if (a.cascade) {
     const ran = results.filter((r) => r.t).map((r) => r.t);
@@ -1560,6 +1583,9 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
   for (const c of stopped) log(`STOPPED ${c.id} (stopped by a signal)`);
   for (const u of unrun) log(`STOPPED ${u.check} ${u.name} (stopped by a signal)`);
   const nStopped = stopped.length + unrun.length;
+  // Where the run's time went, before the counts so the counts stay the last line. total also holds what no stage names.
+  lap(time, 'report', Date.now() - tReport);
+  log(timeLine(time, Date.now() - began));
   log(`changed ${items.size}, covered ${covered}, uncovered ${uncovered.length}, ran ${results.filter((r) => !r.aside).length}, passed ${n('pass')}, failed ${n('fail')}${n('error') ? `, errors ${n('error')}` : ''}${n('handoff') ? `, needs browser ${n('handoff')}` : ''}${notRun.size ? `, not run ${notRun.size}` : ''}${nStopped ? `, stopped ${nStopped}` : ''}`);
   if (a.junit) {
     const asCase = (r) => (r.status === 'handoff' ? { id: r.id, status: 'skip', ms: 0, reason: r.error } : { id: r.id, status: r.status === 'pass' ? 'pass' : 'fail', ms: 0, error: r.error });

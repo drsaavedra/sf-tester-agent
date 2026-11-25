@@ -348,6 +348,20 @@ test('a validate report maps each method: pass, fail with its message, and a met
   assert.match(m.out.at(-1), /passed 1, failed 1, errors 1$/);
 });
 
+test('a run prints its time per stage before the counts, and splits the validate by the deploy result\'s own dates', async (t) => {
+  const dated = JSON.parse(REPORT);
+  Object.assign(dated.result, { createdDate: '2026-11-25T00:00:00.000Z', startDate: '2026-11-25T00:00:02.000Z', completedDate: '2026-11-25T00:00:09.000Z' });
+  dated.result.details.runTestResult.totalTime = '4000.0';
+  const { file, sf } = selecting(t, { answers: [OK_ENVELOPE, JSON.stringify(dated)] });
+  const r = await run(['verify', '--org', 'o', '--checks', file], { sf });
+  assert.match(r.out.at(-2), /^time: connect \d+ ms, generate \d+ ms, validate \d+ ms \(queue 2000 ms, deploy 3000 ms, tests 4000 ms\), report \d+ ms, total \d+ ms$/);
+  assert.match(r.out.at(-1), /^changed 0, /, 'the counts stay the last line');
+  // A report with no dates prints the validate with no split.
+  const plain = selecting(t);
+  const p = await run(['verify', '--org', 'o', '--checks', plain.file], { sf: plain.sf });
+  assert.match(p.out.at(-2), /^time: connect \d+ ms, generate \d+ ms, validate \d+ ms, report \d+ ms, total \d+ ms$/);
+});
+
 test('a compile error or refused metadata makes every record case ERROR with the problem; an envelope with no job id too', async (t) => {
   const failed = sample('validate-report.json');
   failed.result.details = { componentFailures: [{ fullName: 'SfTesterVerifyTest', problem: 'Invalid type: Schema.Nope (33:25)' }] };
