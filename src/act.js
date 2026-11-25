@@ -138,12 +138,32 @@ const lists = new WeakMap(); // context -> its session's toasts
 async function recordToasts(context) {
   lists.set(context, []);
   await context.exposeFunction('__sfUiToast', (t) => lists.get(context).push(t));
-  await context.addInitScript(() => window.addEventListener('force:showToast', (e) => {
-    const d = (e.getParams && e.getParams()) || (e.detail && (e.detail.data || e.detail)) || {};
-    const data = d.messageTemplateData || [];
-    const fill = (t) => (t || '').replace(/\{(\d+)\}/g, (_, i) => { const v = data[i]; return v && typeof v === 'object' ? v.label : v; });
-    window.__sfUiToast({ type: d.type, title: d.title, message: d.messageTemplate ? fill(d.messageTemplate) : d.message });
-  }, true));
+  await context.addInitScript(() => {
+    const pending = new Set(); // LWC toasts no force:showToast has answered yet
+    window.addEventListener('force:showToast', (e) => {
+      const d = (e.getParams && e.getParams()) || (e.detail && (e.detail.data || e.detail)) || {};
+      for (const p of pending) if (!p.label || p.label === d.title) { pending.delete(p); break; }
+      const data = d.messageTemplateData || [];
+      const fill = (t) => (t || '').replace(/\{(\d+)\}/g, (_, i) => { const v = data[i]; return v && typeof v === 'object' ? v.label : v; });
+      window.__sfUiToast({ type: d.type, title: d.title, message: d.messageTemplate ? fill(d.messageTemplate) : d.message });
+    }, true);
+    // An LWC toast with messageData fires no force:showToast here and its event shows only the title (label), so the
+    // toast Lightning renders for it is read off the page, for up to 5 s.
+    window.addEventListener('lightning__showtoast', (e) => {
+      const shown = () => [...document.querySelectorAll('.forceToastMessage')];
+      const text = (el) => (el ? el.textContent : '').replace(/\s+/g, ' ').trim();
+      const p = { label: e.detail && e.detail.label, before: new Set(shown()), end: Date.now() + 5_000 };
+      pending.add(p);
+      const look = () => {
+        if (!pending.has(p)) return;
+        const el = shown().find((x) => !p.before.has(x) && (!p.label || text(x.querySelector('.toastTitle')) === p.label));
+        if (!el) return Date.now() < p.end ? setTimeout(look, 100) : pending.delete(p);
+        pending.delete(p);
+        window.__sfUiToast({ type: el.dataset.key, title: text(el.querySelector('.toastTitle')), message: text(el.querySelector('.toastMessage')) });
+      };
+      setTimeout(look, 100);
+    }, true);
+  });
   return lists.get(context);
 }
 const armToasts = async (page) => { lists.get(page.context())?.splice(0); };

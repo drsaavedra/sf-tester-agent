@@ -1410,3 +1410,41 @@ test('a click missed by a pattern name keeps the pattern in its evidence, no org
   assert.equal(miss?.code, 'NOT_FOUND', String(miss));
   assert.equal(JSON.parse(JSON.stringify(miss.evidence)).name, '/^Show (\\d+ )?more actions$/');
 });
+
+// An LWC ShowToastEvent with messageData never reaches the window as force:showToast: Lightning renders the toast
+// itself, so the recorder reads it off the page. A plain one still comes once, from its force:showToast.
+test('toasts records an LWC toast that carries messageData', { skip, timeout: 180_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const tab = await nav.openTab(s, 'SFUIC Panel').catch((e) => { if (e.code === 'TAB_UNAVAILABLE') return null; throw e; });
+  if (!tab) return t.skip('the org has no test/fixture-components tab SFUIC Panel');
+  const seen = async () => (await act.toasts(s.page, { timeout: 4_000 })).map(({ type, title, message }) => ({ type, title, message }));
+  await act.click(tab.main, { name: 'Toast with link' });
+  const r = await act.waitFor(tab.main, { any: [{ toast: 'link' }, { text: 'SFUIC link toast' }], timeout: 4_000 });
+  assert.equal(r.matched.index, 0, JSON.stringify(r));
+  assert.deepEqual(await seen(), [{ type: 'success', title: 'SFUIC link toast', message: 'Open SFUIC Shapes' }]);
+  await act.click(tab.main, { name: 'Toast success' });
+  await new Promise((done) => setTimeout(done, 2_000)); // a second copy, read off the page, would come after the event
+  assert.deepEqual(await seen(), [{ type: 'success', title: 'SFUIC success toast', message: 'A success toast' }]);
+});
+
+// No org: the same two shapes on a local page, the toast markup as Lightning renders it.
+test('toasts reads a rendered toast that no force:showToast announced, once, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.goto(`data:text/html,${encodeURIComponent('<main><c-panel></c-panel></main>')}`);
+  const raise = (title, event) => page.evaluate(([x, e]) => {
+    document.querySelector('c-panel').dispatchEvent(new CustomEvent('lightning__showtoast', { detail: { label: x }, bubbles: true, composed: true }));
+    if (e) window.dispatchEvent(new CustomEvent('force:showToast', { detail: { data: { type: 'info', title: x, message: 'From the event' } } }));
+    setTimeout(() => document.body.insertAdjacentHTML('beforeend', `<div data-key="success" class="forceToastMessage"><div class="toastTitle">${x}</div>
+      <span class="toastMessage">Open <a href="#"><div>SFUIC  Shapes</div></a></span></div>`), 300);
+  }, [title, event]);
+  await act.armToasts(page);
+  await raise('Linked', false);
+  assert.deepEqual((await act.toasts(page, { timeout: 2_000 })).map(({ type, title, message }) => ({ type, title, message })),
+    [{ type: 'success', title: 'Linked', message: 'Open SFUIC Shapes' }]);
+  await act.armToasts(page);
+  await raise('Plain', true);
+  await new Promise((done) => setTimeout(done, 1_000));
+  assert.deepEqual((await act.toasts(page)).map(({ type, title, message }) => ({ type, title, message })),
+    [{ type: 'info', title: 'Plain', message: 'From the event' }]);
+});
