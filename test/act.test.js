@@ -274,7 +274,10 @@ test('modal.find, act.click and modal.read reach a drawn dialog under aria-hidde
   await page.setContent(`<div class="viewport" aria-hidden="true"><main>Record page</main>
     <div role="dialog" aria-modal="true" aria-label="Shell" class="slds-modal"></div>
     <div role="dialog" aria-modal="true" aria-label="New SFUIC Aura" class="slds-modal"><h2>New SFUIC Aura</h2>
-      <div class="slds-modal__content"><input aria-label="Aura Name"></div><button onclick="this.textContent='Cancelled'">Cancel</button></div></div>
+      <div class="slds-modal__content"><input aria-label="Aura Name">
+        <label for="code"><abbr title="required" aria-hidden="true">*</abbr>Aura Code</label><input id="code" required>
+        <div role="group" aria-labelledby="story"><span id="story"><abbr title="required" aria-hidden="true">*</abbr>Aura Story</span><div role="toolbar"><button>Bold</button></div><div class="read" style="min-height:40px">Tell it</div></div>
+      </div><button onclick="this.textContent='Cancelled'">Cancel</button></div></div>
     <div role="dialog" aria-label="Hidden copy" style="display:none"><input></div>`);
   const m = await modal.find({ page }, { timeout: 2_000, body: true });
   assert.equal(await m.getAttribute('aria-label'), 'New SFUIC Aura');
@@ -282,6 +285,12 @@ test('modal.find, act.click and modal.read reach a drawn dialog under aria-hidde
   const r = await modal.read(m, (l) => l.ariaSnapshot());
   assert.equal(r.hiddenBy, '<div class="viewport">');
   assert.match(r.text, /New SFUIC Aura/);
+  // A required box's aria-hidden "*" leads its name under includeHidden (R4): fill by the label still finds it.
+  await act.fill(m, { name: 'Aura Code', value: 'A-1', timeout: 2_000 });
+  assert.equal(await page.locator('#code').inputValue(), 'A-1');
+  await page.evaluate(() => document.querySelector('#story ~ .read').addEventListener('click', (e) => { e.target.outerHTML = '<div role="textbox" aria-label="Aura Story" contenteditable="true" style="min-height:40px" oninput="window.typed = this.textContent"></div>'; }));
+  await act.fill(m, { name: 'Aura Story', value: 'Once', timeout: 2_000 });
+  assert.equal(await page.evaluate(() => window.typed), 'Once');
   await act.click(m, { name: 'Cancel', timeout: 2_000 });
   assert.equal(await m.getByText('Cancelled').count(), 1);
   await m.evaluate((d) => { d.innerHTML += '<button title="Cancel and close" onclick="this.closest(\'[role=dialog]\').remove()">Cancel and close</button>'; });
@@ -313,6 +322,7 @@ test('modal.find reads and clicks in the Edit dialog an Aura template record pag
     assert.equal(m.hiddenBy, '<div class="viewport">', 'control: the page hides this dialog from assistive tech');
     assert.equal(await s.page.getByRole('dialog').count(), 0, 'control: no dialog in the accessibility tree');
     assert.match((await modal.read(m, (l) => l.ariaSnapshot())).text, new RegExp(`Edit ${name}`));
+    await act.fill(m, { name: 'Aura Name', value: `${name} edited` }); // required, so named "*Aura Name" there (R4); Cancel drops it
     const handle = await m.elementHandle();
     await act.click(m, { name: 'Cancel' });
     await handle.waitForElementState('hidden', { timeout: 10_000 });

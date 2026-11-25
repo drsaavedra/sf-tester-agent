@@ -87,15 +87,22 @@ async function rowsOf(scope, row, byRole = (at, r) => at.getByRole(r)) {
   return byRole(scope, 'row').filter({ hasText: row }).or(scope.locator(`[data-sf-ui-row="${m}"]`));
 }
 
+// getByRole that, with includeHidden, also reaches an aria-hidden area, whose hidden text joins a name: a required box
+// is "*Aura Name" there (R4), so a leading "*" is forgiven. ponytail: a header's hidden sort label is not.
+const rolesOf = (includeHidden) => (at, r, opts) => {
+  if (!includeHidden) return at.getByRole(r, opts);
+  const hidden = (o) => at.getByRole(r, { ...o, includeHidden }).locator('visible=true');
+  const all = at.getByRole(r, opts).or(hidden(opts));
+  return typeof opts?.name === 'string' && opts.name ? all.or(hidden({ ...opts, name: `*${opts.name}` })) : all;
+};
+
 // The one element with that role and name (or, for an element with no role, that exact text), in the row and the
 // cell under the column header when named. includeHidden also reaches what an open modal hides, if it renders; it is
 // the default in a dialog modal.find marked hiddenBy (an Aura template page hides its own dialogs, F-fixtures-26).
 async function resolve(scope, { name, role, text, row, column, nth, timeout, includeHidden = Boolean(scope.hiddenBy) }) {
   // In a row, a role alone is that row's one such element: a list view names its checkbox by position ("Select Item 2").
   if (name == null && text == null && !row) throw new SfUiError('BAD_ARGS', 'give a name ("" for an unnamed icon button), a text, or a row for a role alone');
-  // includeHidden adds aria-hidden text to a name (a header's sort label, a required box's "*"), so the name the
-  // page shows matches too.
-  const byRole = (at, r, opts) => (includeHidden ? at.getByRole(r, opts).or(at.getByRole(r, { ...opts, includeHidden }).locator('visible=true')) : at.getByRole(r, opts));
+  const byRole = rolesOf(includeHidden);
   let within = scope;
   if (row) {
     let rows;
@@ -330,8 +337,9 @@ async function press(page, { key }) {
 
 // Clicks the area under a rich text editor's toolbar, which mounts its textbox; false when no one such group is named.
 async function openRich(scope, name, { timeout } = {}) {
-  const group = scope.getByRole('group', { name, exact: true });
-  const toolbar = group.getByRole('toolbar').first();
+  const byRole = rolesOf(Boolean(scope.hiddenBy)); // as resolve finds the textbox after
+  const group = byRole(scope, 'group', { name, exact: true });
+  const toolbar = byRole(group, 'toolbar').first();
   if ((await group.count()) !== 1 || !(await toolbar.count())) return false;
   await group.scrollIntoViewIfNeeded({ timeout });
   const [g, bar] = [await group.boundingBox(), await toolbar.boundingBox()];
