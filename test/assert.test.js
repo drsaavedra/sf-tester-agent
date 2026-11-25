@@ -373,6 +373,28 @@ test('assert, no org: a part of a standard or custom Address is matched inside t
   }
 });
 
+// R1, no org: an empty part (BillingState null) has no text in the Address to find, so via both it passes on the stored value.
+test('assert, no org: an empty part of an Address expected null passes via both when the stored part is empty', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'Account',
+    fields: ['City', 'State'].map((p) => ({ apiName: `Billing${p}`, label: `Billing ${p}`, itemLabel: 'Billing Address', dataType: 'String' })) }));
+  const part = (apiName) => ({ apiName, label: apiName, dataType: 'String', compoundFieldName: 'BillingAddress' });
+  const info = { BillingAddress: { apiName: 'BillingAddress', label: 'Billing Address', dataType: 'Address' }, BillingCity: part('BillingCity'), BillingState: part('BillingState') };
+  const stored = { BillingCity: 'Oakland', BillingState: null };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => (p.startsWith('/ui-api/object-info/') ? { fields: info }
+    : { fields: { [p.split('.').pop()]: { value: stored[p.split('.').pop()], displayValue: null } } }));
+  await page.setContent(`<div role="tablist"><button role="tab">Details</button></div><${A.layoutItem} field-label="Billing Address"><div>Billing Address</div>`
+    + `<a href="#"><div>2 Break St</div><div>Oakland</div><div>USA</div></a><button>Edit Billing Address</button></${A.layoutItem}>`);
+  await lib.assert.fieldValue({ page }, '001x', 'BillingState', null, { via: 'both' });
+  await lib.assert.fieldValue({ page }, '001x', 'BillingCity', 'Oakland', { via: 'both' });
+  // Control: a value the stored part does not hold is still red.
+  await assert.rejects(lib.assert.fieldValue({ page }, '001x', 'BillingState', 'CA', { via: 'both' }), { code: 'FIELD_VALUE_MISMATCH' });
+  stored.BillingState = 'CA';
+  await assert.rejects(lib.assert.fieldValue({ page }, '001x', 'BillingState', null, { via: 'both' }), { code: 'FIELD_VALUE_MISMATCH' });
+});
+
 // No org: a lookup only a Dynamic Forms page places is not in the View model; object-info says it is a lookup.
 test('assert, no org: an off-layout lookup expected by its 15-char id matches the stored 18', async (t) => {
   const ID = 'a0BC1000004XyZ9MAK';
