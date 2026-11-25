@@ -289,6 +289,20 @@ test('an sf_api answer keeps its own at and its shape', async (t) => {
   assert.deepEqual(got, { '/own-at': { result: { at: 'x', n: 1 } }, '/string': { result: 'abc' }, '/number': { result: 0 }, '/list': { result: [1, 2] }, '/null': { result: null }, '/empty': { result: {} } });
 });
 
+// No org: the three calls a run spends most of its tool time in say where the time went.
+test('sf_start, sf_login_as and sf_run_route return timings, in milliseconds per stage', async (t) => {
+  const call = await serve(t, {}, ['-r', path.join(__dirname, 'stub-server.js')]);
+  const whole = (ms) => Object.values(ms).every((n) => Number.isInteger(n) && n >= 0);
+  const started = await call('sf_start', { org: 'stub' }, 10_000);
+  assert.deepEqual([Object.keys(started.body.timings), whole(started.body.timings)], [['close', 'auth', 'browser', 'app', 'policy'], true], JSON.stringify(started.body));
+  const login = await call('sf_login_as', { user: '005other' }, 10_000);
+  assert.deepEqual([Object.keys(login.body.timings), whole(login.body.timings)], [['user', 'login', 'app'], true], JSON.stringify(login.body));
+  const steps = [{ tool: 'sf_open_tab', args: { tab: 'SfUi_Vf' } }, { tool: 'sf_api', args: { path: '/list' } }];
+  const { body } = await call('sf_run_route', { steps }, 10_000);
+  const { stepMs, ...stages } = body.timings;
+  assert.deepEqual([Object.keys(stages), whole(stages), stepMs.length, whole(stepMs)], [['check', 'steps', 'end'], true, 2, true], JSON.stringify(body));
+});
+
 // No org: a route says what it ended on, and what changed when it is given what it was saved against.
 test('sf_run_route returns its validity, and stale on a green or a red when the saved one differs', async (t) => {
   const call = await serve(t, {}, ['-r', path.join(__dirname, 'stub-server.js')]);

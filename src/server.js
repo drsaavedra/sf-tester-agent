@@ -62,6 +62,12 @@ const handlers = new Map();
 
 // A result's image rides beside its JSON as MCP image content, so nothing is written to disk for it.
 const IMAGE = Symbol('image');
+// A call's milliseconds per stage, for its timings: mark(stage) closes the stage that ran since the last mark.
+const stopwatch = () => {
+  const ms = {};
+  let at = Date.now();
+  return { ms, mark: (stage) => { const now = Date.now(); ms[stage] = now - at; at = now; } };
+};
 // A tool's return as its result shows it, so a route's {{stepN.path}} reads the same keys.
 function wrap(out) {
   if (out === undefined) return { ok: true };
@@ -401,6 +407,7 @@ tool('sf_start', 'Start a browser session logged into Lightning as the owner of 
   },
   async ({ org, session = 'default', app, headed, budget, saveRoutes }, { signal }) => {
     const deadline = Date.now() + lib.session.START_MS; // one deadline for the launch, the login and the app open
+    const sw = stopwatch();
     if (session !== 'new' && !known(session)) throw noSession(session);
     const id = session === 'new' ? `s${(minted += 1)}` : session;
     // The last start that ran on this id, kept on its ledger, so a restart that leaves headed out keeps the window.
@@ -423,23 +430,28 @@ tool('sf_start', 'Start a browser session logged into Lightning as the owner of 
     }
     const entry = { id, s: null, form: null, rec: null, used: Date.now() };
     sessions.set(id, entry); // held while the browser starts, so parallel starts count against the cap
+    sw.mark('close'); // ending this id's last session and any idle ones
     try {
       const creds = await lib.session.fromAlias(org);
+      sw.mark('auth');
       state.token = creds.accessToken; // the call's own entry: a first start has no session to redact by yet
       entry.s = await lib.session.start(creds, { headless: !show, deadline });
+      sw.mark('browser'); // the launch, the org reads and the first Lightning page
       // Too little left to open an app is the start's deadline, not an app that failed to open in 0.001 s.
       if (app && lib.session.left(deadline) < MIN_APP_MS) throw new lib.SfUiError('START_TIMEOUT', `the start deadline left under ${MIN_APP_MS / 1000} s to open ${app}`, { deadlineMs: lib.session.START_MS });
       const inApp = app ? { app: await lib.session.openApp(entry.s, app, { timeout: lib.session.left(deadline, 60_000) }) } : await appNow(entry.s);
+      sw.mark('app');
       // The same deadline: a hung org answer is START_TIMEOUT, as it is inside start().
       const policy = await lib.session.loginAsEnabled(entry.s, { signal: AbortSignal.timeout(lib.session.left(deadline)) })
         .catch((e) => { throw e.name === 'TimeoutError' ? lib.session.startTimeout(e, lib.session.START_MS) : e; });
+      sw.mark('policy');
       // Another sf_start or sf_end on this id, or the idle close, ran during the launch: this browser has no owner.
       if (sessions.get(id) !== entry) throw new lib.SfUiError('SESSION_REPLACED', `another sf_start or sf_end on ${id} ran while this one started, so this browser was closed`, { session: id });
       // The caller gave up (a client timeout, an interrupt): nobody learns this id, so free it now.
       if (signal?.aborted) throw new lib.SfUiError('CANCELLED', `the caller cancelled sf_start, so ${id} was closed`, { session: id });
       const routes = routesAsked ?? !entry.s.production;
       Object.assign(checks.ledger(ledgers, id), { headed: show, budget: limit, routesAsked, saveRoutes: routes, org, steps: [], app, noApp: false }); // a started session has a ledger, so a check never has to make one; app as asked, for the route's entry
-      return { session: id, headed: show, ...(entry.s.production && { production: true }), saveRoutes: routes, userId: entry.s.tokenUserId, ...inApp, apiVersion: entry.s.apiVersion, loginAsEnabled: policy.loginAs, serverSkewMs: entry.s.serverSkewMs };
+      return { session: id, headed: show, ...(entry.s.production && { production: true }), saveRoutes: routes, userId: entry.s.tokenUserId, ...inApp, apiVersion: entry.s.apiVersion, loginAsEnabled: policy.loginAs, serverSkewMs: entry.s.serverSkewMs, timings: sw.ms };
     } catch (e) {
       // A failed start frees its id and closes its browser; the id may already hold another start's entry.
       if (sessions.get(id) === entry) sessions.delete(id);
@@ -453,7 +465,11 @@ tool('sf_login_as', 'Become another user for this whole session (needs Login As 
   { user: z.string().describe('User Id (005...), username or sf CLI alias'), app: z.string().min(1).optional().describe('the Lightning app to open, by label or developer name; leave out to keep the session\'s') },
   async ({ user, app }) => {
     const s = need();
-    await lib.session.loginAs(s, await lib.discover.userId(s, user));
+    const sw = stopwatch();
+    const id = await lib.discover.userId(s, user);
+    sw.mark('user');
+    await lib.session.loginAs(s, id);
+    sw.mark('login');
     const led = ledgers.get(state.id);
     if (led) led.steps = []; // what ran before the login ran as another user
     state.form = null;
@@ -461,7 +477,8 @@ tool('sf_login_as', 'Become another user for this whole session (needs Login As 
     const want = app || s.app?.developerName;
     const userId = await lib.session.whoAmI(s);
     // The Login As has happened by now, so a failed app says the session runs as the new user.
-    if (!want) return { userId, ...(await appNow(s)) };
+    const timed = (out) => { sw.mark('app'); return { ...out, timings: sw.ms }; };
+    if (!want) return timed({ userId, ...(await appNow(s)) });
     const inApp = await lib.session.openApp(s, want).catch((e) => {
       if (led) led.noApp = true; // no app is known for this user: a route saved now names none, until sf_start or an app that opens
       if (!(e instanceof lib.SfUiError)) throw e;
@@ -469,7 +486,7 @@ tool('sf_login_as', 'Become another user for this whole session (needs Login As 
     });
     if (led) Object.assign(led, { noApp: false }, app && { app }); // kept once it opened; a kept app keeps the label it was given
     const { warning, ...kept } = inApp; // the caller never typed a kept app's value, so it gets no warning
-    return { userId, app: app ? inApp : kept, ...(!app && { appKept: true }) };
+    return timed({ userId, app: app ? inApp : kept, ...(!app && { appKept: true }) });
   });
 
 tool('sf_whoami', 'The user Id the page runs as, app (the Lightning app the page is in) and apps (the Lightning apps this user can open: label, developerName, console); app null and appReason when they cannot be read.', {}, async () => {
@@ -848,8 +865,10 @@ tool('sf_run_route', 'Run a known route in one call: steps, each another sf-test
     const plan = planRoute(steps);
     // A baseline only reports, so one a hand edit broke counts as none rather than refusing the route.
     const saved = validityShape.safeParse(validity).data;
+    const sw = stopwatch();
     // A saved route is checked before its first step, by API alone; an unreadable validity or an org error leaves it to run as unknown.
     const check = validity === undefined || onStale === 'run' ? undefined : await lib.validity.guarded(need(), validity);
+    sw.mark('check');
     // In a positive scenario, the stale route's id goes on its plan, so its passing run saves a Draft that names it.
     // The first route named stands, planned or refused: a second refusal in the scenario does not take its place.
     // A negative scenario never saves a Draft, so it takes no remap.
@@ -883,8 +902,10 @@ tool('sf_run_route', 'Run a known route in one call: steps, each another sf-test
     const staleNow = async () => { const { stale, unread } = saved ? await ended(opened) : {}; return { ...(stale && { stale }), ...(unread && { unread }) }; };
     const done = [];
     const results = [];
+    const stepMs = []; // one entry per step, in step order
     let last;
     for (const [i, { name, run, args: template }] of plan.entries()) {
+      const began = Date.now();
       // Each {{stepN.path}} becomes the text of that value, as combinations.fill does for {{name}}.
       let gap;
       const args = JSON.parse(JSON.stringify(template).replace(STEP_REF, (ref, n, keys) => {
@@ -908,8 +929,12 @@ tool('sf_run_route', 'Run a known route in one call: steps, each another sf-test
       done.push({ tool: name, ...(last?.[lib.AT] && { at: last[lib.AT] }) });
       last = wrap(last);
       results.push(last);
+      stepMs.push(Date.now() - began);
     }
-    return { steps: done, last, ...(check && { check }), ...(await ended(opened || !saved)) };
+    sw.mark('steps');
+    const end = await ended(opened || !saved);
+    sw.mark('end'); // the read of the app and page the route ended on
+    return { steps: done, last, ...(check && { check }), ...end, timings: { ...sw.ms, stepMs } };
   }));
 
 // planRoute is sf_run_route's own check, so a saved route is one it would run.
