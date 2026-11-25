@@ -10,9 +10,10 @@ const { instantOf } = require('./iso');
 
 // View mode shows "<label>\n<value>\nEdit <label>" inside the layout item that carries field-label, or on a
 // Dynamic Forms page inside the field element App Builder names sfdc:RecordField.<object>.<field>.
-async function uiValue(s, recordId, label, objectApiName, apiName) {
+// The page can label an item otherwise than object-info does ("Created By" for "Created By ID"): both are looked for.
+async function uiValue(s, recordId, label, objectApiName, apiName, itemLabel = label) {
   await nav.openRecord(s, recordId);
-  const any = s.page.locator(`${A.layoutItem}[field-label="${label}"], [data-target-selection-name="sfdc:RecordField.${objectApiName}.${apiName}"]`);
+  const any = s.page.locator(`${A.layoutItem}[field-label="${label}"], ${A.layoutItem}[field-label="${itemLabel}"], [data-target-selection-name="sfdc:RecordField.${objectApiName}.${apiName}"]`);
   const item = any.locator('visible=true').first();
   // The panel can still be rendering after the highlights: a short wait, then Details only when the page has one.
   // A field on neither is FIELD_NOT_SHOWN with the page's tabs. ponytail: a custom tab other than Details is not opened.
@@ -31,13 +32,16 @@ async function uiValue(s, recordId, label, objectApiName, apiName) {
   // The first load after the user collapses a section shows it open, then closes it (~200 ms on sfui-s4-cascade).
   // ponytail: a fixed 1 s settle on every read; a page that closes the section later than that still passes.
   if (await item.waitFor({ state: 'hidden', timeout: 1_000 }).then(() => true, () => false)) throw await notShown();
+  // A lookup's value is its link alone: the item can also hold a Change Owner button or a Created By date, and the
+  // link carries a visually hidden "Preview" control that innerText still reads.
+  const link = item.locator(`${A.lookup}, ${A.hoverableLink}`).first();
+  if (await link.count()) return (await link.innerText()).split('\n').map((l) => l.trim()).filter((l) => l && l !== 'Preview').join('\n');
   const lines = (await item.innerText()).split('\n').map((l) => l.trim());
-  // A lookup's link carries a visually hidden "Preview" control that innerText still reads.
-  const lookup = (await item.locator(`${A.lookup}, ${A.hoverableLink}`).count()) > 0;
   // A field with help text shows a help button whose assistive text ("Help <label>") innerText also reads.
   const help = (await item.locator(A.helptext).allInnerTexts()).map((t) => t.trim());
+  const labels = [label, itemLabel, `Edit ${label}`, `Edit ${itemLabel}`];
   // A blank line inside a Text Area's value is kept; blank lines around it are not.
-  return lines.filter((l) => l !== label && l !== `Edit ${label}` && !(lookup && l === 'Preview') && !(l && help.includes(l)))
+  return lines.filter((l) => !labels.includes(l) && !(l && help.includes(l)))
     .join('\n').replace(/^\n+|\n+$/g, '');
 }
 
@@ -75,7 +79,8 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   const temporal = !!field && ['Date', 'DateTime', 'Time'].includes(field.dataType);
   let stored = null;
   if (via !== 'ui' || temporal) {
-    const optional = rel ? `${model.objectApiName}.${rel}.Id` : dayField ? `Event.IsAllDayEvent,Event.${dayField}` : '';
+    // A polymorphic lookup (a custom object's Owner) has a display value only when its Name is asked for.
+    const optional = rel ? `${model.objectApiName}.${rel}.Id,${model.objectApiName}.${rel}.Name` : dayField ? `Event.IsAllDayEvent,Event.${dayField}` : '';
     const { fields } = await api.call(s, `/ui-api/records/${recordId}?fields=${model.objectApiName}.${apiName}${optional ? `&optionalFields=${optional}` : ''}`);
     stored = { value: fields[apiName].value, display: rel ? (fields[rel] ? fields[rel].displayValue : null) : fields[apiName].displayValue };
     if (via !== 'ui') Object.assign(result, { api: stored.value, apiDisplay: stored.display });
@@ -83,7 +88,7 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   }
   if (via !== 'api') {
     if (!field) throw new SfUiError('FIELD_NOT_ON_FORM', `${apiName} is not a field of ${model.objectApiName} this user can see`, { apiName });
-    result.ui = await uiValue(s, recordId, field.label, model.objectApiName, apiName);
+    result.ui = await uiValue(s, recordId, field.label, model.objectApiName, apiName, field.itemLabel);
   }
   const want = expected === null ? '' : String(expected).replace(/\r\n/g, '\n');
   // A field off the View model (Dynamic Forms) has no known type, so a 15-char id may name its stored 18-char one.

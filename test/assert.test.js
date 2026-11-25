@@ -251,6 +251,37 @@ test('assert, no org: a field with help text is read without its help button, vi
   }
 });
 
+// F-cascade-7, no org: an Owner item also holds the Change Owner button, a Created By item the date and the page label
+// "Created By" (object-info: "Created By ID"); a polymorphic Owner has a display value only when its Name is asked for.
+test('assert, no org: Owner and Created By are read as the user\'s name, by name and by id, via ui and both', { timeout: 60_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const fields = [{ apiName: 'OwnerId', label: 'Owner', itemLabel: 'Owner', dataType: 'Reference' },
+    { apiName: 'CreatedById', label: 'Created By ID', itemLabel: 'Created By', dataType: 'Reference' },
+    { apiName: 'Code__c', label: 'Code', itemLabel: 'Site Code', dataType: 'String' }];
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'SfUiC_Field__c', fields }));
+  const ID = '005HE000005QFbmYAG';
+  const info = { fields: { OwnerId: { relationshipName: 'Owner' }, CreatedById: { relationshipName: 'CreatedBy' } } };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => {
+    if (p.startsWith('/ui-api/object-info/')) return info;
+    const name = (rel) => (p.includes(`.${rel}.Name`) ? 'User User' : null); // Owner, polymorphic, needs its Name asked
+    return { fields: { OwnerId: { value: ID }, CreatedById: { value: ID }, Owner: { displayValue: name('Owner') }, CreatedBy: { displayValue: 'User User' } } };
+  });
+  const link = '<force-lookup><records-hoverable-link><div><a>User User</a></div><div>Preview</div></records-hoverable-link></force-lookup>';
+  await page.setContent(`<${A.layoutItem} field-label="Owner"><div>Owner</div>${link}<div><button>Change Owner</button></div></${A.layoutItem}>`
+    + `<${A.layoutItem} field-label="Created By"><div>Created By</div>${link}<div>, 11/25/2026, 8:07 PM</div></${A.layoutItem}>`
+    + `<${A.layoutItem} field-label="Site Code"><div>Site Code</div><div>C-1</div><div>Edit Site Code</div></${A.layoutItem}>`);
+  for (const f of ['OwnerId', 'CreatedById']) {
+    assert.equal((await lib.assert.fieldValue({ page }, 'a0x', f, 'User User', { via: 'ui' })).ui, 'User User');
+    for (const want of ['User User', ID, ID.slice(0, 15)]) await lib.assert.fieldValue({ page }, 'a0x', f, want, { via: 'both' });
+    // Control: another user's name is still red.
+    for (const via of ['ui', 'both']) await assert.rejects(lib.assert.fieldValue({ page }, 'a0x', f, 'Other User', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+  }
+  // A field that is no lookup, found by its page label, is read without that label and its pencil.
+  assert.equal((await lib.assert.fieldValue({ page }, 'a0x', 'Code__c', 'C-1', { via: 'ui' })).ui, 'C-1');
+});
+
 test('assert, no org: a field off the layout is read from the Dynamic Forms page by its object-info label', { timeout: 30_000 }, async (t) => {
   const page = await localPage(t);
   page.setDefaultTimeout(2_000);
@@ -280,7 +311,7 @@ test('assert, no org: an off-layout lookup expected by its 15-char id matches th
   await assert.rejects(lib.assert.fieldValue({}, 'a0x', 'Code__c', ID.slice(0, 15), { via: 'api' }), { code: 'FIELD_VALUE_MISMATCH' });
 });
 
-test('assert', { skip, timeout: 300_000 }, async (t) => {
+test('assert', { skip, timeout: 480_000 }, async (t) => {
   const s = await lib.session.start(await auth(env.org));
   t.after(() => lib.session.end(s));
   const record = await account(s, t, { Rating: 'Warm' });
@@ -461,6 +492,25 @@ test('assert', { skip, timeout: 300_000 }, async (t) => {
       await lib.assert.fieldValue(s, id, 'Ref__c', ref, { via });
       // Control: a wrong value is still red.
       await assert.rejects(lib.assert.fieldValue(s, id, 'Tone__c', 'Bright', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+    }
+  });
+
+  // F-cascade-7: the Owner item also holds Change Owner, the Created By item a date; a custom object's Owner is
+  // polymorphic and had no API display value. The Account is the standard-object shape of the same finding.
+  await t.test('assert.fieldValue reads Owner and Created By as the user\'s name, by name and by id, via ui and both', async (st) => {
+    const custom = await rec(s, t, 'SfUiC_Field__c', { Name: `BREAK fix owner ${stamp()}` })
+      .catch((e) => { if (e.evidence?.status === 404) return null; throw e; });
+    if (!custom) return st.skip('the org has no test/fixture-components object SfUiC_Field__c');
+    for (const [obj, id, fields] of [['SfUiC_Field__c', custom, ['OwnerId', 'CreatedById']], ['Account', record, ['OwnerId']]]) {
+      const q = `SELECT OwnerId, Owner.Name, CreatedById, CreatedBy.Name FROM ${obj} WHERE Id = '${id}'`;
+      const [row] = (await lib.api.call(s, `/query?q=${encodeURIComponent(q)}`, { as: 'admin' })).records;
+      for (const f of fields) {
+        const [uid, name] = f === 'OwnerId' ? [row.OwnerId, row.Owner.Name] : [row.CreatedById, row.CreatedBy.Name];
+        assert.equal((await lib.assert.fieldValue(s, id, f, name, { via: 'ui' })).ui, name, `${obj}.${f}`);
+        for (const want of [name, uid]) await lib.assert.fieldValue(s, id, f, want, { via: 'both' });
+        // Control: another name is still red on the page.
+        await assert.rejects(lib.assert.fieldValue(s, id, f, 'Not That User', { via: 'ui' }), { code: 'FIELD_VALUE_MISMATCH' });
+      }
     }
   });
 });
