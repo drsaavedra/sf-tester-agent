@@ -11,7 +11,7 @@ const { instantOf } = require('./iso');
 // View mode shows "<label>\n<value>\nEdit <label>" inside the layout item that carries field-label, or on a
 // Dynamic Forms page inside the field element App Builder names sfdc:RecordField.<object>.<field>.
 // The page can label an item otherwise than object-info does ("Created By" for "Created By ID"): both are looked for.
-async function uiValue(s, recordId, label, objectApiName, apiName, itemLabel = label) {
+async function uiValue(s, recordId, label, objectApiName, apiName, itemLabel = label, lookup = true) {
   await nav.openRecord(s, recordId);
   const any = s.page.locator(`${A.layoutItem}[field-label="${label}"], ${A.layoutItem}[field-label="${itemLabel}"], [data-target-selection-name="sfdc:RecordField.${objectApiName}.${apiName}"]`);
   const item = any.locator('visible=true').first();
@@ -35,8 +35,11 @@ async function uiValue(s, recordId, label, objectApiName, apiName, itemLabel = l
   // A lookup's value is its link alone: the item can also hold a Change Owner button or a Created By date, and the
   // link carries a visually hidden "Preview" control that innerText still reads.
   const link = item.locator(`${A.lookup}, ${A.hoverableLink}`).first();
-  if (await link.count()) return (await link.innerText()).split('\n').map((l) => l.trim()).filter((l) => l && l !== 'Preview').join('\n');
-  const lines = (await item.innerText()).split('\n').map((l) => l.trim());
+  const linked = (await link.count()) ? (await link.innerText()).split('\n').map((l) => l.trim()).filter((l) => l && l !== 'Preview') : [];
+  if (linked.length && lookup) return linked.join('\n');
+  // CreatedDate shares the "Created By" item with the user's link: its value is the text after it (", 11/26/2026, 12:32 AM").
+  let lines = (await item.innerText()).split('\n').map((l) => l.trim());
+  if (linked.length) lines = lines.filter((l) => l !== 'Preview' && !linked.includes(l)).map((l) => l.replace(/^,\s*/, ''));
   // A field with help text shows a help button whose assistive text ("Help <label>") innerText also reads.
   const help = (await item.locator(A.helptext).allInnerTexts()).map((t) => t.trim());
   const labels = [label, itemLabel, `Edit ${label}`, `Edit ${itemLabel}`];
@@ -94,7 +97,8 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   }
   if (via !== 'api') {
     if (!field) throw new SfUiError('FIELD_NOT_ON_FORM', `${apiName} is not a field of ${model.objectApiName} this user can see`, { apiName });
-    result.ui = await uiValue(s, recordId, field.label, model.objectApiName, whole ? whole.apiName : apiName, field.itemLabel || (whole && whole.label));
+    result.ui = await uiValue(s, recordId, field.label, model.objectApiName, whole ? whole.apiName : apiName, field.itemLabel || (whole && whole.label),
+      !field.dataType || field.dataType === 'Reference');
   }
   const typed = expected === null ? '' : String(expected).replace(/\r\n/g, '\n');
   // A checkbox is true or false in the API and "True" or "False" on the page: either spelling names the value.

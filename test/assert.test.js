@@ -325,6 +325,24 @@ test('assert, no org: Owner and Created By are read as the user\'s name, by name
   assert.equal((await lib.assert.fieldValue({ page }, 'a0x', 'Code__c', 'C-1', { via: 'ui' })).ui, 'C-1');
 });
 
+// R2, no org: CreatedDate shares the "Created By" item with the user's link; its page value is the date after the link.
+test('assert, no org: CreatedDate in the Created By item is read as the date, not the user\'s name, via ui and both', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const fields = [{ apiName: 'CreatedDate', label: 'Created Date', itemLabel: 'Created By', dataType: 'DateTime' }];
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'Account', fields }));
+  const ISO = '2026-11-25T12:07:00.000Z';
+  t.mock.method(require('../src/api'), 'call', async () => ({ fields: { CreatedDate: { value: ISO, displayValue: '11/25/2026, 8:07 PM' } } }));
+  const link = '<force-lookup><records-hoverable-link><div><a>User User</a></div><div>Preview</div></records-hoverable-link></force-lookup>';
+  await page.setContent(`<${A.layoutItem} field-label="Created By"><div>Created By</div>${link}<span>, </span><div>11/25/2026, 8:07 PM</div></${A.layoutItem}>`);
+  for (const via of ['ui', 'both']) {
+    assert.equal((await lib.assert.fieldValue({ page }, 'a0x', 'CreatedDate', ISO, { via })).ui, '11/25/2026, 8:07 PM');
+    // Control: another instant is still red.
+    await assert.rejects(lib.assert.fieldValue({ page }, 'a0x', 'CreatedDate', '2026-11-25T13:07:00.000Z', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+  }
+});
+
 test('assert, no org: a field off the layout is read from the Dynamic Forms page by its object-info label', { timeout: 30_000 }, async (t) => {
   const page = await localPage(t);
   page.setDefaultTimeout(2_000);
@@ -621,6 +639,19 @@ test('assert', { skip, timeout: 480_000 }, async (t) => {
         // Control: another name is still red on the page.
         await assert.rejects(lib.assert.fieldValue(s, id, f, 'Not That User', { via: 'ui' }), { code: 'FIELD_VALUE_MISMATCH' });
       }
+    }
+  });
+
+  // R2: CreatedDate and LastModifiedDate share their item with the user's link; the page side is the date.
+  await t.test('assert.fieldValue reads CreatedDate and LastModifiedDate as the date, via ui and both', async () => {
+    const { fields } = await lib.api.call(s, `/ui-api/records/${record}?fields=Account.CreatedDate,Account.LastModifiedDate`);
+    for (const f of ['CreatedDate', 'LastModifiedDate']) {
+      for (const via of ['ui', 'both']) {
+        assert.equal((await lib.assert.fieldValue(s, record, f, fields[f].value, { via })).ui, fields[f].displayValue, `${f} via ${via}`);
+      }
+      // Control: a day later is still red on the page.
+      const later = new Date(Date.parse(fields[f].value) + 86_400_000).toISOString();
+      await assert.rejects(lib.assert.fieldValue(s, record, f, later, { via: 'ui' }), { code: 'FIELD_VALUE_MISMATCH' });
     }
   });
 
