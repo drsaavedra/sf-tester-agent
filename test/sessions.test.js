@@ -303,6 +303,18 @@ test('sf_start, sf_login_as and sf_run_route return timings, in milliseconds per
   assert.deepEqual([Object.keys(stages), whole(stages), stepMs.length, whole(stepMs)], [['check', 'steps', 'end'], true, 2, true], JSON.stringify(body));
 });
 
+// No org: a call that fails is the one whose time is asked about, so its evidence carries the stages it reached.
+test('a failed sf_start, sf_login_as or sf_run_route carries timings in its evidence, with the stage that threw as failed', async (t) => {
+  const call = await serve(t, {}, ['-r', path.join(__dirname, 'stub-server.js')]);
+  const slow = await call('sf_start', { org: 'slowlogin' }, 10_000);
+  assert.deepEqual([slow.body.code, Object.keys(slow.body.evidence.timings ?? {})], ['START_TIMEOUT', ['close', 'auth', 'browser', 'app', 'failed']], JSON.stringify(slow.body));
+  await call('sf_start', { org: 'stub' }, 10_000);
+  const route = await call('sf_run_route', { steps: [{ tool: 'sf_api', args: { path: '/list' } }, { tool: 'sf_api', args: { path: '/fails' } }] }, 10_000);
+  assert.deepEqual([route.body.code, Object.keys(route.body.evidence.timings ?? {}), route.body.evidence.timings?.stepMs.length], ['ROUTE_STEP_FAILED', ['check', 'steps', 'stepMs'], 2], JSON.stringify(route.body));
+  const login = await call('sf_login_as', { user: '005noapps', app: 'SfUi_Console' }, 10_000);
+  assert.deepEqual([login.isError, Object.keys(login.body.evidence.timings ?? {})], [true, ['user', 'login', 'failed']], JSON.stringify(login.body));
+});
+
 // No org: a route says what it ended on, and what changed when it is given what it was saved against.
 test('sf_run_route returns its validity, and stale on a green or a red when the saved one differs', async (t) => {
   const call = await serve(t, {}, ['-r', path.join(__dirname, 'stub-server.js')]);

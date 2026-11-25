@@ -458,6 +458,9 @@ tool('sf_start', 'Start a browser session logged into Lightning as the owner of 
       if (sessions.get(id) === entry) sessions.delete(id);
       if (entry.s) await lib.session.end(entry.s);
       if (ledgers.has(id)) ledgers.get(id).used = Date.now(); // the launch took time: the idle window starts at the failure
+      // A failed start says where its time went too: failed is the stage that threw.
+      sw.mark('failed');
+      if (e instanceof lib.SfUiError) e.evidence = { ...e.evidence, timings: sw.ms };
       throw e;
     }
   });
@@ -483,7 +486,7 @@ tool('sf_login_as', 'Become another user for this whole session (needs Login As 
     const inApp = await lib.session.openApp(s, want).catch((e) => {
       if (led) led.noApp = true; // no app is known for this user: a route saved now names none, until sf_start or an app that opens
       if (!(e instanceof lib.SfUiError)) throw e;
-      throw new lib.SfUiError(e.code, `logged in as ${userId}, but ${e.message.replace(/^\w+: /, '')}; sf_start to return to the alias owner`, { ...e.evidence, userId });
+      throw new lib.SfUiError(e.code, `logged in as ${userId}, but ${e.message.replace(/^\w+: /, '')}; sf_start to return to the alias owner`, { ...e.evidence, userId, timings: (sw.mark('failed'), sw.ms) });
     });
     if (led) Object.assign(led, { noApp: false }, app && { app }); // kept once it opened; a kept app keeps the label it was given
     const { warning, ...kept } = inApp; // the caller never typed a kept app's value, so it gets no warning
@@ -923,7 +926,9 @@ tool('sf_run_route', 'Run a known route in one call: steps, each another sf-test
         if (at !== start || reuses(name, args, at)) opened = true; // a step that moved or reused the page before it threw
         const code = codeOf(e);
         const error = redact(String(e.message || e)).slice(0, ERROR_CHARS);
-        throw new lib.SfUiError('ROUTE_STEP_FAILED', `step ${i} ${name}: ${error.split('\n')[0]}`, { failedAt: i, tool: name, code, error, evidence: e.evidence, done, ...(await staleNow()) });
+        stepMs.push(Math.round(performance.now() - began)); // the failed step's time is the last entry
+        sw.mark('steps');
+        throw new lib.SfUiError('ROUTE_STEP_FAILED', `step ${i} ${name}: ${error.split('\n')[0]}`, { failedAt: i, tool: name, code, error, evidence: e.evidence, done, ...(await staleNow()), timings: { ...sw.ms, stepMs } });
       }
       const url = state.s?.page.url();
       opened ||= isEntry({ tool: name, args }) || url !== start || reuses(name, args, url);
