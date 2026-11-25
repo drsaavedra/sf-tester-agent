@@ -859,6 +859,21 @@ test('act hover, no org', async (t) => {
   });
 });
 
+// No org: the clip card's label holds its hidden hover card, so the label's text is its own plus the card's (F-flow-21).
+test('hover by text reaches a label that holds a hidden hover card, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent(`<style>.card{display:none} .host:hover .card{display:block}</style>
+    <span class="host">Shipment<span class="card">Hover card: three parcels, one pallet</span></span><p>Shipment details</p>`);
+  const body = page.locator('body');
+  const { layer } = require('..');
+  assert.equal((await layer.measure(body, { selector: '.card' })).rendered, 0);
+  await act.hover(body, { text: 'Shipment', timeout: 1_000 });
+  assert.equal((await layer.measure(body, { selector: '.card' })).rendered, 1, 'the mouse is on the label, so its card opens');
+  await act.hover(body, { text: 'Shipment details', timeout: 1_000 }); // a plain exact text still aims at its own element
+  assert.equal((await layer.measure(body, { selector: '.card' })).rendered, 0);
+  await assert.rejects(act.hover(body, { text: 'Shipmen', timeout: 1_000 }), (e) => e.code === 'NOT_FOUND'); // still exact
+});
+
 // No org: a validation line that collapses on blur moves the button up between press and release, as on the
 // fixture's Check code, so no click reaches it; a click that lands and then moves its own button is not a miss.
 test('a click whose target moved before the release is TARGET_MOVED; one that lands and moves is not', { timeout: 30_000 }, async (t) => {

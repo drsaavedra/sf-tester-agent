@@ -102,9 +102,15 @@ async function resolve(scope, { name, role, text, row, column, nth, timeout, inc
     const at = await header.evaluate((th) => [...th.parentElement.children].indexOf(th) + 1);
     within = (row ? within : byRole(scope, 'row')).locator(`:scope > :nth-child(${at})`);
   }
-  const all = text ? within.getByText(text, { exact: true }).locator('visible=true') : byRole(within, role, { name, exact: true });
+  let all = text ? within.getByText(text, { exact: true }).locator('visible=true') : byRole(within, role, { name, exact: true });
   await all.first().waitFor({ timeout }).catch(() => {});
-  const count = await all.count();
+  let count = await all.count();
+  if (text && !count) {
+    // A label that holds a hidden child (a CSS hover card) has the child's text in its own: match the text it shows.
+    const m = `${(marks += 1)}`;
+    count = await within.getByText(text).locator('visible=true').evaluateAll((els, [t, k]) => els.filter((e) => e.innerText.replace(/\s+/g, ' ').trim() === t && !e.setAttribute('data-sf-ui-text', k)).length, [`${text}`.replace(/\s+/g, ' ').trim(), m]);
+    if (count) all = within.locator(`[data-sf-ui-text="${m}"]`);
+  }
   if (nth ? count < nth : count !== 1) {
     const what = text ? `elements with text "${text}"` : `${role}s${name == null ? '' : ` named "${name}"`}`;
     const where = `${row ? ` in the row with "${row}"` : ''}${column ? ` under "${column}"` : ''}`;

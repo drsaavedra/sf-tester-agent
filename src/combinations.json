@@ -4425,6 +4425,44 @@
       ]
     },
     {
+      "id": "hover-card@app-page",
+      "component": "pure-CSS hover card in a label (sfUiClipCard)",
+      "container": "Lightning app page from a custom tab",
+      "interaction": "hover the label by its text, wait for the card",
+      "task": "Open the \"SF UI Clip App\" tab; on that app page, put the mouse on the label Shipment and confirm its hover card opens.",
+      "needs": [],
+      "route": [
+        {
+          "tool": "sf_open_tab",
+          "args": {
+            "tab": "SF UI Clip App"
+          }
+        },
+        {
+          "tool": "sf_hover",
+          "args": {
+            "text": "Shipment"
+          }
+        },
+        {
+          "tool": "sf_wait",
+          "args": {
+            "text": "Hover card: three parcels, one pallet",
+            "timeoutMs": 10000
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-1"
+      },
+      "notes": "the label holds its hidden card, so its own text is the label and the card: the text aim matches what it shows (F-flow-21)",
+      "break": [
+        "F-flow-21"
+      ]
+    },
+    {
       "id": "number-grouped@page-layout",
       "component": "Number of 1,000 or more",
       "container": "standard Edit dialog (page layout)",
