@@ -4843,6 +4843,88 @@
       ]
     },
     {
+      "id": "text-entities@new-dialog",
+      "component": "text fields holding & < > ' or \"",
+      "container": "object New action (page layout)",
+      "interaction": "create with markup characters, check and delete",
+      "task": "Create an SF UI Dynamic named \"BREAK fix R&D <1> O'Neil \"q\" {{stamp}}n{{routeIndex}}\" from the standard New dialog with Note \"Tom & Jerry &amp; <b>x</b>\", confirm the save and that the record holds both values exactly as typed, the Note through the API and on the page, then delete the record from its Delete action and confirm it was deleted.",
+      "needs": [],
+      "route": [
+        {
+          "tool": "sf_create_record",
+          "args": {
+            "objectApiName": "SfUiDyn__c"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "Name": "BREAK fix R&D <1> O'Neil \"q\" {{stamp}}n{{routeIndex}}",
+              "Note__c": "Tom & Jerry &amp; <b>x</b>"
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "field": "Name",
+            "expected": "BREAK fix R&D <1> O'Neil \"q\" {{stamp}}n{{routeIndex}}",
+            "via": "api"
+          }
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "field": "Note__c",
+            "expected": "Tom & Jerry &amp; <b>x</b>",
+            "via": "both"
+          }
+        },
+        {
+          "tool": "sf_launch_action",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "apiName": "Delete"
+          }
+        },
+        {
+          "tool": "sf_click",
+          "args": {
+            "inModal": true,
+            "name": "Delete"
+          }
+        },
+        {
+          "tool": "sf_wait",
+          "args": {
+            "any": [
+              {
+                "toast": "was deleted"
+              }
+            ],
+            "timeoutMs": 10000
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-2"
+      },
+      "notes": "UI API sends a record's text entity-escaped (R&amp;D) where the form and SOQL hold it as typed, so the create's read-back and the api read compare it unescaped; the typed &amp; checks the unescape is one pass (F-cascade-30, F-cascade-4); a route that fails between the save and the Delete leaves the record behind",
+      "break": [
+        "F-cascade-30",
+        "F-cascade-4"
+      ]
+    },
+    {
       "id": "lookup-on-page@dynamic-forms-new-dialog",
       "component": "lookup field placed only on a Dynamic Forms page",
       "container": "object New action (Dynamic Forms page)",
