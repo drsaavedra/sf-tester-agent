@@ -144,7 +144,8 @@ async function recordToasts(context) {
       const d = (e.getParams && e.getParams()) || (e.detail && (e.detail.data || e.detail)) || {};
       for (const p of pending) if (!p.label || p.label === d.title) { pending.delete(p); break; }
       const data = d.messageTemplateData || [];
-      const fill = (t) => (t || '').replace(/\{(\d+)\}/g, (_, i) => { const v = data[i]; return v && typeof v === 'object' ? v.label : v; });
+      // A missing entry or label fills as nothing, as the page shows it (the favorites star's "{1}" has neither).
+      const fill = (t) => (t || '').replace(/\{(\d+)\}/g, (_, i) => { const v = data[i]; return v == null ? '' : typeof v === 'object' ? (v.label ?? '') : v; }).trim();
       window.__sfUiToast({ type: d.type, title: d.title, message: d.messageTemplate ? fill(d.messageTemplate) : d.message });
     }, true);
     // An LWC toast with messageData, or one from lightning/toast, fires no force:showToast here, so the toast Lightning

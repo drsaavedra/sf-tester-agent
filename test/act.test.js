@@ -1449,6 +1449,35 @@ test('toasts reads a rendered toast that no force:showToast announced, once, no 
     [{ type: 'info', title: 'Plain', message: 'From the event' }]);
 });
 
+// F-cascade-34: the favorites star's toast is a template whose last entry has no label; it read "...  undefined".
+test('toasts records the favorites star toast as the page shows it', { skip, timeout: 180_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const Name = `BREAK fix favorite ${stamp()}`;
+  await nav.openRecord(s, await probe(s, t, { Name }));
+  await act.click(s.page.locator('body'), { name: 'Add favorite' });
+  try {
+    const seen = await act.toasts(s.page);
+    assert.deepEqual(seen.map((x) => x.message), [`"${Name}" was added to your favorites.`], JSON.stringify(seen));
+  } finally {
+    await act.click(s.page.locator('body'), { name: 'Remove favorite' });
+  }
+});
+
+// No org, F-cascade-34: a template entry with no label, or no entry at all, fills as nothing, not "undefined".
+test('toasts fills a template entry with no label as nothing, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.goto(`data:text/html,${encodeURIComponent('<main></main>')}`);
+  const raise = (messageTemplate, messageTemplateData) => page.evaluate(([m, d]) => window.dispatchEvent(new CustomEvent('force:showToast',
+    { detail: { type: 'success', messageTemplate: m, messageTemplateData: d } })), [messageTemplate, messageTemplateData]);
+  await act.armToasts(page);
+  await raise('"{0}" was added to your favorites.  {1}', [{ label: 'Alpha' }, { url: '/x' }]);
+  await raise('"{0}" was added to your favorites.  {1}', ['Beta']);
+  await raise('{0} of {1} saved', [2, { label: 'three' }]);
+  assert.deepEqual((await act.toasts(page)).map((x) => x.message),
+    ['"Alpha" was added to your favorites.', '"Beta" was added to your favorites.', '2 of three saved']);
+});
+
 // A lightning/toast toast fires no force:showToast and no .forceToastMessage: it renders as a lightning-toast inside
 // lightning-toastContainer's shadow, so the recorder reads it there. A sticky one still on screen is not read again.
 test('toasts records a toast shown with the lightning/toast module', { skip, timeout: 180_000 }, async (t) => {
