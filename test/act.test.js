@@ -6,7 +6,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { session, act, modal, api, lwc, nav, AT } = require('..');
-const { auth, env, skip, probe, account, stamp, localPage } = require('./helpers');
+const { auth, env, skip, record, probe, account, stamp, localPage } = require('./helpers');
 
 test('act', { skip, timeout: 300_000 }, async (t) => {
   const s = await session.start(await auth(env.org));
@@ -265,6 +265,58 @@ test('modal.find and modal.open take an alertdialog, over a later non-modal dial
   assert.equal(await (await modal.find({ page }, { timeout: 2_000, body: true })).getAttribute('aria-label'), 'SFUIC Alert');
   await page.setContent('<section role="alertdialog" aria-label="SFUIC Confirm"><button>OK</button><button>Cancel</button></section>');
   assert.equal(await (await modal.open({ page }, { timeout: 500 })).getAttribute('aria-label'), 'SFUIC Confirm');
+});
+
+// No org: a second stacked panel on an Aura template page sets aria-hidden on div.viewport, which holds both dialogs
+// (F-fixtures-26). find still takes the drawn dialog, a click reaches inside it, and read gives its text and the hider.
+test('modal.find, act.click and modal.read reach a drawn dialog under aria-hidden, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent(`<div class="viewport" aria-hidden="true"><main>Record page</main>
+    <div role="dialog" aria-modal="true" aria-label="Shell" class="slds-modal"></div>
+    <div role="dialog" aria-modal="true" aria-label="New SFUIC Aura" class="slds-modal"><h2>New SFUIC Aura</h2>
+      <div class="slds-modal__content"><input aria-label="Aura Name"></div><button onclick="this.textContent='Cancelled'">Cancel</button></div></div>
+    <div role="dialog" aria-label="Hidden copy" style="display:none"><input></div>`);
+  const m = await modal.find({ page }, { timeout: 2_000, body: true });
+  assert.equal(await m.getAttribute('aria-label'), 'New SFUIC Aura');
+  assert.equal(m.hiddenBy, '<div class="viewport">');
+  const r = await modal.read(m, (l) => l.ariaSnapshot());
+  assert.equal(r.hiddenBy, '<div class="viewport">');
+  assert.match(r.text, /New SFUIC Aura/);
+  await act.click(m, { name: 'Cancel', timeout: 2_000 });
+  assert.equal(await m.getByText('Cancelled').count(), 1);
+  await m.evaluate((d) => { d.innerHTML += '<button title="Cancel and close" onclick="this.closest(\'[role=dialog]\').remove()">Cancel and close</button>'; });
+  await modal.close(m, { timeout: 2_000 });
+  assert.equal(await page.getByText('New SFUIC Aura').count(), 0, 'closed');
+  // Control: a dialog in the accessibility tree is read by its snapshot and carries no hiddenBy.
+  await page.setContent('<div role="dialog" aria-modal="true" aria-label="Plain"><input aria-label="Name"></div>');
+  const plain = await modal.find({ page }, { timeout: 2_000 });
+  assert.equal(plain.hiddenBy, undefined);
+  assert.match((await modal.read(plain, (l) => l.ariaSnapshot())).snapshot, /textbox "Name"/);
+});
+
+// The repro on the component fixture: the second force:editRecord or force:createRecord panel on the Aura template
+// record page draws under an aria-hidden div.viewport, so getByRole('dialog') finds none (F-fixtures-26).
+test('modal.find reads and clicks in the Edit dialog an Aura template record page hides', { skip, timeout: 300_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const app = await session.openApp(s, 'SfUiC_Aura_Home').catch((e) => { if (e.code === 'APP_UNAVAILABLE') return null; throw e; });
+  if (!app) return t.skip('the org has no test/fixture-components app SfUiC_Aura_Home');
+  const name = `BREAK fix 38 aura ${stamp()}`;
+  const id = await record(s, t, 'SfUiC_Aura__c', { Name: name });
+  for (const button of ['force:createRecord', 'force:editRecord']) {
+    await nav.openRecord(s, id);
+    await act.waitFor(s.page, { text: 'force:recordSave', timeout: 20_000 });
+    await act.click(s.page, { name: button });
+    await s.page.waitForTimeout(2_000); // the platform sets aria-hidden on div.viewport about a second after the panels open
+    const m = await modal.find(s, { timeout: 10_000, body: true });
+    if (button === 'force:createRecord') { await s.page.keyboard.press('Escape'); continue; } // the first panel opens unhidden
+    assert.equal(m.hiddenBy, '<div class="viewport">', 'control: the page hides this dialog from assistive tech');
+    assert.equal(await s.page.getByRole('dialog').count(), 0, 'control: no dialog in the accessibility tree');
+    assert.match((await modal.read(m, (l) => l.ariaSnapshot())).text, new RegExp(`Edit ${name}`));
+    const handle = await m.elementHandle();
+    await act.click(m, { name: 'Cancel' });
+    await handle.waitForElementState('hidden', { timeout: 10_000 });
+  }
 });
 
 // The repro on the component fixture: LightningAlert and LightningConfirm on the Aura Calls tab, read and closed as modals.

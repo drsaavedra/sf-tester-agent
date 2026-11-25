@@ -79,8 +79,9 @@ async function near(asked, find) {
 }
 
 // The one element with that role and name (or, for an element with no role, that exact text), in the row and the
-// cell under the column header when named. includeHidden also reaches what an open modal hides, if it renders.
-async function resolve(scope, { name, role, text, row, column, nth, timeout, includeHidden = false }) {
+// cell under the column header when named. includeHidden also reaches what an open modal hides, if it renders; it is
+// the default in a dialog modal.find marked hiddenBy (an Aura template page hides its own dialogs, F-fixtures-26).
+async function resolve(scope, { name, role, text, row, column, nth, timeout, includeHidden = Boolean(scope.hiddenBy) }) {
   // In a row, a role alone is that row's one such element: a list view names its checkbox by position ("Select Item 2").
   if (name == null && text == null && !row) throw new SfUiError('BAD_ARGS', 'give a name ("" for an unnamed icon button), a text, or a row for a role alone');
   // includeHidden adds aria-hidden text to a name (a header's sort label, a required box's "*"), so the name the

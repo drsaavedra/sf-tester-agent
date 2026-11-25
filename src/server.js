@@ -734,13 +734,13 @@ tool('sf_wait','Wait until text shows (or, with gone, leaves) in a component, th
   },
   async ({ text, gone, any, timeoutMs, ...at }) => lib.act.waitFor(await scopeOf(need(), at), { text, gone, any, timeout: timeoutMs }));
 
-tool('sf_modal','Read the newest open modal (snapshot) or close it. With no dialog showing after timeoutMs (default 5000) it answers { open: false } instead of throwing, so it also checks that a dialog closed.',
+tool('sf_modal','Read the newest open modal (snapshot) or close it. With no dialog showing after timeoutMs (default 5000) it answers { open: false } instead of throwing, so it also checks that a dialog closed. A drawn dialog the page hides from assistive tech (an aria-hidden ancestor) has no snapshot: it answers hiddenBy, that ancestor, and text, the dialog\'s text, and inModal steps still reach inside it.',
   { action: z.enum(['snapshot', 'close']), timeoutMs: z.number().optional() },
   async ({ action, timeoutMs }) => {
     const m = await lib.modal.open(need(), { timeout: timeoutMs, body: action === 'snapshot' });
     if (!m) return { open: false };
     if (action === 'close') return lib.modal.close(m);
-    return { snapshot: await snapshot(m) };
+    return lib.modal.read(m, snapshot);
   });
 
 tool('sf_apex', 'Record the Apex calls the page makes: start, read what was logged so far, or stop.',

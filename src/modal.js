@@ -11,8 +11,9 @@ const { requireEnglish } = require('./session');
 async function find(s, { timeout = 30_000, body = false } = {}) {
   const until = Date.now() + timeout;
   const left = () => Math.max(100, until - Date.now());
-  // LightningAlert and LightningConfirm are role alertdialog (F-fixtures-4).
-  const role = () => s.page.getByRole('dialog').or(s.page.getByRole('alertdialog'));
+  // LightningAlert and LightningConfirm are role alertdialog (F-fixtures-4). includeHidden: a stacked panel on an Aura
+  // template page sets aria-hidden on div.viewport, which holds the drawn dialogs too (F-fixtures-26).
+  const role = () => s.page.getByRole('dialog', { includeHidden: true }).or(s.page.getByRole('alertdialog', { includeHidden: true }));
   const any = role().locator('visible=true');
   await any.last().waitFor({ state: 'visible', timeout: left() });
   const modal = s.page.locator('[aria-modal="true"]').and(role()).locator('visible=true');
@@ -22,7 +23,24 @@ async function find(s, { timeout = 30_000, body = false } = {}) {
   while (body && !(await dialog.evaluate(drawn, null, { timeout: left() }).catch((e) => { if (/has been closed/.test(e.message)) throw e; return false; })) && Date.now() < until) {
     await new Promise((ok) => { setTimeout(ok, 100); });
   }
+  // Marks the dialog so act.resolve reaches inside it and read gives its text: its accessibility snapshot is empty.
+  const by = await dialog.evaluate(hider, null, { timeout: left() });
+  if (by) dialog.hiddenBy = by;
   return dialog;
+}
+
+// In the page: the nearest ancestor, across shadow roots, that hides d from assistive tech, as an opening tag.
+function hider(d) {
+  for (let e = d; e; e = e.parentElement || (e.getRootNode().host ?? null)) {
+    if (e.getAttribute('aria-hidden') === 'true') return `<${e.tagName.toLowerCase()}${e.className ? ` class="${String(e.className).slice(0, 60)}"` : ''}>`;
+  }
+  return null;
+}
+
+// What sf_modal snapshot answers: the snapshot, or for a dialog the page hides from assistive tech, its text and the hider.
+async function read(dialog, snapshot) {
+  if (!dialog.hiddenBy) return { snapshot: await snapshot(dialog) };
+  return { hiddenBy: dialog.hiddenBy, text: (await dialog.innerText()).slice(0, 6000) };
 }
 
 // In the page: a field or a button besides close or Cancel, as before, and every body (a quick action nests one) holds
@@ -44,8 +62,8 @@ async function open(s, { timeout = 5_000, body = false } = {}) {
 async function close(dialog, { timeout = 30_000 } = {}) {
   await requireEnglish({ page: dialog.page() });
   const handle = await dialog.elementHandle();
-  await dialog.getByRole('button', { name: /^(Close|Cancel and close|Cancel)$/ }).first().click({ timeout });
+  await dialog.getByRole('button', { name: /^(Close|Cancel and close|Cancel)$/, includeHidden: Boolean(dialog.hiddenBy) }).first().click({ timeout });
   await handle.waitForElementState('hidden', { timeout });
 }
 
-module.exports = { find, open, close };
+module.exports = { find, open, close, read };
