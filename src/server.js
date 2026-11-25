@@ -63,10 +63,11 @@ const handlers = new Map();
 // A result's image rides beside its JSON as MCP image content, so nothing is written to disk for it.
 const IMAGE = Symbol('image');
 // A call's milliseconds per stage, for its timings: mark(stage) closes the stage that ran since the last mark.
+// performance.now, not Date.now: a clock correction during a call would give a negative or stretched stage.
 const stopwatch = () => {
   const ms = {};
-  let at = Date.now();
-  return { ms, mark: (stage) => { const now = Date.now(); ms[stage] = now - at; at = now; } };
+  let at = performance.now();
+  return { ms, mark: (stage) => { const now = performance.now(); ms[stage] = Math.round(now - at); at = now; } };
 };
 // A tool's return as its result shows it, so a route's {{stepN.path}} reads the same keys.
 function wrap(out) {
@@ -905,7 +906,7 @@ tool('sf_run_route', 'Run a known route in one call: steps, each another sf-test
     const stepMs = []; // one entry per step, in step order
     let last;
     for (const [i, { name, run, args: template }] of plan.entries()) {
-      const began = Date.now();
+      const began = performance.now();
       // Each {{stepN.path}} becomes the text of that value, as combinations.fill does for {{name}}.
       let gap;
       const args = JSON.parse(JSON.stringify(template).replace(STEP_REF, (ref, n, keys) => {
@@ -929,7 +930,7 @@ tool('sf_run_route', 'Run a known route in one call: steps, each another sf-test
       done.push({ tool: name, ...(last?.[lib.AT] && { at: last[lib.AT] }) });
       last = wrap(last);
       results.push(last);
-      stepMs.push(Date.now() - began);
+      stepMs.push(Math.round(performance.now() - began));
     }
     sw.mark('steps');
     const end = await ended(opened || !saved);

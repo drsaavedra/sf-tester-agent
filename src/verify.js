@@ -633,7 +633,7 @@ async function runRecords(checks, { s, proj, sf, org, items, files = [], signal,
     return [p.apex];
   });
   if (!run.length) return early;
-  const t0 = Date.now();
+  const t0 = performance.now();
   const { apex, methods, acts } = generate(run, proj.namespace);
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sf-tester-verify-'));
   try {
@@ -649,10 +649,10 @@ async function runRecords(checks, { s, proj, sf, org, items, files = [], signal,
     const report = cas ? () => soapReport(sf, { s, dir, signal, tests, cas }) : () => sfReport(sf, { org, dir, signal, tests });
     let rep;
     let err;
-    const t1 = Date.now();
-    time.generate = t1 - t0; // the run's times, which its last-but-one line prints
+    const t1 = performance.now();
+    time.generate = Math.round(t1 - t0); // the run's times, which its last-but-one line prints
     try { rep = await report(); } catch (e) { err = e.message; }
-    time.validate = Date.now() - t1;
+    time.validate = Math.round(performance.now() - t1);
     Object.assign(time, deployTimes(rep));
     const got = validate(methods, { rep, err, acts });
     const text = rep?.debugLog;
@@ -1419,11 +1419,11 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
   for (const c of file.checks) c.selects = c.kind === 'componentVisible' ? gateCovers(c, proj) : [];
   let s;
   const time = {};
-  const began = Date.now();
+  const began = performance.now(); // not Date.now: a clock correction mid-run would bend a stage
   if (!a.plan) {
     try {
       s = await (connect || ((org) => defaultConnect(org, api)))(a.org);
-      time.connect = Date.now() - began;
+      time.connect = Math.round(performance.now() - began);
     } catch (e) {
       if (!['NO_AUTH', 'AUTH_UNREADABLE', 'API_ERROR'].includes(e.code)) throw e;
       // An API_ERROR is the org's answer, not the command line's, so it gets no usage line.
@@ -1448,7 +1448,7 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
   // The item keys the static map named, and its flows' labels, for the --cascade diff.
   let mapped = null;
   let labels;
-  const tDiff = Date.now();
+  const tDiff = performance.now();
   if (a.since) {
     try { files = changedFiles(a.since, proj.root, git); } catch (e) {
       if (e.stderr == null) throw e;
@@ -1492,7 +1492,7 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
       if (a.junit) fs.writeFileSync(a.junit, junit([], [], SUITE));
       return 0;
     }
-    time.diff = Date.now() - tDiff;
+    time.diff = Math.round(performance.now() - tDiff);
   }
   const uncovered = [...items.keys()].filter((k) => !covering(k).length);
   const wanted = (c) => (!a.since || [...items.keys()].some((k) => c.keys.includes(k) || c.selects.includes(k))) && (!only || only.test(c.id));
@@ -1561,7 +1561,7 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
       if (r.cascade) log(`  RAN ${r.cascade}`);
     }
   }
-  const tReport = Date.now();
+  const tReport = performance.now();
   // What the map said could run against what did, over every case that ran.
   if (a.cascade) {
     const ran = results.filter((r) => r.t).map((r) => r.t);
@@ -1582,8 +1582,8 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
   for (const u of unrun) log(`STOPPED ${u.check} ${u.name} (stopped by a signal)`);
   const nStopped = stopped.length + unrun.length;
   // Where the run's time went, before the counts so the counts stay the last line. total also holds what no stage names.
-  time.report = Date.now() - tReport;
-  log(timeLine(time, Date.now() - began));
+  time.report = Math.round(performance.now() - tReport);
+  log(timeLine(time, Math.round(performance.now() - began)));
   log(`changed ${items.size}, covered ${covered}, uncovered ${uncovered.length}, ran ${results.filter((r) => !r.aside).length}, passed ${n('pass')}, failed ${n('fail')}${n('error') ? `, errors ${n('error')}` : ''}${n('handoff') ? `, needs browser ${n('handoff')}` : ''}${notRun.size ? `, not run ${notRun.size}` : ''}${nStopped ? `, stopped ${nStopped}` : ''}`);
   if (a.junit) {
     const asCase = (r) => (r.status === 'handoff' ? { id: r.id, status: 'skip', ms: 0, reason: r.error } : { id: r.id, status: r.status === 'pass' ? 'pass' : 'fail', ms: 0, error: r.error });
