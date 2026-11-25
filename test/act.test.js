@@ -1265,6 +1265,27 @@ test('fill on a flow screen is VALUE_NOT_SET for a date or time the component dr
   await act.fill(main, { role: 'spinbutton', name: 'SFUIC Currency', value: '1000' }); // control
 });
 
+// F-flow-3, F-fixtures-5: a select a Lightning component renders (flow picklist, multi-select, Aura lightning:select)
+// listed no options, so every value was VALUE_NOT_FOUND with options [].
+test('fill chooses an option in a native select that a Lightning component renders', { skip, timeout: 180_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const tab = (label) => nav.openTab(s, label).catch((e) => { if (e.code === 'TAB_UNAVAILABLE') return null; throw e; });
+  const flow = await tab('SFUIC Screens');
+  if (!flow) return t.skip('the org has no test/fixture-components flow tab SFUIC Screens');
+  await act.click(flow.main, { role: 'checkbox', name: 'SFUIC Checkbox' });
+  await act.click(flow.main, { name: 'Next' });
+  await act.waitFor(flow.main, { text: 'Flow: Picklist', timeout: 30_000 });
+  await act.fill(flow.main, { role: 'combobox', name: 'SFUIC Picklist', value: 'SFUIC Two' });
+  await act.fill(flow.main, { role: 'listbox', name: 'SFUIC Multi Pick', value: 'SFUIC Two' });
+  await assert.rejects(act.fill(flow.main, { role: 'combobox', name: 'SFUIC Picklist', value: 'SFUIC Nine' }), // a miss still names the options
+    (e) => e.code === 'VALUE_NOT_FOUND' && e.evidence.options.includes('SFUIC Three'));
+  const aura = await tab('SFUIC Aura Inputs');
+  if (!aura) return t.skip('the org has no test/fixture-components tab SFUIC Aura Inputs');
+  await act.fill(aura.main, { role: 'combobox', name: 'SFUIC Select', value: 'SFUIC Blue' });
+  await act.waitFor(aura.main, { text: 'Select: blue', timeout: 10_000 });
+});
+
 // No org: fill selects, then types, so a colour box fills, a box sees one input event (no empty one first), and a
 // box that locks on its first input event still takes the typed value (a clear first left it blank).
 test('fill replaces a value with one input event, a colour box included, no org', { timeout: 30_000 }, async (t) => {

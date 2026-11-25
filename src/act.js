@@ -281,8 +281,9 @@ async function fill(scope, { name, value, role = 'textbox', row, column, nth, ti
   // A native select (an Aura dialog, a Visualforce page) takes an option by its label, not typing.
   const kind = await box.evaluate((e) => (e.localName === 'select' ? 'select' : e.type), null, { timeout });
   if (kind === 'select') {
-    const options = await box.locator('option').allInnerTexts();
-    if (!options.map((o) => o.trim()).includes(String(value))) throw new SfUiError('VALUE_NOT_FOUND', `${name} offers no "${value}"`, { name, value, options: options.map((o) => o.trim()) });
+    // Read off the element: a locator query finds no option in a select a Lightning component renders (F-flow-3).
+    const options = await box.evaluate((e) => [...e.options].map((o) => o.label), null, { timeout });
+    if (!options.includes(String(value))) throw new SfUiError('VALUE_NOT_FOUND', `${name} offers no "${value}"`, { name, value, options });
     await box.selectOption({ label: String(value) }, { timeout });
   } else {
     // A searchable combobox (record picker, lookup) lists its matches only once pressed, as a user does before typing.
