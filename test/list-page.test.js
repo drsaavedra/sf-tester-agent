@@ -568,6 +568,20 @@ test('massEdit ticks "Update N selected items" by its label and confirms every r
   assert.deepEqual([r.recordIds, r.field, await s.page.evaluate(() => window.saved.all)], [[ID, ID2], 'Count__c', true]);
 });
 
+// "Todo 60" spans two cells: textContent runs them together ("Todo60"), so only act.resolve's innerText match finds it.
+test('select and massEdit find a row by a text that crosses two cells, and massEdit unticks it after', async (t) => {
+  stub(t, LISTS);
+  const one = await page(t, TABLE().replace('probe one</a></th>', 'probe one</a></th><td>Todo</td><td>60</td>'));
+  await one.page.goto(`${ORIGIN}/lightning/o/SfUiProbe__c/list?filterName=All`);
+  assert.deepEqual((await list.ACTIONS.select[0](one, { rows: ['Todo 60'], timeout: 2_000 })).recordIds, [ID]);
+  const s = await page(t, MASS.replace('probe 1</a></th>', 'probe 1</a></th><td>Todo</td><td>60</td>'));
+  stub(t, massApi(s));
+  await s.page.goto(`${ORIGIN}/lightning/o/SfUiProbe__c/list?filterName=All`);
+  const r = await list.ACTIONS.massEdit[0](s, { rows: ['Todo 60', 'probe 2'], column: 'Count', value: 5, timeout: 2_000 });
+  assert.deepEqual(r.recordIds, [ID, ID2]);
+  assert.equal(await s.page.getByRole('checkbox', { name: 'Select item 1' }).isChecked(), false, 'the row massEdit ticked is unticked after');
+});
+
 test('massEdit fails NOT_SAVED naming the record the save left, and refuses rows not named before ticking', async (t) => {
   const s = await page(t, MASS);
   stub(t, massApi(s));

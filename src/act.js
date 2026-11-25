@@ -78,6 +78,15 @@ async function near(asked, find) {
   return out;
 }
 
+// The rows holding the text, by text content or by innerText with spaces collapsed, the text the error's rows print:
+// a text across two cells ("Todo 60") is tab-joined there, while textContent runs the cells together. No wait.
+async function rowsOf(scope, row, byRole = (at, r) => at.getByRole(r)) {
+  const m = `${(marks += 1)}`;
+  const want = row.replace(/\s+/g, ' ').trim().toLowerCase();
+  await byRole(scope, 'row').evaluateAll((els, [t, k]) => els.forEach((e) => e.innerText.replace(/\s+/g, ' ').toLowerCase().includes(t) && e.setAttribute('data-sf-ui-row', k)), [want, m]).catch(() => {});
+  return byRole(scope, 'row').filter({ hasText: row }).or(scope.locator(`[data-sf-ui-row="${m}"]`));
+}
+
 // The one element with that role and name (or, for an element with no role, that exact text), in the row and the
 // cell under the column header when named. includeHidden also reaches what an open modal hides, if it renders; it is
 // the default in a dialog modal.find marked hiddenBy (an Aura template page hides its own dialogs, F-fixtures-26).
@@ -89,14 +98,10 @@ async function resolve(scope, { name, role, text, row, column, nth, timeout, inc
   const byRole = (at, r, opts) => (includeHidden ? at.getByRole(r, opts).or(at.getByRole(r, { ...opts, includeHidden }).locator('visible=true')) : at.getByRole(r, opts));
   let within = scope;
   if (row) {
-    // A row matches its text content, or its innerText with spaces collapsed, the text the error's rows print: a
-    // text across two cells ("Todo 60") is tab-joined there, while textContent runs the cells together.
-    const m = `${(marks += 1)}`;
-    const want = row.replace(/\s+/g, ' ').trim().toLowerCase();
-    const rows = byRole(scope, 'row').filter({ hasText: row }).or(scope.locator(`[data-sf-ui-row="${m}"]`));
+    let rows;
     let count = 0;
     for (const end = Date.now() + timeout; ; await new Promise((r) => setTimeout(r, 100))) {
-      await byRole(scope, 'row').evaluateAll((els, [t, k]) => els.forEach((e) => e.innerText.replace(/\s+/g, ' ').toLowerCase().includes(t) && e.setAttribute('data-sf-ui-row', k)), [want, m]).catch(() => {});
+      rows = await rowsOf(scope, row, byRole);
       if ((count = await rows.count()) || Date.now() >= end) break;
     }
     if (count !== 1) {
@@ -514,4 +519,4 @@ async function waitFor(scope, { text, gone = false, any, timeout = 30_000 } = {}
   throw new SfUiError('TIMEOUT', `none of ${what.join(', ')} within ${timeout} ms`, { conditions: conds, timeout, toasts: raised(page), snapshot: await snapshot(scope) });
 }
 
-module.exports = { near, click, hover, press, fill, openRich, replaceText, boxValue, readBack, waitFor, toasts, armToasts, recordToasts, raised, mainOf, snapshot, marked, cut, resolve };
+module.exports = { near, click, hover, press, fill, openRich, replaceText, boxValue, readBack, waitFor, toasts, armToasts, recordToasts, raised, mainOf, snapshot, marked, cut, resolve, rowsOf };

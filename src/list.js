@@ -142,7 +142,7 @@ async function search(s, { text, timeout = 15_000 }) {
 async function rowOf(c, row) {
   const at = await act.resolve(c.grid, { row, role: 'rowheader', timeout: 10_000 });
   const recordId = idOf(await at.getByRole('link').first().getAttribute('href'));
-  return { recordId, line: c.grid.getByRole('row').filter({ hasText: row }) }; // the one row act.resolve found
+  return { recordId, line: await act.rowsOf(c.grid, row) }; // the one row act.resolve found
 }
 
 // Selects (never clears) each row; the status line must count each one this call selected on top of those before.
@@ -309,12 +309,18 @@ async function massEdit(s, { rows, column, value, timeout = 15_000 }) {
 // steps, then the named rows that were not ticked before it are unticked, on a failure too (select alone keeps its
 // rows ticked); a row no longer in the list is passed over.
 async function unticking(c, rows, steps) {
-  const boxOf = (row) => c.grid.getByRole('row').filter({ hasText: row }).getByRole('checkbox');
+  const boxOf = async (row) => (await act.rowsOf(c.grid, row)).getByRole('checkbox');
   const before = (await statusOf(c)).selected;
   const [fresh, held] = [[], []];
-  for (const row of new Set(rows)) if ((await boxOf(row).count()) === 1) ((await boxOf(row).isChecked()) ? held : fresh).push(row);
+  for (const row of new Set(rows)) {
+    const box = await boxOf(row);
+    if ((await box.count()) === 1) ((await box.isChecked()) ? held : fresh).push(row);
+  }
   const untick = async () => {
-    for (const row of fresh) if ((await boxOf(row).count()) === 1 && (await boxOf(row).isChecked())) await act.click(c.grid, { row, role: 'checkbox' });
+    for (const row of fresh) {
+      const box = await boxOf(row);
+      if ((await box.count()) === 1 && (await box.isChecked())) await act.click(c.grid, { row, role: 'checkbox' });
+    }
     await until(() => statusOf(c), (x) => x.selected <= before, { timeout: 10_000, code: 'SELECTION_MISMATCH', message: (x) => `the status line counts ${x.selected} selected after the rows were unticked, not ${before}` });
   };
   let out;
@@ -325,7 +331,10 @@ async function unticking(c, rows, steps) {
   await untick();
   // Lightning clears every tick after a Change Owner, the caller's too (probe-g2 D1): those rows are named.
   const lost = [];
-  for (const row of held) if ((await boxOf(row).count()) === 1 && !(await boxOf(row).isChecked())) lost.push(row);
+  for (const row of held) {
+    const box = await boxOf(row);
+    if ((await box.count()) === 1 && !(await box.isChecked())) lost.push(row);
+  }
   return { ...out, ...(lost.length && { unticked: lost }) };
 }
 // The server holds the typed value: empty as no value, a number as that number, else as stored or as displayed.
