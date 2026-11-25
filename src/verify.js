@@ -1392,6 +1392,8 @@ async function defaultConnect(org, api) {
 }
 
 async function main(a, { log = console.log, warn = console.error, git, sf, api = require('./api'), connect, signal, soap, sleep } = {}) {
+  const time = {};
+  const began = performance.now(); // not Date.now: a clock correction mid-run would bend a stage
   let proj;
   let file;
   let only;
@@ -1418,12 +1420,11 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
   // selects: what else changes the verdict of a check, so --since runs it; unlike covers, it does not cover a gap.
   for (const c of file.checks) c.selects = c.kind === 'componentVisible' ? gateCovers(c, proj) : [];
   let s;
-  const time = {};
-  const began = performance.now(); // not Date.now: a clock correction mid-run would bend a stage
+  const tConnect = performance.now();
   if (!a.plan) {
     try {
       s = await (connect || ((org) => defaultConnect(org, api)))(a.org);
-      time.connect = Math.round(performance.now() - began);
+      time.connect = Math.round(performance.now() - tConnect);
     } catch (e) {
       if (!['NO_AUTH', 'AUTH_UNREADABLE', 'API_ERROR'].includes(e.code)) throw e;
       // An API_ERROR is the org's answer, not the command line's, so it gets no usage line.
@@ -1581,15 +1582,15 @@ async function main(a, { log = console.log, warn = console.error, git, sf, api =
   for (const c of stopped) log(`STOPPED ${c.id} (stopped by a signal)`);
   for (const u of unrun) log(`STOPPED ${u.check} ${u.name} (stopped by a signal)`);
   const nStopped = stopped.length + unrun.length;
-  // Where the run's time went, before the counts so the counts stay the last line. total also holds what no stage names.
-  time.report = Math.round(performance.now() - tReport);
-  log(timeLine(time, Math.round(performance.now() - began)));
-  log(`changed ${items.size}, covered ${covered}, uncovered ${uncovered.length}, ran ${results.filter((r) => !r.aside).length}, passed ${n('pass')}, failed ${n('fail')}${n('error') ? `, errors ${n('error')}` : ''}${n('handoff') ? `, needs browser ${n('handoff')}` : ''}${notRun.size ? `, not run ${notRun.size}` : ''}${nStopped ? `, stopped ${nStopped}` : ''}`);
   if (a.junit) {
     const asCase = (r) => (r.status === 'handoff' ? { id: r.id, status: 'skip', ms: 0, reason: r.error } : { id: r.id, status: r.status === 'pass' ? 'pass' : 'fail', ms: 0, error: r.error });
     fs.writeFileSync(a.junit, junit([...stopped.map((c) => ({ id: `stopped/${c.id}`, status: 'skip', ms: 0, reason: 'stopped by a signal' })), ...unrun.map((u) => ({ id: `stopped/${u.check}/${u.name}`, status: 'skip', ms: 0, reason: 'stopped by a signal' })), ...[...notRun].map(([k, why]) => ({ id: `notrun/${k}`, status: 'skip', ms: 0, reason: why })), ...uncovered.map((k) => ({ id: `uncovered/${k}`, status: 'fail', ms: 0, error: `UNCOVERED${dropped(k)}` })), ...results.filter((r) => r.status !== 'error').map(asCase)],
       results.filter((r) => r.status === 'error').map((r) => ({ name: r.id, message: r.error })), SUITE));
   }
+  // Where the run's time went, before the counts so the counts stay the last line. total also holds what no stage names.
+  time.report = Math.round(performance.now() - tReport);
+  log(timeLine(time, Math.round(performance.now() - began)));
+  log(`changed ${items.size}, covered ${covered}, uncovered ${uncovered.length}, ran ${results.filter((r) => !r.aside).length}, passed ${n('pass')}, failed ${n('fail')}${n('error') ? `, errors ${n('error')}` : ''}${n('handoff') ? `, needs browser ${n('handoff')}` : ''}${notRun.size ? `, not run ${notRun.size}` : ''}${nStopped ? `, stopped ${nStopped}` : ''}`);
   // Nothing ran is never green, unless --only or a deletion left a covered item with nothing to run, which was printed.
   if (!results.length && !uncovered.length && !notRun.size) { warn('no check ran: check --checks, --since and --only'); return 2; }
   return uncovered.length || n('fail') || n('error') ? 1 : 0;
