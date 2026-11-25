@@ -80,6 +80,24 @@ test('setFields, no org: a Rich Text Area not yet mounted is clicked open, then 
   assert.equal(f.set.Rich__c.rich, true);
 });
 
+// F-cascade-17, F-flow-22, no org: a Geolocation draws group "Spot" with textboxes "Latitude" and "Longitude"; the
+// layout model names the parts "Spot (Latitude)", a Dynamic Forms model "Latitude", which a second pair makes ambiguous.
+test('setFields, no org: a Geolocation part is the Latitude or Longitude box of its group', { timeout: 30_000 }, async (t) => {
+  const { localPage } = require('./helpers');
+  const page = await localPage(t);
+  const pair = (name) => `<fieldset><legend>${name}</legend><label>Latitude<input></label><label>Longitude<input></label></fieldset>`;
+  await page.setContent(`<main>${pair('Spot')}${pair('Loc')}</main>`);
+  const part = (c, p, label, role) => ({ apiName: `${c}__${p}__s`, label, itemLabel: c, dataType: 'Double', role, editable: true });
+  const f = { s: { page }, scope: page.locator('main'), model: { fields: [
+    part('Spot', 'Latitude', 'Spot (Latitude)'), part('Spot', 'Longitude', 'Spot (Longitude)'), // as a page layout labels them
+    part('Loc', 'Latitude', 'Latitude', 'textbox'), part('Loc', 'Longitude', 'Longitude', 'textbox'), // as Dynamic Forms does
+  ] } };
+  await form.setFields(f, { Spot__Latitude__s: 37.5, Spot__Longitude__s: -122.25, Loc__Latitude__s: 12.5 });
+  const box = (g, n) => page.getByRole('group', { name: g }).getByRole('textbox', { name: n }).inputValue();
+  assert.deepEqual([await box('Spot', 'Latitude'), await box('Spot', 'Longitude'), await box('Loc', 'Latitude'), await box('Loc', 'Longitude')],
+    ['37.5', '-122.25', '12.5', '']);
+});
+
 test('form types',{ skip, timeout: 600_000 }, async (t) => {
   const s = await session.start(await auth(env.org));
   t.after(() => session.end(s));
@@ -381,5 +399,24 @@ test('form types',{ skip, timeout: 600_000 }, async (t) => {
     await form.setFields(g, { Rich__c: 'BREAK rich text' });
     assert.equal((await form.save(g)).outcome, 'saved');
     assert.match(await rich(), /BREAK rich text/);
+  });
+
+  await t.test('setFields types a Geolocation\'s Latitude and Longitude on the New and the Edit form', async (st) => {
+    const info = await api.call(s, '/ui-api/object-info/SfUiC_Shape__c').catch((e) => { if ([400, 404].includes(e.evidence?.status)) return null; throw e; });
+    if (!info) return st.skip('the org has no test/fixture-components object SfUiC_Shape__c');
+    const parts = ['Spot__Latitude__s', 'Spot__Longitude__s'];
+    const spot = async (id) => { const r = await api.call(s, `/sobjects/SfUiC_Shape__c/${id}?fields=${parts}`, { as: 'admin' }); return parts.map((p) => r[p]); };
+    const f = await form.createRecord(s, 'SfUiC_Shape__c');
+    assert.deepEqual(f.missing.filter((x) => parts.includes(x)), [], JSON.stringify(f.missing));
+    await form.setFields(f, { Name: `BREAK fix spot ${stamp()}`, Spot__Latitude__s: 37.5, Spot__Longitude__s: -122.25 });
+    const r = await form.save(f);
+    assert.equal(r.outcome, 'saved', JSON.stringify(r));
+    st.after(() => api.call(s, `/sobjects/SfUiC_Shape__c/${r.recordId}`, { method: 'DELETE', as: 'admin' }));
+    assert.deepEqual(await spot(r.recordId), [37.5, -122.25]);
+    const g = await form.editRecord(s, r.recordId);
+    assert.deepEqual(g.missing.filter((x) => parts.includes(x)), [], JSON.stringify(g.missing));
+    await form.setFields(g, { Spot__Latitude__s: -12.25 });
+    assert.equal((await form.save(g)).outcome, 'saved');
+    assert.deepEqual(await spot(r.recordId), [-12.25, -122.25]);
   });
 });

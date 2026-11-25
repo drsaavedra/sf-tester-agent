@@ -4484,6 +4484,89 @@
       ]
     },
     {
+      "id": "geolocation-parts@new-dialog",
+      "component": "Geolocation (Latitude and Longitude)",
+      "container": "object New action (page layout)",
+      "interaction": "create with a location, check and delete",
+      "task": "Create an SF UI Dynamic named \"sf-ui combo spot {{stamp}}n{{routeIndex}}\" from the standard New dialog with Loc Latitude 37.5 and Longitude -122.25, confirm through the API that it holds both, then delete the record from its Delete action and confirm it was deleted.",
+      "needs": [],
+      "route": [
+        {
+          "tool": "sf_create_record",
+          "args": {
+            "objectApiName": "SfUiDyn__c"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "Name": "sf-ui combo spot {{stamp}}n{{routeIndex}}",
+              "Loc__Latitude__s": 37.5,
+              "Loc__Longitude__s": -122.25
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "field": "Loc__Latitude__s",
+            "expected": 37.5,
+            "via": "api"
+          }
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "field": "Loc__Longitude__s",
+            "expected": -122.25,
+            "via": "api"
+          }
+        },
+        {
+          "tool": "sf_launch_action",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "apiName": "Delete"
+          }
+        },
+        {
+          "tool": "sf_click",
+          "args": {
+            "inModal": true,
+            "name": "Delete"
+          }
+        },
+        {
+          "tool": "sf_wait",
+          "args": {
+            "any": [
+              {
+                "toast": "was deleted"
+              }
+            ],
+            "timeoutMs": 10000
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-3"
+      },
+      "notes": "the New dialog draws group \"Loc\" with textboxes \"Latitude\" and \"Longitude\", the layout model labels them \"Loc (Latitude)\" (F-cascade-17, F-flow-22); via api only, the page read of a part is step 32's; a route that fails between the save and the Delete leaves the record behind",
+      "break": [
+        "F-cascade-17",
+        "F-flow-22"
+      ]
+    },
+    {
       "id": "inline-edit@page-layout",
       "component": "number field",
       "container": "inline edit in the record detail panel (page layout)",
