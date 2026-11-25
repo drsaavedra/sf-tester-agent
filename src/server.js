@@ -480,6 +480,7 @@ tool('sf_login_as', 'Become another user for this whole session (needs Login As 
     // Login As lands in the new user's last-used app, so the session's app is opened again.
     const want = app || s.app?.developerName;
     const userId = await lib.session.whoAmI(s);
+    sw.mark('whoami');
     // The Login As has happened by now, so a failed app says the session runs as the new user.
     const timed = (out) => { sw.mark('app'); return { ...out, timings: sw.ms }; };
     if (!want) return timed({ userId, ...(await appNow(s)) });

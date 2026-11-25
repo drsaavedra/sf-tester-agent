@@ -296,7 +296,7 @@ test('sf_start, sf_login_as and sf_run_route return timings, in milliseconds per
   const started = await call('sf_start', { org: 'stub' }, 10_000);
   assert.deepEqual([Object.keys(started.body.timings), whole(started.body.timings)], [['close', 'auth', 'browser', 'app', 'policy'], true], JSON.stringify(started.body));
   const login = await call('sf_login_as', { user: '005other' }, 10_000);
-  assert.deepEqual([Object.keys(login.body.timings), whole(login.body.timings)], [['user', 'login', 'app'], true], JSON.stringify(login.body));
+  assert.deepEqual([Object.keys(login.body.timings), whole(login.body.timings)], [['user', 'login', 'whoami', 'app'], true], JSON.stringify(login.body));
   const steps = [{ tool: 'sf_open_tab', args: { tab: 'SfUi_Vf' } }, { tool: 'sf_api', args: { path: '/list' } }];
   const { body } = await call('sf_run_route', { steps }, 10_000);
   const { stepMs, ...stages } = body.timings;
@@ -312,7 +312,7 @@ test('a failed sf_start, sf_login_as or sf_run_route carries timings in its evid
   const route = await call('sf_run_route', { steps: [{ tool: 'sf_api', args: { path: '/list' } }, { tool: 'sf_api', args: { path: '/fails' } }] }, 10_000);
   assert.deepEqual([route.body.code, Object.keys(route.body.evidence.timings ?? {}), route.body.evidence.timings?.stepMs.length], ['ROUTE_STEP_FAILED', ['check', 'steps', 'stepMs'], 2], JSON.stringify(route.body));
   const login = await call('sf_login_as', { user: '005noapps', app: 'SfUi_Console' }, 10_000);
-  assert.deepEqual([login.isError, Object.keys(login.body.evidence.timings ?? {})], [true, ['user', 'login', 'failed']], JSON.stringify(login.body));
+  assert.deepEqual([login.isError, Object.keys(login.body.evidence.timings ?? {})], [true, ['user', 'login', 'whoami', 'failed']], JSON.stringify(login.body));
 });
 
 // No org: a route says what it ended on, and what changed when it is given what it was saved against.
