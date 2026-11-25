@@ -22,6 +22,19 @@ test('dynamic forms', { skip, timeout: 300_000 }, async (t) => {
     await form.cancel(f);
   });
 
+  // The New dialog follows the page too: it shows Probe and no Hidden (F-cascade-25, F-flow-23).
+  await t.test('createRecord on a Dynamic Forms object models the page\'s fields, not the Create layout\'s', async () => {
+    const name = (await api.call(s, `/sobjects/SfUiProbe__c/${await probe(s, t)}`, { as: 'admin' })).Name;
+    const f = await form.createRecord(s, 'SfUiDyn__c');
+    try {
+      assert.equal(f.model.source, 'dynamicForms');
+      assert.deepEqual(f.model.fields.map((x) => x.apiName), ['Name', 'Note__c', 'Level__c', 'Loc__Latitude__s', 'Loc__Longitude__s', 'Probe__c']);
+      assert.deepEqual(f.missing, []);
+      await form.setFields(f, { Probe__c: name });
+      await assert.rejects(form.setFields(f, { Hidden__c: 'x' }), { code: 'FIELD_NOT_ON_FORM' });
+    } finally { await form.cancel(f); }
+  });
+
   await t.test('setFields and save work on the Dynamic Forms dialog', async () => {
     const f = await form.editRecord(s, id);
     await form.setFields(f, { Note__c: 'from the page', Level__c: 'High' });

@@ -48,8 +48,8 @@ async function editRecord(s, recordId, { timeout = 30_000, actionTimeout = 10_00
   return formOf(s, recordId, model, s.page.getByRole('dialog').filter({ has: save }));
 }
 
-// The New dialog for an object, from the Create layout of the record type chosen. ponytail: the layout even on a
-// Dynamic Forms object, whose New dialog may follow the page instead (unmeasured).
+// The New dialog for an object, from the Create layout of the record type chosen, or from the record page the dialog
+// follows when that page is Dynamic Forms (measured: it shows the page's fields).
 async function createRecord(s, objectApiName, { recordType, timeout = 30_000 } = {}) {
   nav.segment(objectApiName);
   // Refused from object-info before any page: no create access, or a record type to choose that the caller did not name.
@@ -95,7 +95,8 @@ async function createRecord(s, objectApiName, { recordType, timeout = 30_000 } =
   const save = s.page.getByRole('button', { name: 'Save', exact: true });
   await save.waitFor({ timeout });
   const recordTypeId = recordType != null ? types.find((r) => r.name === recordType).recordTypeId : undefined;
-  const model = await discover.formModel(s, null, { mode: 'Create', objectApiName, recordTypeId });
+  const flexiPageApiName = await discover.renderedPage(s, { create: objectApiName });
+  const model = await discover.formModel(s, null, { mode: 'Create', objectApiName, recordTypeId, flexiPageApiName });
   return formOf(s, null, model, s.page.getByRole('dialog').filter({ has: save }));
 }
 

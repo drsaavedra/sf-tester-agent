@@ -4652,6 +4652,81 @@
       ]
     },
     {
+      "id": "lookup-on-page@dynamic-forms-new-dialog",
+      "component": "lookup field placed only on a Dynamic Forms page",
+      "container": "object New action (Dynamic Forms page)",
+      "interaction": "create with a lookup only the page places, check and delete",
+      "task": "Create an SF UI Dynamic named \"sf-ui combo pagenew {{stamp}}n{{routeIndex}}\" from the standard New dialog with Probe set to the probe \"{{probeName}}\", confirm through the API that its Probe is that probe, then delete the record from its Delete action and confirm it was deleted.",
+      "needs": [
+        "probeName"
+      ],
+      "route": [
+        {
+          "tool": "sf_create_record",
+          "args": {
+            "objectApiName": "SfUiDyn__c"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "Name": "sf-ui combo pagenew {{stamp}}n{{routeIndex}}",
+              "Probe__c": "{{probeName}}"
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "field": "Probe__c",
+            "expected": "{{probeId}}",
+            "via": "api"
+          }
+        },
+        {
+          "tool": "sf_launch_action",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "apiName": "Delete"
+          }
+        },
+        {
+          "tool": "sf_click",
+          "args": {
+            "inModal": true,
+            "name": "Delete"
+          }
+        },
+        {
+          "tool": "sf_wait",
+          "args": {
+            "any": [
+              {
+                "toast": "was deleted"
+              }
+            ],
+            "timeoutMs": 10000
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-3"
+      },
+      "notes": "SfUiDyn__c's New dialog follows its Dynamic Forms record page: it shows combobox \"Probe\", which the Create layout lacks (F-cascade-25, F-flow-23); a route that fails between the save and the Delete leaves the record behind",
+      "break": [
+        "F-cascade-25",
+        "F-flow-23"
+      ]
+    },
+    {
       "id": "address-parts@edit-record",
       "component": "standard compound Address (Billing Address)",
       "container": "record Edit dialog (page layout)",

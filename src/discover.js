@@ -102,15 +102,18 @@ async function dynamicFields(s, flexiPageApiName, info, mode, layout) {
 
 // The record page the user actually got: Lightning tags the rendered page with its FlexiPage name, lowercased
 // (forcegenerated-flexipage_my_record_page_ns__thing__c__view_js...), so no assignment rules to resolve.
-async function renderedPage(s) {
+// Given create (an object), the page the open New dialog follows (..._thing__c__create_js...).
+async function renderedPage(s, { create } = {}) {
   // The shown one: Lightning keeps the last record's page in the DOM, hidden, after an in-app navigation.
-  const host = s.page.locator(`${A.recordHome} > *`).locator('visible=true').first();
-  const found = await host.waitFor({ state: 'attached', timeout: 3_000 }).then(() => true, (e) => { if (e.name !== 'TimeoutError') throw e; return false; });
+  const host = s.page.locator(`${create ? A.recordAction : A.recordHome} > *`).locator('visible=true').first();
+  // An open New dialog has drawn its page host, if it has one, by the time its Save shows: no wait.
+  const found = create ? (await host.count()) > 0
+    : await host.waitFor({ state: 'attached', timeout: 3_000 }).then(() => true, (e) => { if (e.name !== 'TimeoutError') throw e; return false; });
   if (!found) return null; // not a record FlexiPage
   const tag = await host.evaluate((e) => e.tagName.toLowerCase());
   if (!tag.startsWith(A.generatedPagePrefix)) return null; // not a generated page: no FlexiPage name to query
-  const object = new URL(s.page.url()).pathname.split('/')[3].toLowerCase();
-  const lower = tag.slice(A.generatedPagePrefix.length).split(`_${object}__view_js`)[0];
+  const object = (create || new URL(s.page.url()).pathname.split('/')[3]).toLowerCase();
+  const lower = tag.slice(A.generatedPagePrefix.length).split(`_${object}__${create ? 'create' : 'view'}_js`)[0];
   const q = `SELECT DeveloperName FROM FlexiPage WHERE DeveloperName = '${lower.replace(/'/g, '')}'`;
   const { records } = await api.call(s, `/tooling/query?q=${encodeURIComponent(q)}`, { as: 'admin' });
   return records.length ? records[0].DeveloperName : null;
