@@ -360,6 +360,11 @@ test('a run prints its time per stage before the counts, and splits the validate
   const plain = selecting(t);
   const p = await run(['verify', '--org', 'o', '--checks', plain.file], { sf: plain.sf });
   assert.match(p.out.at(-2), /^time: connect \d+ ms, generate \d+ ms, validate \d+ ms, report \d+ ms, total \d+ ms$/);
+  // With --since, the diff has a stage of its own.
+  const since = selecting(t);
+  touch(since.dir, [`${D}${RULE}.validationRule-meta.xml`]);
+  const d = await run(['verify', '--org', 'o', '--checks', since.file, '--since', 'main'], { sf: since.sf, git: gitOf([`${D}${RULE}.validationRule-meta.xml`]) });
+  assert.match(d.out.at(-2), /^time: connect \d+ ms, diff \d+ ms, generate \d+ ms, /, d.out.join('\n'));
 });
 
 test('a compile error or refused metadata makes every record case ERROR with the problem; an envelope with no job id too', async (t) => {
