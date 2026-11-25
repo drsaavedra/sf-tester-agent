@@ -295,6 +295,41 @@ test('assert, no org: a field off the layout is read from the Dynamic Forms page
   await assert.rejects(lib.assert.fieldValue({ page }, 'a0x', 'Secret__c', 'x', { via: 'ui' }), { code: 'FIELD_NOT_ON_FORM' });
 });
 
+// F-cascade-11, no org: an address part shows inside its compound's one item ("Billing Address", or a Dynamic Forms
+// Site__c), as measured on sfui-pool-2; the part is matched inside that text.
+test('assert, no org: a part of a standard or custom Address is matched inside the Address the page shows', { timeout: 60_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const models = {
+    '001x': { objectApiName: 'Account', fields: ['Street', 'City', 'State'].map((p) => ({ apiName: `Billing${p}`, label: `Billing ${p}`, itemLabel: 'Billing Address', dataType: 'String' })) },
+    a0x: { objectApiName: 'SfUiC_Place__c', fields: [] }, // Site__c is placed by the Dynamic Forms page only
+  };
+  t.mock.method(require('../src/discover'), 'formModel', async (s, id) => models[id]);
+  const part = (apiName, label, whole) => ({ apiName, label, dataType: 'String', compoundFieldName: whole });
+  const info = {
+    Account: { BillingAddress: { apiName: 'BillingAddress', label: 'Billing Address', dataType: 'Address' }, BillingStreet: part('BillingStreet', 'Billing Street', 'BillingAddress'),
+      BillingCity: part('BillingCity', 'Billing City', 'BillingAddress'), BillingState: part('BillingState', 'Billing State', 'BillingAddress') },
+    SfUiC_Place__c: { Site__c: { apiName: 'Site__c', label: 'Site', dataType: 'Address' }, Site__City__s: part('Site__City__s', 'Site (City)', 'Site__c') },
+  };
+  const stored = { BillingStreet: '2 Break St\r\nSuite 9', BillingCity: 'Oakland', BillingState: 'CA', Site__City__s: 'Oakland' };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => (p.startsWith('/ui-api/object-info/') ? { fields: info[p.split('/').pop()] }
+    : { fields: { [p.split('.').pop()]: { value: stored[p.split('.').pop()], displayValue: null } } }));
+  await page.setContent(`<div role="tablist"><button role="tab">Details</button></div><${A.layoutItem} field-label="Billing Address"><div>Billing Address</div>`
+    + `<a href="#"><div>2 Break St</div><div>Suite 9, Oakland</div><div>94607 CA</div><div>USA</div></a><button>Edit Billing Address</button></${A.layoutItem}>`
+    + '<div data-target-selection-name="sfdc:RecordField.SfUiC_Place__c.Site__c"><div>Site</div><div>2 Break Street, Oakland</div><div>Edit Site</div></div>');
+  for (const via of ['ui', 'both']) {
+    await lib.assert.fieldValue({ page }, '001x', 'BillingCity', 'Oakland', { via });
+    await lib.assert.fieldValue({ page }, '001x', 'BillingStreet', '2 Break St\nSuite 9', { via });
+    await lib.assert.fieldValue({ page }, '001x', 'BillingState', 'CA', { via });
+    await lib.assert.fieldValue({ page }, 'a0x', 'Site__City__s', 'Oakland', { via });
+    // Control: a value the Address does not hold, or only a piece of a word in it, is red and carries the page's text.
+    for (const [id, f, want] of [['001x', 'BillingCity', 'Berkeley'], ['001x', 'BillingCity', 'Oak'], ['a0x', 'Site__City__s', 'Berkeley']]) {
+      await assert.rejects(lib.assert.fieldValue({ page }, id, f, want, { via }), (e) => e.code === 'FIELD_VALUE_MISMATCH' && /Oakland/.test(e.evidence.ui));
+    }
+  }
+});
+
 // No org: a lookup only a Dynamic Forms page places is not in the View model; object-info says it is a lookup.
 test('assert, no org: an off-layout lookup expected by its 15-char id matches the stored 18', async (t) => {
   const ID = 'a0BC1000004XyZ9MAK';
@@ -512,5 +547,24 @@ test('assert', { skip, timeout: 480_000 }, async (t) => {
         await assert.rejects(lib.assert.fieldValue(s, id, f, 'Not That User', { via: 'ui' }), { code: 'FIELD_VALUE_MISMATCH' });
       }
     }
+  });
+
+  // F-cascade-11: a part of the standard Billing Address, and of the custom Address Site__c that SfUiC_App's Dynamic
+  // Forms page places, is read inside the one Address item the page shows. Last: it leaves SfUiC_App open.
+  await t.test('assert.fieldValue reads a part of a standard and a custom Address, via ui and both', async (st) => {
+    const acct = await account(s, t, { Name: `BREAK fix address ${stamp()}`, BillingStreet: '2 Break St\nSuite 9', BillingCity: 'Oakland', BillingState: 'CA', BillingPostalCode: '94607' });
+    const app = await lib.session.openApp(s, 'SfUiC_App').catch((e) => { if (e.code === 'APP_UNAVAILABLE') return null; throw e; });
+    const place = app && await rec(s, t, 'SfUiC_Place__c', { Name: `BREAK fix place ${stamp()}`, Site__Street__s: '2 Break Street', Site__City__s: 'Oakland' });
+    for (const via of ['ui', 'both']) {
+      await lib.assert.fieldValue(s, acct, 'BillingCity', 'Oakland', { via });
+      await lib.assert.fieldValue(s, acct, 'BillingStreet', '2 Break St\nSuite 9', { via });
+      await lib.assert.fieldValue(s, acct, 'BillingPostalCode', '94607', { via });
+      // Control: a city the Address does not hold is red, with the Address text as the page side.
+      await assert.rejects(lib.assert.fieldValue(s, acct, 'BillingCity', 'Berkeley', { via }), (e) => e.code === 'FIELD_VALUE_MISMATCH' && /Oakland/.test(e.evidence.ui));
+      if (!place) continue;
+      await lib.assert.fieldValue(s, place, 'Site__City__s', 'Oakland', { via });
+      await assert.rejects(lib.assert.fieldValue(s, place, 'Site__City__s', 'Berkeley', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+    }
+    if (!place) st.skip('the org has no test/fixture-components app SfUiC_App: the custom Address half did not run');
   });
 });

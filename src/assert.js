@@ -66,12 +66,15 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   const model = await discover.formModel(s, recordId, { mode: 'View' });
   const onLayout = model.fields.find((f) => f.apiName === apiName);
   // A field only a Dynamic Forms page places is not in the layout's View model: object-info gives its label and type.
-  const infoFields = (!onLayout || (via !== 'ui' && onLayout.dataType === 'Reference'))
+  // An item of several fields (Billing Address) may be a compound, whose part object-info names.
+  const infos = (!onLayout || (via !== 'ui' && onLayout.dataType === 'Reference') || (via !== 'api' && !!onLayout.itemLabel && onLayout.itemLabel !== onLayout.label))
     && (await api.call(s, `/ui-api/object-info/${model.objectApiName}`)).fields;
-  const info = infoFields && infoFields[apiName];
+  const info = infos && infos[apiName];
   // A compound off the View model (a Name whose parts the layout lists) takes the label its parts' item has.
-  const part = !onLayout && model.fields.find((f) => infoFields[f.apiName]?.compoundFieldName === apiName);
+  const part = !onLayout && model.fields.find((f) => infos[f.apiName]?.compoundFieldName === apiName);
   const field = onLayout || (info && part ? { ...info, itemLabel: part.itemLabel } : info);
+  // A compound's part (Billing City) shows only inside the compound's one item, so the page read is that item's.
+  const whole = via !== 'api' && info && info.compoundFieldName && infos[info.compoundFieldName];
   const result = {};
   // A lookup stores an Id; its relationship field's display value is the record name a route sets it by.
   const rel = via !== 'ui' && field && field.dataType === 'Reference' && info && info.relationshipName;
@@ -91,7 +94,7 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   }
   if (via !== 'api') {
     if (!field) throw new SfUiError('FIELD_NOT_ON_FORM', `${apiName} is not a field of ${model.objectApiName} this user can see`, { apiName });
-    result.ui = await uiValue(s, recordId, field.label, model.objectApiName, apiName, field.itemLabel);
+    result.ui = await uiValue(s, recordId, field.label, model.objectApiName, whole ? whole.apiName : apiName, field.itemLabel || (whole && whole.label));
   }
   const want = expected === null ? '' : String(expected).replace(/\r\n/g, '\n');
   // A field off the View model (Dynamic Forms) has no known type, so a 15-char id may name its stored 18-char one.
@@ -105,7 +108,10 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   const page = field && field.dataType === 'Time' && result.ui != null ? result.ui.replace(/(\d:\d{2}):00\b/, '$1') : result.ui;
   // The page renders a run of spaces or tabs as one space.
   const spaced = (v) => v.replace(/[ \t]+/g, ' ');
-  const uiOk = !('ui' in result) || spaced(shown) === spaced(want) || num(field.dataType, result.ui) === num(field.dataType, want)
+  // A part is found inside its compound's text ("Suite 9, Oakland\n94607 CA"), between line breaks, commas or spaces.
+  // ponytail: a part that starts a longer one ("2 Break St" of "2 Break St\nSuite 9") passes via ui; via both catches it.
+  const inWhole = () => want !== '' && new RegExp(`(^|[\\s,])${spaced(want).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[\\s,])`).test(spaced(result.ui));
+  const uiOk = !('ui' in result) || (whole ? inWhole() : spaced(shown) === spaced(want)) || num(field.dataType, result.ui) === num(field.dataType, want)
     || (storedOk && ((stored.display != null && page === stored.display) || (dayDisplay != null && page === dayDisplay)));
   if (!apiOk || !uiOk) throw new SfUiError('FIELD_VALUE_MISMATCH', `${apiName} expected ${JSON.stringify(expected)}`, { expected, ...result });
   return result;

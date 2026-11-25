@@ -4605,6 +4605,67 @@
       ]
     },
     {
+      "id": "address-parts@edit-record",
+      "component": "standard compound Address (Billing Address)",
+      "container": "record Edit dialog (page layout)",
+      "interaction": "set the parts, save, check each part on the record page",
+      "task": "On the Account {{accountId}}, edit the record, set the Billing Address to street \"2 Break St\" and \"Suite 9\" on two lines, city Oakland, state CA, postal code 94607, country USA, save, and confirm the record page shows the city and the street.",
+      "needs": [
+        "accountId"
+      ],
+      "route": [
+        {
+          "tool": "sf_edit_record",
+          "args": {
+            "recordId": "{{accountId}}"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "BillingStreet": "2 Break St\nSuite 9",
+              "BillingCity": "Oakland",
+              "BillingState": "CA",
+              "BillingPostalCode": "94607",
+              "BillingCountry": "USA"
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{accountId}}",
+            "field": "BillingCity",
+            "expected": "Oakland",
+            "via": "both"
+          }
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{accountId}}",
+            "field": "BillingStreet",
+            "expected": "2 Break St\nSuite 9",
+            "via": "ui"
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-2"
+      },
+      "notes": "the record page shows the parts as one item, \"Billing Address\", so a part is read inside that item's text (F-cascade-11)",
+      "break": [
+        "F-cascade-11"
+      ]
+    },
+    {
       "id": "inline-edit@page-layout",
       "component": "number field",
       "container": "inline edit in the record detail panel (page layout)",
