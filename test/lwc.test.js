@@ -114,6 +114,32 @@ test('lwc.locate refuses an Aura component on a record page at once', { skip, ti
   assert.ok(Date.now() - started < 10_000, `took ${Date.now() - started} ms`);
 });
 
+// No org: a host that paints late makes no Tooling call; one that never paints asks Tooling, and for c only the org's own bundles.
+test('lwc.locate asks Tooling only for a host still hidden after 2 s, no org', async (t) => {
+  const page = await localPage(t);
+  const { api } = require('..');
+  const qs = [];
+  t.mock.method(api, 'call', async (s, path) => { qs.push(decodeURIComponent(path)); return { records: [{}] }; });
+  t.mock.method(nav, 'showsRecord', () => false);
+  t.mock.method(nav, 'openRecord', async () => {});
+  t.mock.method(discover, 'renderedPage', async () => 'Some_Page');
+  let place = { tag: 'c-record-banner', componentName: 'c:recordBanner', tabs: [] };
+  t.mock.method(discover, 'lwcOnPage', async () => place);
+  const id = '001000000000001AAA';
+  await page.setContent('<main></main>');
+  await page.evaluate(() => setTimeout(() => { document.querySelector('main').innerHTML = '<c-record-banner>Banner</c-record-banner>'; }, 500));
+  const { host } = await lwc.locate({ page }, id, 'recordBanner', { timeout: 5_000 });
+  assert.equal(await host.textContent(), 'Banner');
+  assert.deepEqual(qs, []);
+  await page.setContent('<main></main>'); // never paints: Tooling says Aura
+  await assert.rejects(lwc.locate({ page }, id, 'recordBanner', { timeout: 5_000 }), (e) => e.code === 'BAD_ARGS' && e.evidence.reason === 'auraComponent');
+  assert.match(qs[0], /DeveloperName = 'recordBanner' AND \(NamespacePrefix = null OR ManageableState NOT IN \('installed', 'installedEditable'/);
+  place = { ...place, componentName: 'acme:recordBanner' }; // control: a named namespace keeps its own filter
+  await assert.rejects(lwc.locate({ page }, id, 'recordBanner', { timeout: 5_000 }), (e) => e.code === 'BAD_ARGS');
+  assert.match(qs[1], /DeveloperName = 'recordBanner' AND NamespacePrefix = 'acme' LIMIT 1$/);
+  assert.equal(qs.length, 2);
+});
+
 // A managed package renders its components as <namespace>-<name> inside native shadow roots; the fixture org has
 // neither, so a local page builds that shape, with a decoy whose tag only ends the same way.
 test('lwc nested host in a namespace, no org', async (t) => {

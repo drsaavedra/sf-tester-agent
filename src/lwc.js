@@ -19,7 +19,9 @@ async function locate(s, recordId, lwcApiName, { flexiPageApiName, timeout = 30_
   if (!place) return nested(s, page, lwcApiName, { timeout: Math.min(timeout, 10_000) }); // a mistyped name fails in 10 s
   await openTabs(s, place, { timeout });
   const host = s.page.locator(place.tag).locator('visible=true').first();
-  if (!(await host.isVisible()) && (await isAura(s, place.componentName))) {
+  // Ask Tooling only for a host that has not painted in 2 s: most paint by then, and a Tooling error must not fail a render.
+  const shown = await host.waitFor({ state: 'visible', timeout: Math.min(timeout, 2_000) }).then(() => true, (e) => { if (e.name !== 'TimeoutError') throw e; return false; });
+  if (!shown && (await isAura(s, place.componentName))) {
     throw new SfUiError('BAD_ARGS', `${lwcApiName} is an Aura component: it renders no host to scope by its name, so aim at it without lwcApiName (role and name on the page)`, { reason: 'auraComponent', page, place });
   }
   await host.waitFor({ state: 'visible', timeout }).catch((e) => {
@@ -30,9 +32,11 @@ async function locate(s, recordId, lwcApiName, { flexiPageApiName, timeout = 30_
 }
 
 // An Aura bundle renders no tag of its name (and no class without CSS of its own), so a wait for its host never ends.
+// c is the org's own: no namespace, or its own one; an installed package's bundle of the same name is not it.
+const OWN = " AND (NamespacePrefix = null OR ManageableState NOT IN ('installed', 'installedEditable', 'deprecated', 'deprecatedEditable'))";
 async function isAura(s, componentName) {
   const [ns, name] = componentName.split(':').map((v) => v.replace(/'/g, ''));
-  const q = `SELECT Id FROM AuraDefinitionBundle WHERE DeveloperName = '${name}'${ns === 'c' ? '' : ` AND NamespacePrefix = '${ns}'`} LIMIT 1`;
+  const q = `SELECT Id FROM AuraDefinitionBundle WHERE DeveloperName = '${name}'${ns === 'c' ? OWN : ` AND NamespacePrefix = '${ns}'`} LIMIT 1`;
   return (await api.call(s, `/tooling/query?q=${encodeURIComponent(q)}`, { as: 'admin' })).records.length > 0;
 }
 
