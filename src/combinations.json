@@ -21289,6 +21289,44 @@
           "by": "a person"
         }
       }
+    },
+    {
+      "id": "search-again@header",
+      "component": "global search",
+      "container": "header search box, from a results page",
+      "interaction": "search twice in a row",
+      "task": "Search the org from the header for \"sfuinomatchbreakone\", then, from its results page, search for \"sfuinomatchbreaktwo\" and confirm the results page says it searched for the second term.",
+      "needs": [],
+      "route": [
+        {
+          "tool": "sf_search",
+          "args": {
+            "text": "sfuinomatchbreakone"
+          }
+        },
+        {
+          "tool": "sf_search",
+          "args": {
+            "text": "sfuinomatchbreaktwo"
+          }
+        },
+        {
+          "tool": "sf_wait",
+          "args": {
+            "text": "We searched for \"sfuinomatchbreaktwo\"",
+            "timeoutMs": 10000
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-3"
+      },
+      "notes": "on a results page the header button is \"Search: <last term>\", and the search redraws that page and keeps its url (F-flow-20)",
+      "break": [
+        "F-flow-20"
+      ]
     }
   ],
   "candidates": [

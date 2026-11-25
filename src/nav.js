@@ -233,24 +233,29 @@ async function openTab(s, tab, { timeout = 60_000 } = {}) {
 
 // Global search from the header box, as a user types it; returns the results page's main area.
 // The header's Search button opens the box only once the header has loaded, so it is pressed until the box shows.
+// On a results page that button is named "Search: <last term>" (F-flow-20).
 async function search(s, text, { timeout = 60_000 } = {}) {
   await requireEnglish(s);
   const box = s.page.locator('input[placeholder="Search..."]').locator('visible=true');
-  const button = s.page.getByRole('button', { name: 'Search', exact: true });
+  const button = s.page.getByRole('button', { name: /^Search(: .*)?$/ });
   for (const end = Date.now() + 20_000; !(await box.count()); await s.page.waitForTimeout(1_000)) {
     if (Date.now() > end) throw new SfUiError('ACTION_NOT_AVAILABLE', 'the header search box did not open', { url: s.page.url() });
     await button.click().catch(() => {});
   }
+  // Results open at /one/one.app#<base64 of {"componentDef":"forceSearch:searchPageDesktop",...}>.
+  const isSearch = (u) => Buffer.from(u.hash.slice(1), 'base64').toString().includes('forceSearch');
   const before = s.page.url();
+  const main = s.page.getByRole('main');
   await box.first().fill(String(text));
   await box.first().press('Enter');
-  // Results open at /one/one.app#<base64 of {"componentDef":"forceSearch:searchPageDesktop",...}>.
-  const isResults = (u) => u.href !== before && Buffer.from(u.hash.slice(1), 'base64').toString().includes('forceSearch');
-  await s.page.waitForURL(isResults, { timeout }).catch(() => {
+  // A search from a results page redraws that page and keeps its url; its main then names the new term (F-flow-20).
+  const opened = isSearch(new URL(before))
+    ? main.getByText(`We searched for "${text}"`).first().waitFor({ timeout })
+    : s.page.waitForURL((u) => u.href !== before && isSearch(u), { timeout });
+  await opened.catch(() => {
     throw new SfUiError('SEARCH_FAILED', `searching for "${text}" did not open the results page`, { text, url: s.page.url() });
   });
   // main shows before its results: wait for a result row or the no-match text (F-flow-19).
-  const main = s.page.getByRole('main');
   const settled = main.getByRole('rowheader').or(main.getByText(/find any matches/)).first();
   await settled.waitFor({ timeout }).catch(() => {
     throw new SfUiError('SEARCH_FAILED', `the results page for "${text}" never showed a result row or "no matches"`, { text, url: s.page.url() });

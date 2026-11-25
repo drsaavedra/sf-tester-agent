@@ -5,7 +5,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { session, nav, api } = require('..');
-const { auth, env, skip, account, probe, record: own, stamp } = require('./helpers');
+const { auth, env, skip, account, probe, record: own, stamp, localPage } = require('./helpers');
 
 test('nav', { skip, timeout: 600_000 }, async (t) => {
   const s = await session.start(await auth(env.org));
@@ -93,6 +93,42 @@ test('nav', { skip, timeout: 600_000 }, async (t) => {
     const main = await nav.search(s, name);
     assert.ok(await main.getByText(/didn.t find any matches/).count(), await main.ariaSnapshot());
   });
+
+  // F-flow-20: on a results page the header button is "Search: <last term>", and a search redraws that page in place.
+  await t.test('search again from a results page opens the new results page', async () => {
+    const [first, second] = [`sfuinomatch${stamp()}a`, `sfuinomatch${stamp()}b`];
+    await nav.openList(s, 'SfUiProbe__c');
+    await nav.search(s, first);
+    const main = await nav.search(s, second, { timeout: 30_000 });
+    assert.ok(await main.getByText(`We searched for "${second}"`).count(), await main.ariaSnapshot());
+    assert.ok(await main.getByText(/didn.t find any matches/).count(), await main.ariaSnapshot());
+  });
+});
+
+// F-flow-20, no org: a stub of the header and the results page. The button is "Search", then "Search: <last term>";
+// a search from a results page keeps the url and redraws main, the old rows first, the new ones 300 ms later.
+test('search twice in a row returns the second results page, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main></main>
+    <script>
+      const shows = (term) => '<p>We searched for "' + term + '".</p><table><tr><th role=rowheader>hit ' + term + '</th></tr></table>';
+      q.onkeydown = (e) => {
+        if (e.key !== 'Enter') return;
+        const term = q.value, main = document.querySelector('main');
+        q.hidden = true;
+        document.querySelector('header button').setAttribute('aria-label', 'Search: ' + term);
+        if (location.hash) return setTimeout(() => { main.innerHTML = shows(term); }, 300);
+        location.hash = btoa(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop', term }));
+        main.innerHTML = shows(term);
+      };
+    </script></body></html>` }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  const main = await nav.search({ page }, 'BREAK flow clone', { timeout: 5_000 });
+  assert.equal(await main.getByRole('rowheader').textContent(), 'hit BREAK flow clone');
+  await nav.search({ page }, 'sf-ui probe 7805767', { timeout: 5_000 });
+  assert.equal(await main.getByRole('rowheader').textContent(), 'hit sf-ui probe 7805767');
 });
 
 // No org: the tab list as UI API serves it (test/nav-items.json), in two pages with the custom tabs on page 2, so a
