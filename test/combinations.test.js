@@ -85,8 +85,9 @@ test('sf_combinations with no filter lists every tested id by component, and can
   assert.deepEqual(body.candidates.map((c) => c.id), all.filter((c) => c.status !== 'tested').map((c) => c.id));
   assert.ok(body.candidates.length >= 1, 'the bundled catalogue holds a candidate');
   assert.equal(body.components['inline-edit'].in.filter((w) => w.includes(' (')).length, 1, 'a different interaction is noted beside its slug');
-  // The budget keeps the index readable in one call; it grows with the catalogue (15,188 chars at the Task routes).
-  assert.ok(r.content[0].text.length < 17_000, `${r.content[0].text.length} chars`);
+  // The budget keeps the index readable in one call; it grows with the catalogue (15,188 chars at the Task routes,
+  // 17,341 with the 16 break routes).
+  assert.ok(r.content[0].text.length < 19_000, `${r.content[0].text.length} chars`);
   const one = JSON.parse((await client.callTool({ name: 'sf_combinations', arguments: { component: tested[0].id } })).content[0].text);
   assert.equal(one.combinations[0].id, tested[0].id);
   assert.ok(one.combinations[0].route.length, 'a filtered entry carries its route');
