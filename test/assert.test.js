@@ -231,6 +231,26 @@ test('assert, no org: a Number of 1,000 or more and a Percent match as the numbe
 });
 
 // No org: a field only a Dynamic Forms page places is not in the layout's View model; the page is still read.
+// F-cascade-6, no org: a field with help text carries a lightning-helptext whose text ("Help <label>") innerText reads.
+test('assert, no org: a field with help text is read without its help button, via ui and both', { timeout: 60_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const fields = [{ apiName: 'Email__c', label: 'Email', dataType: 'Email' }, { apiName: 'Note__c', label: 'Note', dataType: 'String' }];
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'SfUiC_Field__c', fields }));
+  const stored = { Email__c: 'a@b.example', Note__c: 'Help Note' };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => ({ fields: { [p.split('.').pop()]: { value: stored[p.split('.').pop()], displayValue: null } } }));
+  const help = (label) => `<${A.helptext}><button><span>Help ${label}</span></button></${A.helptext}>`;
+  const item = (label, text, h = '') => `<${A.layoutItem} field-label="${label}"><div>${label}</div>${h}<div>${text}</div><div>Edit ${label}</div></${A.layoutItem}>`;
+  await page.setContent(item('Email', 'a@b.example', help('Email')) + item('Note', 'Help Note'));
+  for (const via of ['ui', 'both']) {
+    assert.equal((await lib.assert.fieldValue({ page }, 'a0x', 'Email__c', 'a@b.example', { via })).ui, 'a@b.example');
+    // Control: with no help button, a value that reads like one is the value.
+    assert.equal((await lib.assert.fieldValue({ page }, 'a0x', 'Note__c', 'Help Note', { via })).ui, 'Help Note');
+    await assert.rejects(lib.assert.fieldValue({ page }, 'a0x', 'Email__c', 'c@d.example', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+  }
+});
+
 test('assert, no org: a field off the layout is read from the Dynamic Forms page by its object-info label', { timeout: 30_000 }, async (t) => {
   const page = await localPage(t);
   page.setDefaultTimeout(2_000);
@@ -424,6 +444,23 @@ test('assert', { skip, timeout: 300_000 }, async (t) => {
       // Control: a lost blank line, or a line break typed as a space, is still red.
       await assert.rejects(lib.assert.fieldValue(s, id, 'Memo__c', 'line one\nline three', { via }), { code: 'FIELD_VALUE_MISMATCH' });
       await assert.rejects(lib.assert.fieldValue(s, id, 'Long__c', 'lead\ttab second', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+    }
+  });
+
+  // F-cascade-6: a field with help text shows a "Help <label>" button; the page side read it as part of the value.
+  await t.test('assert.fieldValue reads a field with help text without its help button, via ui and both', async (st) => {
+    const email = `break.fix.${stamp()}@sfuic.example`.toLowerCase();
+    const id = await rec(s, t, 'SfUiC_Field__c', { Name: `BREAK fix help ${stamp()}`, Email__c: email, Flagged__c: true, Tone__c: 'Calm' })
+      .catch((e) => { if (e.evidence?.status === 404) return null; throw e; });
+    if (!id) return st.skip('the org has no test/fixture-components object SfUiC_Field__c');
+    const ref = (await lib.assert.fieldValue(s, id, 'Ref__c', 'x', { via: 'api' }).catch((e) => e.evidence)).api;
+    for (const via of ['ui', 'both']) {
+      assert.equal((await lib.assert.fieldValue(s, id, 'Email__c', email, { via })).ui, email);
+      await lib.assert.fieldValue(s, id, 'Flagged__c', true, { via });
+      await lib.assert.fieldValue(s, id, 'Tone__c', 'Calm', { via });
+      await lib.assert.fieldValue(s, id, 'Ref__c', ref, { via });
+      // Control: a wrong value is still red.
+      await assert.rejects(lib.assert.fieldValue(s, id, 'Tone__c', 'Bright', { via }), { code: 'FIELD_VALUE_MISMATCH' });
     }
   });
 });

@@ -34,8 +34,11 @@ async function uiValue(s, recordId, label, objectApiName, apiName) {
   const lines = (await item.innerText()).split('\n').map((l) => l.trim());
   // A lookup's link carries a visually hidden "Preview" control that innerText still reads.
   const lookup = (await item.locator(`${A.lookup}, ${A.hoverableLink}`).count()) > 0;
+  // A field with help text shows a help button whose assistive text ("Help <label>") innerText also reads.
+  const help = (await item.locator(A.helptext).allInnerTexts()).map((t) => t.trim());
   // A blank line inside a Text Area's value is kept; blank lines around it are not.
-  return lines.filter((l) => l !== label && l !== `Edit ${label}` && !(lookup && l === 'Preview')).join('\n').replace(/^\n+|\n+$/g, '');
+  return lines.filter((l) => l !== label && l !== `Edit ${label}` && !(lookup && l === 'Preview') && !(l && help.includes(l)))
+    .join('\n').replace(/^\n+|\n+$/g, '');
 }
 
 // The stored value is the wanted one: equal, the same record by a 15-char id (id), or a display name (name).

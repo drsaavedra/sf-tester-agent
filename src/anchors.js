@@ -14,5 +14,6 @@ module.exports = Object.freeze({
   layoutItem: 'records-record-layout-item', // records/recordLayoutItem.utam.json
   lookup: 'force-lookup', // force/lookup.utam.json
   hoverableLink: 'records-hoverable-link', // force/lookup.utam.json
+  helptext: 'lightning-helptext', // in no page object; measured on sfui-pool-2 (reads "Help <label>")
   generatedPagePrefix: 'forcegenerated-flexipage_', // in no page object; measured on the fixture org
 });
