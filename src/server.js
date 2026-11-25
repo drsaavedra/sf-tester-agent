@@ -190,7 +190,7 @@ async function reap(id) {
 
 // The page's app when none was asked for is only information: a failure answers app null and why, never an error.
 const appNow = (s, list) => lib.session.currentApp(s, list).then(
-  (app) => (app.id ? { app } : { app: null, appReason: 'the page shows no Lightning app' }),
+  ({ reason, ...app }) => (app.id ? { app, ...(reason && { appReason: reason }) } : { app: null, appReason: 'the page shows no Lightning app' }),
   (e) => ({ app: null, appReason: String(e.message || e).slice(0, 300) }));
 
 const snapshot = async (locator, max = 6000) => lib.act.marked(locator, lib.act.cut(await locator.ariaSnapshot(), max));
@@ -500,7 +500,7 @@ tool('sf_login_as', 'Become another user for this whole session (needs Login As 
     }
   });
 
-tool('sf_whoami', 'The user Id the page runs as, app (the Lightning app the page is in) and apps (the Lightning apps this user can open: label, developerName, console); app null and appReason when they cannot be read.', {}, async () => {
+tool('sf_whoami', 'The user Id the page runs as, app (the Lightning app the page is in) and apps (the Lightning apps this user can open: label, developerName, console); app null and appReason when they cannot be read, and appReason beside app when it was read from the navigation bar because Lightning did not name it (after a Visualforce page).', {}, async () => {
   const s = need();
   const userId = await lib.session.whoAmI(s);
   const list = await lib.session.apps(s).catch((e) => e);
