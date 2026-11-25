@@ -10,15 +10,20 @@ const { unxml } = require('./xml');
 // A tool argument that goes into a page URL is one path segment: a slash or a ? would open another page.
 const segment = (...values) => { for (const v of values) if (v !== undefined && !/^\w+$/.test(v)) throw new SfUiError('BAD_ARGS', `not an id or an API name: ${v}`, { value: v }); };
 
-// Loaded = the highlights panel renders; failed = the flexipage error card (about 6 s for a bad id).
+// Loaded = the highlights panel renders, or the record home draws and no panel follows within PANEL_MS (a template
+// with none: highlights false); failed = the flexipage error card, which comes with the record home.
+const PANEL_MS = 5_000; // the panel came 0 to 0.3 s after the record home, cold page included (measured on sfui-pool-2)
 async function openRecord(s, recordId, { objectApiName, timeout = 60_000 } = {}) {
   segment(recordId, objectApiName);
   const path = `/lightning/r/${objectApiName ? `${objectApiName}/` : ''}${recordId}/view`;
   await s.page.goto(s.origin + path);
-  await s.page.locator(`${A.highlights}, ${A.pageError}`).first().waitFor({ state: 'visible', timeout }).catch((e) => {
+  const loaded = s.page.locator(`${A.highlights}, ${A.pageError}`).first();
+  const home = s.page.locator(`${A.recordHome} > *`).locator('visible=true').first();
+  await loaded.or(home).first().waitFor({ state: 'visible', timeout }).catch((e) => {
     if (e.name !== 'TimeoutError') throw e;
-    throw new SfUiError('NO_HIGHLIGHTS', `${recordId}'s page showed no Highlights Panel and no error card within ${timeout} ms: a slow page, or a page with no panel (the record tools need one)`, { recordId, url: s.page.url() });
+    throw new SfUiError('NO_HIGHLIGHTS', `${recordId}'s page drew no record page and no error card within ${timeout} ms: a slow page, or an object the user cannot read`, { recordId, url: s.page.url() });
   });
+  const highlights = await loaded.waitFor({ state: 'visible', timeout: PANEL_MS }).then(() => true, (e) => { if (e.name !== 'TimeoutError') throw e; return false; });
   if (await s.page.locator(A.pageError).first().isVisible()) {
     const text = (await s.page.locator(A.pageError).first().innerText()).slice(0, 200);
     throw new SfUiError('RECORD_UNAVAILABLE', `${recordId} did not load`, { recordId, text });
@@ -27,7 +32,7 @@ async function openRecord(s, recordId, { objectApiName, timeout = 60_000 } = {})
   await s.page.waitForURL(new RegExp(`/lightning/r/[^/]+/${recordId}\\w{0,3}/view`), { timeout });
   await requireEnglish(s); // every record-page tool comes through here
   const [, object] = new URL(s.page.url()).pathname.match(/\/lightning\/r\/([^/]+)\//);
-  return { recordId, objectApiName: object, url: s.page.url() };
+  return { recordId, objectApiName: object, url: s.page.url(), ...(!highlights && { highlights: false }) };
 }
 
 const SPLIT = 'Select an item from this list to open it.'; // the split view's list pane: in main (Sales), not (SF UI App)

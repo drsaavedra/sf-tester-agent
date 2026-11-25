@@ -508,7 +508,7 @@ tool('sf_whoami', 'The user Id the page runs as, app (the Lightning app the page
   return { userId, ...(await appNow(s, list)), apps: list.map(({ id, ...a }) => a) };
 });
 
-tool('sf_open_record', 'Open a record page and wait until it has loaded. Throws RECORD_UNAVAILABLE when the user cannot see it, UNSUPPORTED_LANGUAGE for a non-English user.',
+tool('sf_open_record', 'Open a record page and wait until it has loaded. Returns highlights false when the page has no Highlights Panel (a template with none): the tools that use its actions cannot. Throws RECORD_UNAVAILABLE when the user cannot see it, UNSUPPORTED_LANGUAGE for a non-English user.',
   { recordId: z.string(), objectApiName: z.string().optional() },
   async ({ recordId, objectApiName }) => {
     const r = await lib.nav.openRecord(need(), recordId, { objectApiName });

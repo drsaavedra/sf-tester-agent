@@ -31,6 +31,16 @@ test('nav', { skip, timeout: 600_000 }, async (t) => {
     assert.equal((await nav.openRecord(s, event)).objectApiName, 'Event');
   });
 
+  // F-fixtures-25: SfUiC_Tpl_1__c's View override (test/fixture-components, every app) is a template with no Highlights Panel.
+  await t.test('openRecord opens a record page with no Highlights Panel', async (st) => {
+    if (await api.call(s, '/sobjects/SfUiC_Tpl_1__c/describe', { as: 'admin' }).then(() => false, () => true)) return st.skip('the org has no test/fixture-components object SfUiC_Tpl_1__c');
+    const id = await own(s, t, 'SfUiC_Tpl_1__c', { Name: `BREAK fix tpl1 ${stamp()}` });
+    const started = Date.now();
+    const r = await nav.openRecord(s, id);
+    assert.deepEqual([r.objectApiName, r.highlights], ['SfUiC_Tpl_1__c', false]);
+    assert.ok(Date.now() - started < 20_000, `took ${Date.now() - started} ms`);
+  });
+
   await t.test('openRecord throws RECORD_UNAVAILABLE for an id that does not exist', async () => {
     const missing = record.slice(0, 12) + 'ZZZAA0';
     await assert.rejects(nav.openRecord(s, missing, { objectApiName: 'Account' }), { code: 'RECORD_UNAVAILABLE' });
