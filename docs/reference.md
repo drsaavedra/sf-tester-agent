@@ -641,9 +641,12 @@ Every tool also takes `session`: the session id sf_start returned; leave out for
 ### Timings
 
 `sf_start`, `sf_login_as` and `sf_run_route` return `timings`: the milliseconds of each stage of the call, measured in
-the server. When one of these calls fails, `timings` is in the evidence of the error. It has the stages that the call
-completed, and `failed` is the time of the stage that failed. For a route, the last time in `stepMs` is the step that
-failed.
+the server. When `sf_start` or `sf_login_as` fails with a coded error, `timings` is in the evidence of the error. It has the
+stages that the call completed, and `failed` is the time of the stage that failed. An `sf_start` that is refused before
+it holds a session (`NO_SESSION`, `TOO_MANY_SESSIONS`) has no `timings`. When a route fails after its checks, its
+evidence has `timings` with no `failed`: the last time in `stepMs` is the step that failed, and `end` is the read of
+what changed on the page. A route that is refused before its first step (`STALE_ROUTE`, or arguments that the first
+check refuses) has no `timings`.
 
 | Tool | Stages |
 |---|---|

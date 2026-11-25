@@ -470,28 +470,34 @@ tool('sf_login_as', 'Become another user for this whole session (needs Login As 
   async ({ user, app }) => {
     const s = need();
     const sw = stopwatch();
-    const id = await lib.discover.userId(s, user);
-    sw.mark('user');
-    await lib.session.loginAs(s, id);
-    sw.mark('login');
-    const led = ledgers.get(state.id);
-    if (led) led.steps = []; // what ran before the login ran as another user
-    state.form = null;
-    // Login As lands in the new user's last-used app, so the session's app is opened again.
-    const want = app || s.app?.developerName;
-    const userId = await lib.session.whoAmI(s);
-    sw.mark('whoami');
-    // The Login As has happened by now, so a failed app says the session runs as the new user.
-    const timed = (out) => { sw.mark('app'); return { ...out, timings: sw.ms }; };
-    if (!want) return timed({ userId, ...(await appNow(s)) });
-    const inApp = await lib.session.openApp(s, want).catch((e) => {
-      if (led) led.noApp = true; // no app is known for this user: a route saved now names none, until sf_start or an app that opens
-      if (!(e instanceof lib.SfUiError)) throw e;
-      throw new lib.SfUiError(e.code, `logged in as ${userId}, but ${e.message.replace(/^\w+: /, '')}; sf_start to return to the alias owner`, { ...e.evidence, userId, timings: (sw.mark('failed'), sw.ms) });
-    });
-    if (led) Object.assign(led, { noApp: false }, app && { app }); // kept once it opened; a kept app keeps the label it was given
-    const { warning, ...kept } = inApp; // the caller never typed a kept app's value, so it gets no warning
-    return timed({ userId, app: app ? inApp : kept, ...(!app && { appKept: true }) });
+    try {
+      const id = await lib.discover.userId(s, user);
+      sw.mark('user');
+      await lib.session.loginAs(s, id);
+      sw.mark('login');
+      const led = ledgers.get(state.id);
+      if (led) led.steps = []; // what ran before the login ran as another user
+      state.form = null;
+      // Login As lands in the new user's last-used app, so the session's app is opened again.
+      const want = app || s.app?.developerName;
+      const userId = await lib.session.whoAmI(s);
+      sw.mark('whoami');
+      // The Login As has happened by now, so a failed app says the session runs as the new user.
+      const timed = (out) => { sw.mark('app'); return { ...out, timings: sw.ms }; };
+      if (!want) return timed({ userId, ...(await appNow(s)) });
+      const inApp = await lib.session.openApp(s, want).catch((e) => {
+        if (led) led.noApp = true; // no app is known for this user: a route saved now names none, until sf_start or an app that opens
+        if (!(e instanceof lib.SfUiError)) throw e;
+        throw new lib.SfUiError(e.code, `logged in as ${userId}, but ${e.message.replace(/^\w+: /, '')}; sf_start to return to the alias owner`, { ...e.evidence, userId, timings: (sw.mark('failed'), sw.ms) });
+      });
+      if (led) Object.assign(led, { noApp: false }, app && { app }); // kept once it opened; a kept app keeps the label it was given
+      const { warning, ...kept } = inApp; // the caller never typed a kept app's value, so it gets no warning
+      return timed({ userId, app: app ? inApp : kept, ...(!app && { appKept: true }) });
+    } catch (e) {
+      // Any coded failure says how far the login got; the app open has added its own.
+      if (e instanceof lib.SfUiError && !e.evidence?.timings) { sw.mark('failed'); e.evidence = { ...e.evidence, timings: sw.ms }; }
+      throw e;
+    }
   });
 
 tool('sf_whoami', 'The user Id the page runs as, app (the Lightning app the page is in) and apps (the Lightning apps this user can open: label, developerName, console); app null and appReason when they cannot be read.', {}, async () => {
@@ -863,7 +869,7 @@ const staleNext = ({ negative, open, id, remap }) => {
   if (!remap) return 'plan the scenario with replaces naming the stale route';
   return id !== remap ? `this scenario's Draft names ${remap}, so ${id} needs a scenario of its own` : `this scenario's Draft will name ${remap}`;
 };
-tool('sf_run_route', 'Run a known route in one call: steps, each another sf-tester tool and its arguments (leave session out: the route\'s session applies), in order. Every step\'s arguments are checked before any step runs (BAD_ARGS, or PATH_REFUSED for a path sf_api refuses), and sf_start, sf_end, sf_run_route and the tools that keep a record of the run (sf_scenario, sf_save_route, sf_promote_route, sf_record_improvement, sf_fix_improvement) cannot be steps. An sf_verify_checks step leaves out org, as it runs on the route session\'s org, takes an absolute checksFile or project and meets the call\'s own argument rules (BAD_ARGS before any step otherwise; sf_combinations gives a saved route\'s paths absolute), counts against the session\'s budget as a direct call does, charged with the route before any step runs (BUDGET_SPENT, and no step runs, when they do not fit), and fails the route on any verdict but green (code VERIFY_NOT_GREEN for red, VERIFY_NOT_RUN for not run or nothing checked, verify\'s lines in evidence). A string argument can carry {{stepN.path}}, a value an earlier step returned: N counts from 0, path is dotted keys into that step\'s result ({{step2.recordId}} after a create\'s sf_save, {{step0.actions.0.apiName}}); one to a step not yet run, or to a value that is not there, is BAD_ARGS naming the step. Returns steps (each tool with its at moments), last, the final step\'s whole result, timings (the milliseconds of each stage, and stepMs, one time per step; in a failure\'s evidence too), and validity, the app and record page the route ended on, with the persona only when a login names one, or the persona read is the one the route\'s own validity names (any other is read to compare, not to save). A read that threw comes back as unread, so a red with no stale may be a page nobody read; a route with a saved validity that opened no page reads its app and persona only, and unread says the page was not read. The first step that fails stops the route with ROUTE_STEP_FAILED: failedAt, that step\'s code, error and evidence, and the steps done before it. Given a saved route\'s validity, it is first checked against the org with no browser (app, FlexiPage, the persona\'s permission sets and its profile\'s own set): stale refuses the route with STALE_ROUTE, naming what changed, before any step runs, so you remap it (find the route again, and the passing scenario saves a new Draft with replaces; a negative scenario saves none, so remap in a positive one of its own); onStale run skips the check (the CLI replay checks first). The result carries check: valid, stale or unknown (nothing compared, or the check could not run: it runs, and unchecked says why), and what could not be checked before the run (the form, read where the route ends). A result or a failure also adds stale, what has changed on that page since the route was saved; a red with stale is still a red.',
+tool('sf_run_route', 'Run a known route in one call: steps, each another sf-tester tool and its arguments (leave session out: the route\'s session applies), in order. Every step\'s arguments are checked before any step runs (BAD_ARGS, or PATH_REFUSED for a path sf_api refuses), and sf_start, sf_end, sf_run_route and the tools that keep a record of the run (sf_scenario, sf_save_route, sf_promote_route, sf_record_improvement, sf_fix_improvement) cannot be steps. An sf_verify_checks step leaves out org, as it runs on the route session\'s org, takes an absolute checksFile or project and meets the call\'s own argument rules (BAD_ARGS before any step otherwise; sf_combinations gives a saved route\'s paths absolute), counts against the session\'s budget as a direct call does, charged with the route before any step runs (BUDGET_SPENT, and no step runs, when they do not fit), and fails the route on any verdict but green (code VERIFY_NOT_GREEN for red, VERIFY_NOT_RUN for not run or nothing checked, verify\'s lines in evidence). A string argument can carry {{stepN.path}}, a value an earlier step returned: N counts from 0, path is dotted keys into that step\'s result ({{step2.recordId}} after a create\'s sf_save, {{step0.actions.0.apiName}}); one to a step not yet run, or to a value that is not there, is BAD_ARGS naming the step. Returns steps (each tool with its at moments), last, the final step\'s whole result, timings (the milliseconds of each stage, and stepMs, one time per step; in the evidence too when a step fails), and validity, the app and record page the route ended on, with the persona only when a login names one, or the persona read is the one the route\'s own validity names (any other is read to compare, not to save). A read that threw comes back as unread, so a red with no stale may be a page nobody read; a route with a saved validity that opened no page reads its app and persona only, and unread says the page was not read. The first step that fails stops the route with ROUTE_STEP_FAILED: failedAt, that step\'s code, error and evidence, and the steps done before it. Given a saved route\'s validity, it is first checked against the org with no browser (app, FlexiPage, the persona\'s permission sets and its profile\'s own set): stale refuses the route with STALE_ROUTE, naming what changed, before any step runs, so you remap it (find the route again, and the passing scenario saves a new Draft with replaces; a negative scenario saves none, so remap in a positive one of its own); onStale run skips the check (the CLI replay checks first). The result carries check: valid, stale or unknown (nothing compared, or the check could not run: it runs, and unchecked says why), and what could not be checked before the run (the form, read where the route ends). A result or a failure also adds stale, what has changed on that page since the route was saved; a red with stale is still a red.',
   { steps: z.array(z.object({ tool: z.string(), args: z.record(z.string(), z.unknown()).optional() })).min(1), id: z.string().min(1).optional().describe('the saved route\'s id, from sf_combinations: a stale refusal inside a positive scenario makes that scenario\'s Draft name it; a negative scenario saves no Draft, so remap in a positive one'), onStale: z.enum(['refuse', 'run']).optional().describe('refuse (the default): a route the pre-run check finds stale runs no step; run: no check, for the CLI replay (it checks first) and replay --baseline; a tester remaps a stale route instead'), validity: z.unknown().optional().describe('a saved route\'s validity, from sf_combinations, to check it and to report what changed since it was saved, or that it ran as another persona than the one it names; leave it out for a route that has none') },
   unwound(async ({ steps, id, validity, onStale = 'refuse' }, extra) => {
     const led = ledgers.get(state.id); // read before any await, so a verify step runs on the ledger the call started on
@@ -908,6 +914,8 @@ tool('sf_run_route', 'Run a known route in one call: steps, each another sf-test
     const done = [];
     const results = [];
     const stepMs = []; // one entry per step, in step order
+    // A failure after a step ran: the steps so far, then end, the read of what changed on the page.
+    const failure = async () => { sw.mark('steps'); const now = await staleNow(); sw.mark('end'); return { ...now, timings: { ...sw.ms, stepMs } }; };
     let last;
     for (const [i, { name, run, args: template }] of plan.entries()) {
       const began = performance.now();
@@ -919,7 +927,7 @@ tool('sf_run_route', 'Run a known route in one call: steps, each another sf-test
         return JSON.stringify(String(value)).slice(1, -1);
       }));
       // A page that changed can empty an earlier step's value, so this red says so too.
-      if (gap) throw new lib.SfUiError('BAD_ARGS', `step ${i} ${name}: step ${gap.n} returned no value for ${gap.ref}`, { step: i, tool: name, ref: gap.ref, done, ...(await staleNow()) });
+      if (gap) throw new lib.SfUiError('BAD_ARGS', `step ${i} ${name}: step ${gap.n} returned no value for ${gap.ref}`, { step: i, tool: name, ref: gap.ref, done, ...(await failure()) });
       try {
         last = await run(args, name === 'sf_verify_checks' ? { ...extra, led } : extra);
       } catch (e) {
@@ -928,8 +936,7 @@ tool('sf_run_route', 'Run a known route in one call: steps, each another sf-test
         const code = codeOf(e);
         const error = redact(String(e.message || e)).slice(0, ERROR_CHARS);
         stepMs.push(Math.round(performance.now() - began)); // the failed step's time is the last entry
-        sw.mark('steps');
-        throw new lib.SfUiError('ROUTE_STEP_FAILED', `step ${i} ${name}: ${error.split('\n')[0]}`, { failedAt: i, tool: name, code, error, evidence: e.evidence, done, ...(await staleNow()), timings: { ...sw.ms, stepMs } });
+        throw new lib.SfUiError('ROUTE_STEP_FAILED', `step ${i} ${name}: ${error.split('\n')[0]}`, { failedAt: i, tool: name, code, error, evidence: e.evidence, done, ...(await failure()) });
       }
       const url = state.s?.page.url();
       opened ||= isEntry({ tool: name, args }) || url !== start || reuses(name, args, url);

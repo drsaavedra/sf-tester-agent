@@ -313,7 +313,12 @@ test('a failed sf_start, sf_login_as or sf_run_route carries timings in its evid
   assert.deepEqual([slow.body.code, Object.keys(slow.body.evidence.timings ?? {})], ['START_TIMEOUT', ['close', 'auth', 'browser', 'app', 'failed']], JSON.stringify(slow.body));
   await call('sf_start', { org: 'stub' }, 10_000);
   const route = await call('sf_run_route', { steps: [{ tool: 'sf_api', args: { path: '/list' } }, { tool: 'sf_api', args: { path: '/fails' } }] }, 10_000);
-  assert.deepEqual([route.body.code, Object.keys(route.body.evidence.timings ?? {}), route.body.evidence.timings?.stepMs.length], ['ROUTE_STEP_FAILED', ['check', 'steps', 'stepMs'], 2], JSON.stringify(route.body));
+  assert.deepEqual([route.body.code, Object.keys(route.body.evidence.timings ?? {}), route.body.evidence.timings?.stepMs.length], ['ROUTE_STEP_FAILED', ['check', 'steps', 'end', 'stepMs'], 2], JSON.stringify(route.body));
+  const gap = await call('sf_run_route', { steps: [{ tool: 'sf_api', args: { path: '/list' } }, { tool: 'sf_api', args: { path: '{{step0.nope}}' } }] }, 10_000);
+  assert.deepEqual([gap.body.code, gap.body.evidence.timings?.stepMs.length], ['BAD_ARGS', 1], JSON.stringify(gap.body));
+  const wrong = await call('sf_login_as', { user: '005fail' }, 10_000);
+  assert.deepEqual([wrong.body.code, Object.keys(wrong.body.evidence.timings ?? {})], ['WRONG_USER', ['user', 'failed']], JSON.stringify(wrong.body));
+  await call('sf_start', { org: 'stub' }, 10_000); // the failed login left the session with no known user
   const login = await call('sf_login_as', { user: '005noapps', app: 'SfUi_Console' }, 10_000);
   assert.deepEqual([login.isError, Object.keys(login.body.evidence.timings ?? {})], [true, ['user', 'login', 'whoami', 'failed']], JSON.stringify(login.body));
 });
