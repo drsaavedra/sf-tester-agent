@@ -267,6 +267,20 @@ test('modal.find and modal.open take an alertdialog, over a later non-modal dial
   assert.equal(await (await modal.open({ page }, { timeout: 500 })).getAttribute('aria-label'), 'SFUIC Confirm');
 });
 
+// No org: a dialog the page hides because a newer one opened over it may come later in the DOM than the shown one (R7);
+// an aria-modal dialog under aria-hidden still beats a shown non-modal one (a utility panel on an Aura template page).
+test('modal.find takes a shown dialog over a later one under aria-hidden, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent(`<section role="alertdialog" aria-modal="true" aria-label="Front"><button>OK</button></section>
+    <div aria-hidden="true"><div role="dialog" aria-modal="true" aria-label="Back"><input aria-label="Name"></div></div>`);
+  const m = await modal.find({ page }, { timeout: 2_000 });
+  assert.equal(await m.getAttribute('aria-label'), 'Front');
+  assert.equal(m.hiddenBy, undefined);
+  await page.setContent(`<div aria-hidden="true"><div role="dialog" aria-modal="true" aria-label="Drawn"><input aria-label="Name"></div></div>
+    <footer><div role="dialog" aria-label="SF UI Utility"><input aria-label="Utility note"></div></footer>`);
+  assert.equal(await (await modal.find({ page }, { timeout: 2_000 })).getAttribute('aria-label'), 'Drawn');
+});
+
 // No org: a second stacked panel on an Aura template page sets aria-hidden on div.viewport, which holds both dialogs
 // (F-fixtures-26). find still takes the drawn dialog, a click reaches inside it, and read gives its text and the hider.
 test('modal.find, act.click and modal.read reach a drawn dialog under aria-hidden, no org', { timeout: 30_000 }, async (t) => {

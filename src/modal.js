@@ -13,11 +13,15 @@ async function find(s, { timeout = 30_000, body = false } = {}) {
   const left = () => Math.max(100, until - Date.now());
   // LightningAlert and LightningConfirm are role alertdialog (F-fixtures-4). includeHidden: a stacked panel on an Aura
   // template page sets aria-hidden on div.viewport, which holds the drawn dialogs too (F-fixtures-26).
-  const role = () => s.page.getByRole('dialog', { includeHidden: true }).or(s.page.getByRole('alertdialog', { includeHidden: true }));
+  const role = (includeHidden = true) => s.page.getByRole('dialog', { includeHidden }).or(s.page.getByRole('alertdialog', { includeHidden }));
   const any = role().locator('visible=true');
   await any.last().waitFor({ state: 'visible', timeout: left() });
-  const modal = s.page.locator('[aria-modal="true"]').and(role()).locator('visible=true');
-  const dialog = (await modal.count()) ? modal.last() : any.last();
+  // A shown dialog before one the page hid when a newer one opened over it: DOM order is not stacking order (R7).
+  const modal = (hidden) => s.page.locator('[aria-modal="true"]').and(role(hidden)).locator('visible=true');
+  let dialog = any.last();
+  for (const l of [modal(false), modal(true), role(false).locator('visible=true')]) {
+    if (await l.count()) { dialog = l.last(); break; }
+  }
   // body, for a caller that reads the dialog at once: its frame and footer (Submit, Next) show before its body, so wait
   // for the body to hold text or a field and no empty group, returning it either way. Steps inside wait on their own.
   while (body && !(await dialog.evaluate(drawn, null, { timeout: left() }).catch((e) => { if (/has been closed/.test(e.message)) throw e; return false; })) && Date.now() < until) {
