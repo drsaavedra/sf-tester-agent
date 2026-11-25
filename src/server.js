@@ -225,7 +225,7 @@ const verifyStep = {
     if (!led?.org) throw noSession(state.id);
     const out = await handlers.get('sf_verify_checks').run({ ...args, org: led.org }, extra);
     // red is an access regression; not run and nothing checked are a run that checked no access (a bad check, git, the org).
-    if (out.verdict !== 'green') throw new lib.SfUiError(out.verdict === 'red' ? 'VERIFY_NOT_GREEN' : 'VERIFY_NOT_RUN', `verdict ${out.verdict}: ${out.lines.find((l) => !l.startsWith('PASS ')) ?? out.problems?.[0] ?? 'no check passed'}`, out);
+    if (out.verdict !== 'green') throw new lib.SfUiError(out.verdict === 'red' ? 'VERIFY_NOT_GREEN' : 'VERIFY_NOT_RUN', `verdict ${out.verdict}: ${out.lines.find((l) => !l.startsWith('PASS ') && !l.startsWith('time: ')) ?? out.problems?.[0] ?? 'no check passed'}`, out);
     return out;
   },
 };
