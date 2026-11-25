@@ -101,3 +101,22 @@ test('a standard lookup on a Dynamic Forms page is labelled as the form labels i
   assert.equal((await form.save(f)).outcome, 'saved');
   assert.equal((await api.call(s, `/ui-api/records/${id}?fields=Contact.AccountId`)).fields.AccountId.value, acct);
 });
+
+// F-cascade-18: SfUiC_Place_App_Page (SfUiC_App) places the custom Address Site__c. The dialog names its boxes as
+// object-info labels the parts ("Site (City)"), so the model must keep that label to find them.
+test('a custom Address on a Dynamic Forms page is labelled as the form labels its parts', { skip, timeout: 300_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const app = await session.openApp(s, 'SfUiC_App').catch((e) => { if (e.code === 'APP_UNAVAILABLE') return null; throw e; });
+  if (!app) return t.skip('the org has no test/fixture-components app SfUiC_App');
+  const id = await record(s, t, 'SfUiC_Place__c', { Name: `BREAK fix place ${stamp()}` });
+  const f = await form.editRecord(s, id);
+  assert.equal(f.model.flexiPageApiName, 'SfUiC_Place_App_Page');
+  const label = (api) => f.model.fields.find((x) => x.apiName === api).label;
+  assert.deepEqual([label('Site__City__s'), label('Site__Street__s')], ['Site (City)', 'Site (Street)']);
+  assert.deepEqual(f.missing, []); // the coordinates have no box on an address form, so they are not modelled
+  await form.setFields(f, { Site__City__s: 'Oakland', Site__Street__s: '2 Break Street' });
+  assert.equal((await form.save(f)).outcome, 'saved');
+  const { fields } = await api.call(s, `/ui-api/records/${id}?fields=SfUiC_Place__c.Site__City__s,SfUiC_Place__c.Site__Street__s`);
+  assert.deepEqual([fields.Site__City__s.value, fields.Site__Street__s.value], ['Oakland', '2 Break Street']);
+});

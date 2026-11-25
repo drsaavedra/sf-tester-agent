@@ -54,7 +54,7 @@ async function formModel(s, recordId, { mode = 'Edit', objectApiName: given, rec
 }
 
 // Field instances of a Dynamic Forms page, labelled as the dialog labels them. A compound instance (an address,
-// a location) becomes its parts, as on a layout; a part's "Loc (Latitude)" shows as "Latitude".
+// a location) becomes its parts, as on a layout; a location part's "Loc (Latitude)" shows as "Latitude".
 // Null when the page places no field (not Dynamic Forms); [] when it places only fields this user cannot read.
 // ponytail: metadata order, not visual order; a field with a visibility rule is marked conditional, not evaluated.
 const escRe = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -72,9 +72,12 @@ async function dynamicFields(s, flexiPageApiName, info, mode, layout) {
     if (!field) return [];
     const behavior = (fi.fieldInstanceProperties || []).find((p) => p.name === 'uiBehavior');
     const ui = behavior ? behavior.value : 'none';
-    const parts = Object.values(info.fields).filter((p) => p.compoundFieldName === apiName);
+    // An address form shows no box for its coordinates, as a layout lists none (measured on a custom Address).
+    const parts = Object.values(info.fields).filter((p) => p.compoundFieldName === apiName
+      && !(field.dataType === 'Address' && /(Latitude|Longitude|GeocodeAccuracy)(__s)?$/.test(p.apiName)));
     return (parts.length ? parts : [field]).map((p) => {
-      const inner = parts.length && new RegExp(`^${escRe(field.label)} \\((.*)\\)$`).exec(p.label);
+      // An address's boxes keep "Site (City)"; only a location's show as "Latitude".
+      const inner = field.dataType === 'Location' && new RegExp(`^${escRe(field.label)} \\((.*)\\)$`).exec(p.label);
       return {
         apiName: p.apiName,
         label: inner ? inner[1] : shown.get(p.apiName) || p.label,
