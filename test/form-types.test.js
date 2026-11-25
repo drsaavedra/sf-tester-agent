@@ -66,6 +66,20 @@ test('setFields, no org: an all-day Event refuses Start or End as an instant', a
   await assert.rejects(form.setFields(closed, { StartDateTime: '2027-06-01T00:00:00Z', IsAllDayEvent: false }), (e) => e.code !== 'INVALID_VALUE');
 });
 
+// F-cascade-3, no org: a Rich Text Area shows a read view under its toolbar until a click mounts the editor's textbox.
+test('setFields, no org: a Rich Text Area not yet mounted is clicked open, then typed', { timeout: 30_000 }, async (t) => {
+  const { localPage } = require('./helpers');
+  const page = await localPage(t);
+  await page.setContent(`<main><div role="group" aria-label="Rich"><div role="toolbar" aria-label="Text Formatting"><button>Bold</button></div>
+    <lightning-formatted-rich-text style="display:block;min-height:40px"></lightning-formatted-rich-text></div></main><script>
+    document.querySelector('lightning-formatted-rich-text').addEventListener('click', (e) => e.target.outerHTML = '<div role="textbox" aria-label="Rich" contenteditable="true" style="min-height:40px"></div>');
+  </script>`);
+  const f = { s: { page }, scope: page.locator('main'), model: { fields: [{ apiName: 'Rich__c', label: 'Rich', dataType: 'TextArea', editable: true }] } };
+  await form.setFields(f, { Rich__c: 'BREAK rich text' });
+  assert.equal(await page.getByRole('textbox', { name: 'Rich' }).innerText(), 'BREAK rich text');
+  assert.equal(f.set.Rich__c.rich, true);
+});
+
 test('form types',{ skip, timeout: 600_000 }, async (t) => {
   const s = await session.start(await auth(env.org));
   t.after(() => session.end(s));
@@ -348,5 +362,24 @@ test('form types',{ skip, timeout: 600_000 }, async (t) => {
       assert.equal(r.fieldErrors.find((e) => e.apiName === apiName)?.message, message, JSON.stringify(r.fieldErrors));
       await form.cancel(f);
     }
+  });
+
+  // F-cascade-3: the layout's Rich Text Area has no textbox until a click mounts its editor, on New and on Edit.
+  await t.test('setFields types into a Rich Text Area on the New and the Edit form', async (st) => {
+    const info = await api.call(s, '/ui-api/object-info/SfUiC_Field__c').catch((e) => { if ([400, 404].includes(e.evidence?.status)) return null; throw e; });
+    if (!info) return st.skip('the org has no test/fixture-components object SfUiC_Field__c');
+    const f = await form.createRecord(s, 'SfUiC_Field__c');
+    assert.ok(!f.missing.includes('Rich__c'), JSON.stringify(f.missing));
+    await form.setFields(f, { Name: `BREAK fix rich ${stamp()}`, Rich__c: 'rich bold & text' });
+    const r = await form.save(f);
+    assert.equal(r.outcome, 'saved', JSON.stringify(r));
+    st.after(() => api.call(s, `/sobjects/SfUiC_Field__c/${r.recordId}`, { method: 'DELETE', as: 'admin' }));
+    const rich = async () => (await api.call(s, `/sobjects/SfUiC_Field__c/${r.recordId}?fields=Rich__c`, { as: 'admin' })).Rich__c;
+    assert.match(await rich(), /rich bold &amp; text/);
+    const g = await form.editRecord(s, r.recordId);
+    assert.ok(!g.missing.includes('Rich__c'), JSON.stringify(g.missing));
+    await form.setFields(g, { Rich__c: 'BREAK rich text' });
+    assert.equal((await form.save(g)).outcome, 'saved');
+    assert.match(await rich(), /BREAK rich text/);
   });
 });

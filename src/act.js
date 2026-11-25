@@ -293,18 +293,23 @@ async function press(page, { key }) {
   return { [AT]: { pressed: new Date().toISOString() } };
 }
 
+// Clicks the area under a rich text editor's toolbar, which mounts its textbox; false when no one such group is named.
+async function openRich(scope, name, { timeout } = {}) {
+  const group = scope.getByRole('group', { name, exact: true });
+  const toolbar = group.getByRole('toolbar').first();
+  if ((await group.count()) !== 1 || !(await toolbar.count())) return false;
+  await group.scrollIntoViewIfNeeded({ timeout });
+  const [g, bar] = [await group.boundingBox(), await toolbar.boundingBox()];
+  await group.click({ position: { x: 20, y: bar.y + bar.height - g.y + 15 }, timeout });
+  return true;
+}
+
 // Replaces the box's text the way typing would, firing the input and change events components listen to.
 async function fill(scope, { name, value, role = 'textbox', row, column, nth, timeout = 10_000 } = {}) {
   const box = await resolve(scope, { name, role, row, column, nth, timeout }).catch(async (e) => {
     // lightning-input-rich-text renders its textbox only once the area under its toolbar is clicked. It ignores row and
     // column and adds one textbox, so only a plain miss opens it; with an nth past 1 something already matched.
-    if (e.code !== 'NOT_FOUND' || role !== 'textbox' || row || column || (nth ?? 1) > 1) throw e;
-    const group = scope.getByRole('group', { name, exact: true });
-    const toolbar = group.getByRole('toolbar').first();
-    if ((await group.count()) !== 1 || !(await toolbar.count())) throw e;
-    await group.scrollIntoViewIfNeeded({ timeout });
-    const [g, bar] = [await group.boundingBox(), await toolbar.boundingBox()];
-    await group.click({ position: { x: 20, y: bar.y + bar.height - g.y + 15 }, timeout });
+    if (e.code !== 'NOT_FOUND' || role !== 'textbox' || row || column || (nth ?? 1) > 1 || !(await openRich(scope, name, { timeout }))) throw e;
     return resolve(scope, { name, role, row, column, nth, timeout });
   });
   // A native select (an Aura dialog, a Visualforce page) takes an option by its label, not typing.
@@ -460,4 +465,4 @@ async function waitFor(scope, { text, gone = false, any, timeout = 30_000 } = {}
   throw new SfUiError('TIMEOUT', `none of ${what.join(', ')} within ${timeout} ms`, { conditions: conds, timeout, toasts: raised(page), snapshot: await snapshot(scope) });
 }
 
-module.exports = { near, click, hover, press, fill, replaceText, boxValue, readBack, waitFor, toasts, armToasts, recordToasts, raised, mainOf, snapshot, marked, cut, resolve };
+module.exports = { near, click, hover, press, fill, openRich, replaceText, boxValue, readBack, waitFor, toasts, armToasts, recordToasts, raised, mainOf, snapshot, marked, cut, resolve };

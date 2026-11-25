@@ -5,7 +5,7 @@ const { SfUiError } = require('./errors');
 const nav = require('./nav');
 const discover = require('./discover');
 const api = require('./api');
-const { armToasts, raised, boxValue, readBack, replaceText } = require('./act');
+const { armToasts, raised, boxValue, readBack, replaceText, openRich } = require('./act');
 const lwc = require('./lwc');
 const action = require('./action');
 const { requireEnglish } = require('./session');
@@ -232,7 +232,10 @@ async function switchTo(f, field, object) {
 
 // An Aura lookup (a Task's Name and Related To) shows its choice as a pill in a list "<label> - Current Selection: …".
 const pillOf = (f, field) => f.scope.getByRole('list', { name: new RegExp(`^${esc(field.label)} - Current Selection`) });
-const shownOf = (f, field) => (field.dataType === 'Reference' ? locate(f, field).or(pillOf(f, field)) : locate(f, field));
+// A Rich Text Area shows a group with a toolbar and no textbox until a click mounts its editor (F-cascade-3).
+const richOf = (f, field) => f.scope.getByRole('group', { name: field.label, exact: true }).filter({ has: f.s.page.getByRole('toolbar') });
+const shownOf = (f, field) => (field.dataType === 'Reference' ? locate(f, field).or(pillOf(f, field))
+  : field.dataType === 'TextArea' ? locate(f, field).or(richOf(f, field)) : locate(f, field));
 
 // Types the record name (clearing the old choice once any id is read) and picks the first-line match once two reads
 // agree; two such options are AMBIGUOUS. A record id types its name and picks the option with that id, or when no
@@ -534,6 +537,7 @@ async function setFields(f, values, { objects = {}, picklist } = {}) {
       landed(field, value, typed, await input.inputValue()); // before the blur formats it
       await input.press('Tab');
     } else {
+      if (field.dataType === 'TextArea' && !(await input.count()) && (await openRich(f.scope, field.label))) await input.waitFor({ timeout: 5_000 });
       await replaceText(input, String(value));
       const [got, isRich] = await boxValue(input); // a Rich Text Area is a contenteditable, not an input
       landed(field, value, String(value), got, (rich = isRich));
