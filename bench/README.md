@@ -63,6 +63,8 @@ NOT RUN `test/server.test.js` ON THE ORG WHILE THE BENCHMARK RUNS.
    node bench/bench.js metrics --run <name> --transcripts ~/.claude/projects/<project>/<session>/subagents
    ```
 
+   With `CLAUDE_CONFIG_DIR` set, the transcripts are under `$CLAUDE_CONFIG_DIR/projects/` instead.
+
    The command writes `metrics.tsv` (one row for each run) and `summary.tsv` (the mean for each target, defect
    and arm, and for each arm; n and the means count only the cells that finished). It also lists the cells that have no `RESULT` line, except a `refused` cell (see below), which counts as finished with or without one.
 6. Delete the records:

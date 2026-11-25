@@ -9,7 +9,7 @@ This page holds the detail that the [README](../README.md) leaves out. Start wit
 - [What it refuses, and why](#what-it-refuses-and-why)
 - [Experience Cloud sites](#experience-cloud-sites): why a site cannot be tested yet
 - [What is in the repo](#what-is-in-the-repo)
-- [Setup](#setup): what the install commands rely on, and the optional pane
+- [Setup](#setup): what the install commands rely on
 - [Running a test](#running-a-test): the brief, headed runs and production orgs
 - [Verify a metadata change with no browser](#verify-a-metadata-change-with-no-browser): the six check kinds, `--matrix`, `--cascade` and the cascade map
   - [Tested versions](#tested-versions)
@@ -108,7 +108,6 @@ The roadmap is in the [README](../README.md#roadmap). This section says why sf-t
 - `src/combinations.json`: UI combinations with a checked route, so an agent does not explore them again.
   `src/cli.js replay` runs them with no model, for CI.
 - `src/verify.js`: `src/cli.js verify`, checks of a metadata change with no browser and no model.
-- `claude-mod/`: an optional Claude Code pane that shows each running tester's scenarios and steps.
 - `bench/`: the benchmark that compares a known route, free exploration and a generic Playwright driver.
 - `docs/`: this reference, and the diagrams above.
 - `test/`: the tests, and `test/fixture`, the scratch org metadata they run against.
@@ -129,17 +128,6 @@ through that link.
 
 No Chrome? Set `SF_TESTER_BROWSER=chromium` and run `npx playwright-core install chromium`.
 
-The pane is optional:
-
-```
-claude plugin marketplace add "$PWD/claude-mod"
-claude plugin install sf-tester-pane@sf-tester
-```
-
-Then `/sf-tester-pane` in Claude Code. If you installed it under its old name, remove that first, or two panes
-open on every tester: `claude plugin uninstall sf-tester-progress@sf-tester` (`claude plugin list` shows the id
-if it was installed from another marketplace name).
-
 ## Running a test
 
 Ask Claude Code to spawn an sf-tester with the org alias, the Lightning app, the users to test as, and the
@@ -148,6 +136,11 @@ because an admin never hits a missing permission; without either the tester stop
 missing app the ones each user can open. It asks nothing else: a missing permission, a wrong named credential or a component not on the page comes
 back as a FAIL with its cause, for you to fix and run it again. Past the stated requirements it tries to break the change
 with checks it picks from the org's own rules. A requirement that names no user runs as every user the brief names.
+
+The report is what you read. Every step the tester took, each tool call with its input and its result, stays in the
+tester's Claude Code transcript (`<session>/subagents/agent-*.jsonl` under the project's folder in `~/.claude/projects/`,
+or in `$CLAUDE_CONFIG_DIR/projects/` when that is set), for you or an agent to retrace a run when a result needs
+explaining.
 
 ```
 Org alias: my-scratch. App: Service Console. Personas: the alias owner and qa-user.
@@ -582,7 +575,7 @@ The safety class says what a tool can do to the org and the disk. The classes ar
 | `sf_verify_checks` | `apiRead` | Check access before the UI, with no browser: runs sf-tester verify, each check as its persona, on a check file kept in the project (checksFile) or on checks you write (checks, with project). |
 | `sf_fix_improvement` | `localFile` | Mark a recorded improvement fixed by a commit, so testing stops working around it. |
 | `sf_record_improvement` | `localFile` | Record something the sf-tester tools could not do, or did only by a workaround, so the tools improve. |
-| `sf_scenario` | `localFile` | Mark the scenarios you test the requirements with, so a person following the run sees each one under its requirement and its result. |
+| `sf_scenario` | `localFile` | Mark the scenarios you test the requirements with, so the transcript shows each one under its requirement and `end` can judge it. |
 | `sf_start` | `login` | Start a browser session logged into Lightning as the owner of an sf CLI alias, ending that session first if open. |
 | `sf_login_as` | `login` | Become another user for this whole session (needs Login As enabled). |
 | `sf_whoami` | `read` | The user Id the page runs as, app (the Lightning app the page is in) and apps (the Lightning apps this user can open: label, developerName, console); app null and appReason when they cannot be read. |

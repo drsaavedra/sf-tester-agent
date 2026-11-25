@@ -40,11 +40,10 @@ mkdir -p ~/.claude/agents && ln -s "$PWD/agents/sf-tester.md" ~/.claude/agents/s
 `npm ci` installs Playwright (`playwright-core` 1.56.1, pinned). It drives your installed Google Chrome, so there is no browser download. Then start a new Claude Code session. The agent is listed as `sf-tester`. A one-command plugin install is on the [roadmap](#roadmap).
 
 <details>
-<summary>No Chrome, saving routes, the optional progress pane</summary>
+<summary>No Chrome, saving routes</summary>
 
 - **No Chrome:** set `SF_TESTER_BROWSER=chromium` and run `npx playwright-core install chromium`.
 - **Saving routes:** set `SF_TESTER_COMBINATIONS` to a catalogue file in your project. Replays and CI run only promoted routes. The tester promotes a route it replayed green. A route run as another user stays a draft until you promote it with `sf_promote_route`, and `SF_TESTER_PROMOTE=manual` leaves every route to you.
-- **Progress pane (optional):** `claude plugin marketplace add "$PWD/claude-mod"`, then `claude plugin install sf-tester-pane@sf-tester`, then `/sf-tester-pane` in Claude Code. It shows each running tester's scenarios and steps.
 
 </details>
 

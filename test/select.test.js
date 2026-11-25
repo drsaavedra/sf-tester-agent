@@ -192,7 +192,7 @@ test('a changed sfdx-project.json or .forceignore at a project root takes the sm
 });
 
 test('docs, tests, the bench and the agents select nothing; the union is in catalogue order', () => {
-  assert.deepEqual(run(['README.md', 'docs/a.md', 'test/replay.test.js', 'bench/x.js', 'agents/sf-tester.md', 'claude-mod/x.js', '.github/dependabot.yml']).ids, []);
+  assert.deepEqual(run(['README.md', 'docs/a.md', 'test/replay.test.js', 'bench/x.js', 'agents/sf-tester.md', '.github/dependabot.yml']).ids, []);
   const before = { combinations: NOW.combinations.filter((e) => e.id !== 'd@app'), candidates: [] };
   assert.deepEqual(run([fx('lwc/sfUiInputs/sfUiInputs.js'), 'README.md'], before).ids, ['a@rec', 'd@app']);
 });
