@@ -96,7 +96,9 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
     if (!field) throw new SfUiError('FIELD_NOT_ON_FORM', `${apiName} is not a field of ${model.objectApiName} this user can see`, { apiName });
     result.ui = await uiValue(s, recordId, field.label, model.objectApiName, whole ? whole.apiName : apiName, field.itemLabel || (whole && whole.label));
   }
-  const want = expected === null ? '' : String(expected).replace(/\r\n/g, '\n');
+  const typed = expected === null ? '' : String(expected).replace(/\r\n/g, '\n');
+  // A checkbox is true or false in the API and "True" or "False" on the page: either spelling names the value.
+  const want = field && field.dataType === 'Boolean' ? typed.toLowerCase() : typed;
   // A field off the View model (Dynamic Forms) has no known type, so a 15-char id may name its stored 18-char one.
   const storedOk = !!stored && (sameValue(want, stored.value, stored.display, { id: rel || !field, name: rel })
     || sameInstant(field && field.dataType, stored.value, want)

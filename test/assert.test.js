@@ -230,6 +230,27 @@ test('assert, no org: a Number of 1,000 or more and a Percent match as the numbe
   await red('Code__c', 12345, 'ui'); // a text field compares the page text whole
 });
 
+// F-cascade-21, no org: a checkbox expected as the text the page shows ("False") passes, via api, ui and both.
+test('assert, no org: a checkbox matches as the page shows it, True or False, via api, ui and both', { timeout: 60_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const fields = [{ apiName: 'Done__c', label: 'Done', dataType: 'Boolean' }, { apiName: 'Open__c', label: 'Open', dataType: 'Boolean' }];
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'SfUiC_Field__c', fields }));
+  const stored = { Done__c: false, Open__c: true };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => ({ fields: { [p.split('.').pop()]: { value: stored[p.split('.').pop()], displayValue: null } } }));
+  const item = (label, text) => `<${A.layoutItem} field-label="${label}"><div>${label}</div><div>${text}</div><div>Edit ${label}</div></${A.layoutItem}>`;
+  await page.setContent(item('Done', 'False') + item('Open', 'True'));
+  const red = (f, v, via) => assert.rejects(lib.assert.fieldValue({ page }, 'a0x', f, v, { via }), { code: 'FIELD_VALUE_MISMATCH' });
+  for (const via of ['api', 'ui', 'both']) {
+    for (const v of ['False', 'false', false]) await lib.assert.fieldValue({ page }, 'a0x', 'Done__c', v, { via });
+    for (const v of ['True', 'true', true]) await lib.assert.fieldValue({ page }, 'a0x', 'Open__c', v, { via });
+    // Control: the other value is still red.
+    for (const v of ['True', true]) await red('Done__c', v, via);
+    for (const v of ['False', false]) await red('Open__c', v, via);
+  }
+});
+
 // No org: a field only a Dynamic Forms page places is not in the layout's View model; the page is still read.
 // F-cascade-6, no org: a field with help text carries a lightning-helptext whose text ("Help <label>") innerText reads.
 test('assert, no org: a field with help text is read without its help button, via ui and both', { timeout: 60_000 }, async (t) => {
@@ -376,6 +397,16 @@ test('assert', { skip, timeout: 480_000 }, async (t) => {
     const r = await lib.assert.fieldValue(s, id, 'Done__c', true);
     assert.deepEqual([r.api, r.ui], [true, 'True']);
     await assert.rejects(lib.assert.fieldValue(s, id, 'Done__c', false), { code: 'FIELD_VALUE_MISMATCH' });
+  });
+
+  // F-cascade-21: a checkbox expected as the text the page shows ("False") passes, via ui and both.
+  await t.test('assert.fieldValue passes a checkbox expected as the page text, False or True, via ui and both', async () => {
+    const id = await probe(s, t, { Done__c: false });
+    for (const via of ['ui', 'both']) {
+      const r = await lib.assert.fieldValue(s, id, 'Done__c', 'False', { via });
+      assert.equal(r.ui, 'False');
+      await assert.rejects(lib.assert.fieldValue(s, id, 'Done__c', 'True', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+    }
   });
 
   // The API stores ...00.000Z; a datetime or time typed without milliseconds is the same value, page side included.

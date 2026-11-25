@@ -4613,6 +4613,60 @@
       ]
     },
     {
+      "id": "checkbox-text@page-layout",
+      "component": "checkbox shown as True or False",
+      "container": "standard Edit dialog (page layout)",
+      "interaction": "set fields, save, assert via both",
+      "task": "On the SF UI Probe record {{probeId}}, edit the record, untick Done, save, and confirm through the API and the record page that Done is False, typed as the page shows it.",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_edit_record",
+          "args": {
+            "recordId": "{{probeId}}",
+            "source": "pageLayout"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "Done__c": false
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{probeId}}",
+            "field": "Done__c",
+            "expected": "False",
+            "via": "both"
+          }
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{probeId}}",
+            "field": "Done__c",
+            "expected": false,
+            "via": "both"
+          }
+        }
+      ],
+      "status": "tested",
+      "notes": "the page shows a checkbox as True or False, the API as true or false (F-cascade-21)",
+      "break": [
+        "F-cascade-21"
+      ]
+    },
+    {
       "id": "geolocation-parts@new-dialog",
       "component": "Geolocation (Latitude and Longitude)",
       "container": "object New action (page layout)",
