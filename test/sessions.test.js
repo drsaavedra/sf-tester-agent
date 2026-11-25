@@ -297,6 +297,9 @@ test('sf_start, sf_login_as and sf_run_route return timings, in milliseconds per
   assert.deepEqual([Object.keys(started.body.timings), whole(started.body.timings)], [['close', 'auth', 'browser', 'app', 'policy'], true], JSON.stringify(started.body));
   const login = await call('sf_login_as', { user: '005other' }, 10_000);
   assert.deepEqual([Object.keys(login.body.timings), whole(login.body.timings)], [['user', 'login', 'whoami', 'app'], true], JSON.stringify(login.body));
+  // With an app asked for, the login returns by its other path.
+  const inApp = await call('sf_login_as', { user: '005other', app: 'SfUi_Console' }, 10_000);
+  assert.deepEqual([inApp.body.appKept, Object.keys(inApp.body.timings)], [undefined, ['user', 'login', 'whoami', 'app']], JSON.stringify(inApp.body));
   const steps = [{ tool: 'sf_open_tab', args: { tab: 'SfUi_Vf' } }, { tool: 'sf_api', args: { path: '/list' } }];
   const { body } = await call('sf_run_route', { steps }, 10_000);
   const { stepMs, ...stages } = body.timings;
