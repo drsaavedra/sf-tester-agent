@@ -6,7 +6,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { session, form, api, discover } = require('..');
-const { auth, env, skip, record, probe, stamp } = require('./helpers');
+const { auth, env, skip, record, account, probe, stamp } = require('./helpers');
 
 test('dynamic forms', { skip, timeout: 300_000 }, async (t) => {
   const s = await session.start(await auth(env.org));
@@ -82,4 +82,22 @@ test('a Dynamic Forms page that shows the user no field models no field', { skip
   assert.equal(a.model.source, 'pageLayout');
   assert.ok(a.model.fields.some((x) => x.apiName === 'Name'));
   await form.cancel(a);
+});
+
+// F-cascade-14: SfUiC_Contact_Page (SfUiC_App) places the standard lookup AccountId. Object-info labels it "Account ID",
+// the dialog "Account Name" as the layout does, so the model must take the layout's label to find the box.
+test('a standard lookup on a Dynamic Forms page is labelled as the form labels it', { skip, timeout: 300_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const app = await session.openApp(s, 'SfUiC_App').catch((e) => { if (e.code === 'APP_UNAVAILABLE') return null; throw e; });
+  if (!app) return t.skip('the org has no test/fixture-components app SfUiC_App');
+  const acct = await account(s, t, { Name: `BREAK fix account ${stamp()}` });
+  const id = await record(s, t, 'Contact', { LastName: `BREAK fix contact ${stamp()}` });
+  const f = await form.editRecord(s, id);
+  assert.equal(f.model.flexiPageApiName, 'SfUiC_Contact_Page');
+  assert.equal(f.model.fields.find((x) => x.apiName === 'AccountId').label, 'Account Name');
+  assert.ok(!f.missing.includes('AccountId'), `missing: ${f.missing}`);
+  await form.setFields(f, { AccountId: acct });
+  assert.equal((await form.save(f)).outcome, 'saved');
+  assert.equal((await api.call(s, `/ui-api/records/${id}?fields=Contact.AccountId`)).fields.AccountId.value, acct);
 });

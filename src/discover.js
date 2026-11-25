@@ -35,7 +35,7 @@ async function formModel(s, recordId, { mode = 'Edit', objectApiName: given, rec
     api.call(s, `/ui-api/layout/${objectApiName}?mode=${mode}${recordTypeId ? `&recordTypeId=${recordTypeId}` : ''}`),
     early || api.call(s, `/ui-api/object-info/${objectApiName}`),
   ]);
-  const dynamic = flexiPageApiName && (await dynamicFields(s, flexiPageApiName, info, mode));
+  const dynamic = flexiPageApiName && (await dynamicFields(s, flexiPageApiName, info, mode, layout));
   if (dynamic) return { objectApiName, recordTypeId, flexiPageApiName, source: 'dynamicForms', mode, fields: dynamic };
   const fields = layout.sections.flatMap((section) => section.layoutRows.flatMap((row) => row.layoutItems.flatMap((item) =>
     item.layoutComponents.filter((c) => c.componentType === 'Field').map((c) => ({
@@ -58,7 +58,11 @@ async function formModel(s, recordId, { mode = 'Edit', objectApiName: given, rec
 // Null when the page places no field (not Dynamic Forms); [] when it places only fields this user cannot read.
 // ponytail: metadata order, not visual order; a field with a visibility rule is marked conditional, not evaluated.
 const escRe = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-async function dynamicFields(s, flexiPageApiName, info, mode) {
+async function dynamicFields(s, flexiPageApiName, info, mode, layout) {
+  // The form labels a field as the layout does ("Account Name"), not as object-info ("Account ID").
+  // ponytail: a field the layout does not carry keeps the object-info label.
+  const shown = new Map(layout.sections.flatMap((x) => x.layoutRows.flatMap((r) => r.layoutItems))
+    .filter((i) => i.layoutComponents.length === 1).map((i) => [i.layoutComponents[0].apiName, i.label]));
   const page = await metadataOf(s, 'FlexiPage', flexiPageApiName);
   const placed = page ? page.flexiPageRegions.flatMap((r) => (r.itemInstances || []).filter((i) => i.fieldInstance)) : [];
   if (!placed.length) return null;
@@ -73,8 +77,8 @@ async function dynamicFields(s, flexiPageApiName, info, mode) {
       const inner = parts.length && new RegExp(`^${escRe(field.label)} \\((.*)\\)$`).exec(p.label);
       return {
         apiName: p.apiName,
-        label: inner ? inner[1] : p.label,
-        itemLabel: field.label,
+        label: inner ? inner[1] : shown.get(p.apiName) || p.label,
+        itemLabel: shown.get(apiName) || field.label,
         dataType: p.dataType,
         scale: p.scale,
         role: field.dataType === 'Location' ? 'textbox' : undefined, // a location's numbers are typed as text
