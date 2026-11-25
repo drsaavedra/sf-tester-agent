@@ -21371,6 +21371,58 @@
       "break": [
         "F-flow-20"
       ]
+    },
+    {
+      "id": "date-picker-calendar@clone-dialog",
+      "component": "lightning-datepicker calendar (position: fixed)",
+      "container": "standard Clone dialog (page layout)",
+      "interaction": "open a Date field's calendar, check its Today button is drawn whole",
+      "task": "On the SF UI Probe record {{probeId}}, press Clone, open the calendar of the Due date in the dialog, confirm its Today button is drawn whole and on top, then close the dialog without saving.",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_launch_action",
+          "args": {
+            "recordId": "{{probeId}}",
+            "apiName": "Clone"
+          }
+        },
+        {
+          "tool": "sf_click",
+          "args": {
+            "inModal": true,
+            "name": "Select a date for Due"
+          }
+        },
+        {
+          "tool": "sf_on_top",
+          "args": {
+            "inModal": true,
+            "name": "Today",
+            "expect": {
+              "path": "visible",
+              "value": 1
+            }
+          }
+        },
+        {
+          "tool": "sf_modal",
+          "args": {
+            "action": "close"
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-3"
+      },
+      "notes": "the calendar is position: fixed and draws past the bottom of the dialog's scrolling body, which is not its containing block, so it is not clipped (F-flow-16)",
+      "break": [
+        "F-flow-16"
+      ]
     }
   ],
   "candidates": [

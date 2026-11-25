@@ -666,3 +666,26 @@ test('onTop scrolls to an element past the viewport edge before it reads, no org
   await page.setContent('<button>High</button>');
   assert.equal((await layer.onTop(page.locator('body'), { name: 'High' })).scrolled, undefined, 'control: one in view is not scrolled');
 });
+
+// No org (F-flow-16): a fixed or absolute dropdown escapes an overflow box that is not its containing block, as the date
+// picker's calendar draws past a scrolling modal; the controls are clipped by the box that is their containing block.
+test('a fixed or absolute dropdown is not clipped by an overflow box it escapes, no org', async (t) => {
+  const page = await localPage(t);
+  await page.setViewportSize({ width: 1000, height: 600 });
+  const pop = (pos, top, name, gap) => `<div class="${name}-pop" style="position:${pos};top:${top}px;left:10px;width:120px;height:80px;background:#fff"><button style="display:block;width:60px;height:30px;margin-top:${gap}px">${name}</button></div>`;
+  await page.setContent(`
+    <div style="position:fixed;top:20px;left:20px;width:300px;height:200px;overflow:auto"><div style="height:400px">${pop('fixed', 180, 'Today', 45)}</div></div>
+    <div style="position:absolute;top:20px;left:400px;width:250px;height:300px;overflow:hidden"><div style="overflow:auto;height:100px">${pop('absolute', 60, 'Escapes', 45)}</div></div>
+    <div style="position:absolute;top:350px;left:20px;width:250px;height:100px;overflow:hidden"><div style="overflow:auto;height:50px">${pop('absolute', 60, 'Cut', 25)}</div></div>
+    <div style="position:absolute;top:350px;left:400px;width:250px;height:100px;overflow:hidden;transform:translateZ(0)">${pop('fixed', 60, 'Pinned', 25)}</div>`);
+  const body = page.locator('body');
+  const read = async (name) => { const r = await layer.onTop(body, { name }); return [r.visible, r.clippedBy]; };
+  assert.deepEqual(await read('Today'), [1, null], 'a fixed calendar below a scrolling modal');
+  assert.deepEqual(await read('Escapes'), [1, null], 'an absolute dropdown out of a static scroller, inside its containing block');
+  const own = (await layer.measure(body, { selector: '.Today-pop' })).elements[0];
+  assert.deepEqual([own.visible, own.clippedBy], [1, null], 'measure on the fixed box itself');
+  const [cut, cutBy] = await read('Cut');
+  assert.ok(cut === 0.5 && cutBy, `control: its positioned containing block clips it: ${cut}`);
+  const [pinned, pinnedBy] = await read('Pinned');
+  assert.ok(pinned === 0.5 && pinnedBy, `control: a transformed box is a fixed box's containing block: ${pinned}`);
+});
