@@ -5,7 +5,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { session, form, api, discover } = require('..');
+const lib = require('..');
+const { session, form, api, discover } = lib;
 const { auth, env, skip, record, account, probe, stamp } = require('./helpers');
 
 test('dynamic forms', { skip, timeout: 300_000 }, async (t) => {
@@ -119,4 +120,22 @@ test('a custom Address on a Dynamic Forms page is labelled as the form labels it
   assert.equal((await form.save(f)).outcome, 'saved');
   const { fields } = await api.call(s, `/ui-api/records/${id}?fields=SfUiC_Place__c.Site__City__s,SfUiC_Place__c.Site__Street__s`);
   assert.deepEqual([fields.Site__City__s.value, fields.Site__Street__s.value], ['Oakland', '2 Break Street']);
+});
+
+// F-cascade-15: SfUiC_Contact_Page (SfUiC_App) places the compound Name. The page labels the item "Name" (pencil
+// "Edit Name") as the layout does; object-info says "Full Name", so the pencil and the value's label line were missed.
+test('a compound Name on a Dynamic Forms page is found by the label the page gives it', { skip, timeout: 300_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const app = await session.openApp(s, 'SfUiC_App').catch((e) => { if (e.code === 'APP_UNAVAILABLE') return null; throw e; });
+  if (!app) return t.skip('the org has no test/fixture-components app SfUiC_App');
+  const last = `BREAK fix contact ${stamp()}`;
+  const id = await record(s, t, 'Contact', { Salutation: 'Dr.', FirstName: 'Samm', LastName: last });
+  const f = await form.editInline(s, id, 'FirstName');
+  assert.equal(f.model.flexiPageApiName, 'SfUiC_Contact_Page');
+  await form.setFields(f, { FirstName: 'Sammy' });
+  assert.equal((await form.save(f)).outcome, 'saved');
+  assert.equal((await api.call(s, `/ui-api/records/${id}?fields=Contact.FirstName`)).fields.FirstName.value, 'Sammy');
+  // The page shows the salutation the API Name leaves out, so via ui is what can pass here.
+  assert.deepEqual(await lib.assert.fieldValue(s, id, 'Name', `Dr. Sammy ${last}`, { via: 'ui' }), { ui: `Dr. Sammy ${last}` });
 });

@@ -66,9 +66,12 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   const model = await discover.formModel(s, recordId, { mode: 'View' });
   const onLayout = model.fields.find((f) => f.apiName === apiName);
   // A field only a Dynamic Forms page places is not in the layout's View model: object-info gives its label and type.
-  const info = (!onLayout || (via !== 'ui' && onLayout.dataType === 'Reference'))
-    && (await api.call(s, `/ui-api/object-info/${model.objectApiName}`)).fields[apiName];
-  const field = onLayout || info;
+  const infoFields = (!onLayout || (via !== 'ui' && onLayout.dataType === 'Reference'))
+    && (await api.call(s, `/ui-api/object-info/${model.objectApiName}`)).fields;
+  const info = infoFields && infoFields[apiName];
+  // A compound off the View model (a Name whose parts the layout lists) takes the label its parts' item has.
+  const part = !onLayout && model.fields.find((f) => infoFields[f.apiName]?.compoundFieldName === apiName);
+  const field = onLayout || (info && part ? { ...info, itemLabel: part.itemLabel } : info);
   const result = {};
   // A lookup stores an Id; its relationship field's display value is the record name a route sets it by.
   const rel = via !== 'ui' && field && field.dataType === 'Reference' && info && info.relationshipName;

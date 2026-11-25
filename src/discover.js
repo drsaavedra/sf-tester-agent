@@ -61,8 +61,13 @@ const escRe = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 async function dynamicFields(s, flexiPageApiName, info, mode, layout) {
   // The form labels a field as the layout does ("Account Name"), not as object-info ("Account ID").
   // ponytail: a field the layout does not carry keeps the object-info label.
-  const shown = new Map(layout.sections.flatMap((x) => x.layoutRows.flatMap((r) => r.layoutItems))
-    .filter((i) => i.layoutComponents.length === 1).map((i) => [i.layoutComponents[0].apiName, i.label]));
+  const items = layout.sections.flatMap((x) => x.layoutRows.flatMap((r) => r.layoutItems));
+  const shown = new Map(items.filter((i) => i.layoutComponents.length === 1).map((i) => [i.layoutComponents[0].apiName, i.label]));
+  // A compound item is labelled, and its pencil named, as the layout does ("Name"), not as object-info ("Full Name").
+  for (const i of items.filter((x) => x.layoutComponents.length > 1)) {
+    const parent = info.fields[i.layoutComponents[0].apiName]?.compoundFieldName;
+    if (parent && !shown.has(parent)) shown.set(parent, i.label);
+  }
   const page = await metadataOf(s, 'FlexiPage', flexiPageApiName);
   const placed = page ? page.flexiPageRegions.flatMap((r) => (r.itemInstances || []).filter((i) => i.fieldInstance)) : [];
   if (!placed.length) return null;
