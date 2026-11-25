@@ -123,6 +123,8 @@ async function resolve(scope, { name, role, text, row, column, nth, timeout, inc
     within = (row ? within : byRole(scope, 'row')).locator(`:scope > :nth-child(${at})`);
   }
   let all = text ? within.getByText(text, { exact: true }).locator('visible=true') : byRole(within, role, { name, exact: true });
+  // Under a column, the scoped cell can be the target itself (role cell, gridcell, rowheader), not only what it holds.
+  if (column && !text) all = all.or(within.and(byRole(scope, role, { name, exact: true })));
   await all.first().waitFor({ timeout }).catch(() => {});
   let count = await all.count();
   if (text && !count) {

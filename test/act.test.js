@@ -923,6 +923,23 @@ test('a column label shared by two tables is the one in the row\'s table, no org
   await assert.rejects(act.resolve(page, { text: '$250.00', column: 'SFUIC Amount', timeout: 500 }), (e) => e.code === 'AMBIGUOUS' && /2 columnheaders/.test(e.message));
 });
 
+// No org: the target is the cell under the column itself, aimed by its own role (F-fixtures-22, a chart's table).
+test('a cell aimed by its own role with row and column is that cell, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent(`<table><tr><th scope="col">Date</th><th scope="col">New</th><th scope="col">Total</th></tr>
+    <tr><th scope="row">Jul 12</th><td>3</td><td>8</td></tr><tr><th scope="row">Jul 13</th><td>12</td><td>39</td></tr></table>
+    <div role="grid"><div role="row"><span role="columnheader">Part</span><span role="columnheader">Stock</span></div>
+    <div role="row"><span role="rowheader">Washer</span><span role="gridcell"><button>2</button></span></div></div>`);
+  const at = (o) => act.resolve(page, { timeout: 1_000, ...o }).then((l) => l.evaluate((e) => e.outerHTML));
+  assert.equal(await at({ role: 'cell', name: '39', row: 'Jul 13', column: 'Total' }), '<td>39</td>');
+  assert.equal(await at({ role: 'rowheader', name: 'Washer', row: 'Washer', column: 'Part' }), '<span role="rowheader">Washer</span>');
+  assert.equal(await at({ role: 'gridcell', name: '2', row: 'Washer', column: 'Stock' }), '<span role="gridcell"><button>2</button></span>');
+  // What the cell holds is still found below it, and a cell of another name is still a miss.
+  assert.equal(await at({ role: 'button', name: '2', row: 'Washer', column: 'Stock' }), '<button>2</button>');
+  await assert.rejects(act.resolve(page, { role: 'cell', name: '12', row: 'Jul 13', column: 'Total', timeout: 500 }), (e) => e.code === 'NOT_FOUND');
+  await act.hover(page, { role: 'cell', name: '39', row: 'Jul 13', column: 'Total', timeout: 1_000 });
+});
+
 // The repro on the component fixture: the Aura page's tree grid and datatable both have "SFUIC Amount".
 test('a column label shared by a tree grid and a datatable aims in the row\'s table', { skip, timeout: 300_000 }, async (t) => {
   const s = await session.start(await auth(env.org));

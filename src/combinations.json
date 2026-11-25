@@ -4603,6 +4603,50 @@
       ]
     },
     {
+      "id": "cell-under-column@datatable",
+      "component": "lightning-datatable (sortable column)",
+      "container": "record page tab",
+      "interaction": "stacking check on a cell aimed by its own role, row and column",
+      "task": "On the SF UI Probe record {{probeId}}, in the \"SF UI More\" card on the record page's \"More\" tab, check that the Stock cell of the Washer row in the parts table, aimed as a grid cell named 2, is on top.",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_on_top",
+          "args": {
+            "recordId": "{{probeId}}",
+            "lwcApiName": "sfUiMore",
+            "role": "gridcell",
+            "name": "2",
+            "row": "Washer",
+            "column": "Stock",
+            "expect": {
+              "path": "onTop",
+              "value": true
+            }
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-1"
+      },
+      "validity": {
+        "page": {
+          "object": "SfUiProbe__c",
+          "flexiPage": "SfUi_Probe_Record_Page",
+          "flexiPageHash": "fcf392a9b30e",
+          "formHash": "e9d7be8db4c2"
+        }
+      },
+      "notes": "the cell under the column is the target itself, aimed by its own role, not only what it holds (F-fixtures-22)",
+      "break": [
+        "F-fixtures-22"
+      ]
+    },
+    {
       "id": "number-grouped@page-layout",
       "component": "Number of 1,000 or more",
       "container": "standard Edit dialog (page layout)",
