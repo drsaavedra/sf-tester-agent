@@ -83,7 +83,9 @@ async function near(asked, find) {
 async function resolve(scope, { name, role, text, row, column, nth, timeout, includeHidden = false }) {
   // In a row, a role alone is that row's one such element: a list view names its checkbox by position ("Select Item 2").
   if (name == null && text == null && !row) throw new SfUiError('BAD_ARGS', 'give a name ("" for an unnamed icon button), a text, or a row for a role alone');
-  const byRole = (at, r, opts) => (includeHidden ? at.getByRole(r, { ...opts, includeHidden }).locator('visible=true') : at.getByRole(r, opts));
+  // includeHidden adds aria-hidden text to a name (a header's sort label, a required box's "*"), so the name the
+  // page shows matches too.
+  const byRole = (at, r, opts) => (includeHidden ? at.getByRole(r, opts).or(at.getByRole(r, { ...opts, includeHidden }).locator('visible=true')) : at.getByRole(r, opts));
   let within = scope;
   if (row) {
     // A row matches its text content, or its innerText with spaces collapsed, the text the error's rows print: a

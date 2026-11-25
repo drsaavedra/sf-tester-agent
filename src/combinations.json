@@ -4510,6 +4510,50 @@
       ]
     },
     {
+      "id": "on-top-under-column@datatable",
+      "component": "lightning-datatable (sortable column)",
+      "container": "record page tab",
+      "interaction": "stacking check on a cell aimed by row and column",
+      "task": "On the SF UI Probe record {{probeId}}, in the \"SF UI More\" card on the record page's \"More\" tab, check that the Washer cell under the Part column of the parts table is on top.",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_on_top",
+          "args": {
+            "recordId": "{{probeId}}",
+            "lwcApiName": "sfUiMore",
+            "text": "Washer",
+            "row": "Washer",
+            "column": "Part",
+            "expect": {
+              "path": "onTop",
+              "value": true
+            }
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-1"
+      },
+      "validity": {
+        "page": {
+          "object": "SfUiProbe__c",
+          "flexiPage": "SfUi_Probe_Record_Page",
+          "flexiPageHash": "fcf392a9b30e",
+          "formHash": "e9d7be8db4c2"
+        }
+      },
+      "notes": "sf_on_top aims with hidden text included, which adds the sortable header's hidden text to its name: the header name the page shows still finds the column (F-fixtures-11, F-fixtures-21)",
+      "break": [
+        "F-fixtures-11",
+        "F-fixtures-21"
+      ]
+    },
+    {
       "id": "number-grouped@page-layout",
       "component": "Number of 1,000 or more",
       "container": "standard Edit dialog (page layout)",

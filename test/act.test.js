@@ -890,6 +890,24 @@ test('row text that crosses a cell boundary finds its one row, no org', { timeou
   await assert.rejects(act.click(page, { role: 'checkbox', row: 'Todo 61', timeout: 500 }), (e) => e.code === 'ROW_NOT_FOUND');
 });
 
+// No org: sf_on_top and sf_measure aim with includeHidden, which adds aria-hidden text to a name: a column header's
+// hidden sort label, a required box's asterisk. The name the page shows still finds them (F-fixtures-11, -21).
+test('with includeHidden, a name the page shows finds its element, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent(`<table><thead><tr><th scope="col">SFUIC Email<span aria-hidden="true">Sort</span></th><th scope="col">SFUIC Amount</th></tr></thead>
+    <tr><td><a href="#">Email two@example.com</a></td><td>$250.00</td></tr></table>
+    <label for="n"><abbr title="required" aria-hidden="true">*</abbr>Name</label><input id="n" required>
+    <div aria-hidden="true"><button>Behind</button></div>`);
+  const { layer } = require('..');
+  const hidden = { timeout: 1_000, includeHidden: true };
+  const at = (o) => act.resolve(page, { ...hidden, ...o }).then((l) => l.evaluate((e) => e.localName));
+  assert.equal(await at({ role: 'link', name: 'Email two@example.com', row: 'two@example.com', column: 'SFUIC Email' }), 'a');
+  assert.equal(await at({ role: 'textbox', name: 'Name' }), 'input');
+  assert.equal(await at({ role: 'button', name: 'Behind' }), 'button', 'an aria-hidden area still resolves');
+  assert.equal((await layer.onTop(page, { text: '$250.00', row: 'two@example.com', column: 'SFUIC Amount', timeout: 1_000 })).visible, 1);
+  await assert.rejects(act.resolve(page, { ...hidden, role: 'textbox', name: 'Nam' }), (e) => e.code === 'NOT_FOUND'); // still exact
+});
+
 // No org: a validation line that collapses on blur moves the button up between press and release, as on the
 // fixture's Check code, so no click reaches it; a click that lands and then moves its own button is not a miss.
 test('a click whose target moved before the release is TARGET_MOVED; one that lands and moves is not', { timeout: 30_000 }, async (t) => {
