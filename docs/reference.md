@@ -178,7 +178,8 @@ The line before the counts shows where the time of the run went, in milliseconds
 time: connect 812 ms, diff 40 ms, generate 6 ms, validate 11920 ms (queue 1000 ms, deploy 6000 ms, tests 4000 ms), report 1 ms, total 12790 ms
 ```
 
-`diff` shows only with `--since`. `generate` and `validate` show only when a `record`, `apex` or `flow` check runs. The
+`diff` shows only with `--since`. `generate` and `validate` show only when a `record`, `apex` or `flow` check deploys a
+validate. A `flow` check that verify hands off to the browser deploys none. The
 three times in brackets are from the deploy result of the org: the wait before the deploy started, the deploy, and the
 test run. The dates of the org are to the second. They do not show when the deploy result has no dates. `total` also
 includes the time that no stage names, for example the reads of a `pageRequired` check.
