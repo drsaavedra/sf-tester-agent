@@ -141,6 +141,33 @@ test('search twice in a row returns the second results page, no org', async (t) 
   assert.equal(await main.getByRole('rowheader').textContent(), 'hit sf-ui probe 7805767');
 });
 
+// R10, no org: the same term again from a results page. "We searched for" and the old rows already match, so the
+// second search must wait for the redraw (500 ms after Enter) before it returns; each draw numbers its row.
+test('search the same term again waits for the results page to redraw, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main></main>
+    <script>
+      let draws = 0;
+      const draw = (term) => { document.querySelector('main').innerHTML = '<p>We searched for "' + term + '".</p><table><tr><th role=rowheader>hit ' + term + ' ' + (++draws) + '</th></tr></table>'; };
+      q.onkeydown = (e) => {
+        if (e.key !== 'Enter') return;
+        const term = q.value;
+        q.hidden = true;
+        document.querySelector('header button').setAttribute('aria-label', 'Search: ' + term);
+        if (location.hash) return setTimeout(() => draw(term), 500);
+        location.hash = btoa(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop', term }));
+        draw(term);
+      };
+    </script></body></html>` }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  const main = await nav.search({ page }, 'BREAK same term', { timeout: 5_000 });
+  assert.equal(await main.getByRole('rowheader').textContent(), 'hit BREAK same term 1');
+  await nav.search({ page }, 'BREAK same term', { timeout: 5_000 });
+  assert.equal(await main.getByRole('rowheader').textContent(), 'hit BREAK same term 2');
+});
+
 // No org: the tab list as UI API serves it (test/nav-items.json), in two pages with the custom tabs on page 2, so a
 // missing nextPageUrl loop goes red. The page is a stub that knows which tab names exist.
 const items = require('./nav-items.json').navItems;

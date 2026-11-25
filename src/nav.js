@@ -251,17 +251,23 @@ async function search(s, text, { timeout = 60_000 } = {}) {
   const isSearch = (u) => Buffer.from(u.hash.slice(1), 'base64').toString().includes('forceSearch');
   const before = s.page.url();
   const main = s.page.getByRole('main');
+  // main shows before its results: wait for a result row or the no-match text (F-flow-19).
+  const settled = main.getByRole('rowheader').or(main.getByText(/find any matches/)).first();
+  const again = isSearch(new URL(before));
+  // On a results page the old rows already match settled: mark them, and wait for the redraw to drop them (R10).
+  const old = again && (await settled.count()) > 0 && await settled.evaluate((e) => e.setAttribute('data-sf-tester-old', '')).then(() => true, () => false);
   await box.first().fill(String(text));
   await box.first().press('Enter');
   // A search from a results page redraws that page and keeps its url; its main then names the new term (F-flow-20).
-  const opened = isSearch(new URL(before))
+  const opened = again
     ? main.getByText(`We searched for "${text}"`).first().waitFor({ timeout })
     : s.page.waitForURL((u) => u.href !== before && isSearch(u), { timeout });
   await opened.catch(() => {
     throw new SfUiError('SEARCH_FAILED', `searching for "${text}" did not open the results page`, { text, url: s.page.url() });
   });
-  // main shows before its results: wait for a result row or the no-match text (F-flow-19).
-  const settled = main.getByRole('rowheader').or(main.getByText(/find any matches/)).first();
+  if (old) await s.page.locator('[data-sf-tester-old]').waitFor({ state: 'detached', timeout }).catch(() => {
+    throw new SfUiError('SEARCH_FAILED', `the results page for "${text}" was not redrawn: the old results are still on it`, { text, url: s.page.url() });
+  });
   await settled.waitFor({ timeout }).catch(() => {
     throw new SfUiError('SEARCH_FAILED', `the results page for "${text}" never showed a result row or "no matches"`, { text, url: s.page.url() });
   });
