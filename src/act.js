@@ -425,11 +425,30 @@ async function waitFor(scope, { text, gone = false, any, timeout = 30_000 } = {}
   const collapsed = (r) => !!r && !r.checked && r.clipped; // cut to nothing by a collapsed box (height or width 0)
   // The document a count ran in, read before and after it: a 0 read while a navigation swapped it is not a 0.
   const docOf = () => page.evaluate(() => (window.__sfUiDoc ??= Math.random())).catch(() => null);
+  // A text across block elements (a label and its value) is missed by getByText, which reads them run together, but
+  // innerText and the snapshot put a break there: mark the deepest elements whose innerText holds it (shadow roots too).
+  const across = async (text) => {
+    if (norm(text).split(' ').length < 2) return null;
+    const m = `${(marks += 1)}`;
+    const root = typeof scope.page === 'function' ? scope : scope.locator('body');
+    const n = await root.evaluateAll((roots, [t, k]) => {
+      const has = (e) => (e.innerText || '').replace(/\s+/g, ' ').toLowerCase().includes(t);
+      let count = 0;
+      const walk = (e) => {
+        const inner = [...e.children, ...(e.shadowRoot?.children || [])].filter(has);
+        if (inner.length) inner.forEach(walk); else { e.setAttribute('data-sf-ui-across', k); count++; }
+      };
+      roots.filter(has).forEach(walk);
+      return count;
+    }, [norm(text), m]).catch((e) => { if (lost(e)) return 0; throw e; });
+    return n ? [scope.locator(`[data-sf-ui-across="${m}"]`), n] : null;
+  };
   const holds = async (c, index) => {
     if (c.toast != null) return raised(page).some((t) => [t.title, t.message].some((x) => norm(x).includes(norm(c.toast))));
-    const shown = scope.getByText(c.text).locator('visible=true');
+    let shown = scope.getByText(c.text).locator('visible=true');
     const doc = c.gone && (await docOf());
-    const n = await shown.count();
+    let n = await shown.count();
+    if (!n) [shown, n] = (await across(c.text)) || [shown, 0];
     unread.delete(index);
     if (n === 0) { covers.delete(index); return !!c.gone && doc !== null && doc === (await docOf()); }
     if (c.gone) { // gone once every copy is collapsed, as shown reads them; a lost read or an 11th copy is still there

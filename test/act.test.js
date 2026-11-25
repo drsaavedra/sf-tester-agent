@@ -1445,6 +1445,26 @@ test('waitFor does not take text on an off-stage carousel slide as shown, no org
   await act.waitFor(body, { text: 'Slide Three', timeout: 500 });
 });
 
+// No org: a label and its value in two block elements (F-fixtures-16), which the snapshot prints as one text line.
+test('waitFor sees a text that spans two block elements, as the snapshot prints it, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  const code = (p) => p.then(() => null, (x) => x?.code ?? String(x));
+  const body = page.locator('body');
+  await page.setContent('<main><div><div>Stage</div><div>Working</div></div><p>Other text</p></main>');
+  assert.match(await body.ariaSnapshot(), /- text: Stage Working/); // the snapshot's own line
+  await act.waitFor(body, { text: 'Stage Working', timeout: 500 });
+  assert.equal((await act.waitFor(body, { any: [{ text: 'Stage Working' }, { text: 'Other text' }], timeout: 500 })).matched.index, 0);
+  assert.equal(await code(act.waitFor(body, { text: 'Stage Working', gone: true, timeout: 500 })), 'TIMEOUT');
+  // Controls: two inline spans read "StageWorking", a hidden value and a box collapsed to nothing are not shown.
+  await page.setContent('<main><span>Stage</span><span>Working</span></main>');
+  assert.equal(await code(act.waitFor(body, { text: 'Stage Working', timeout: 500 })), 'TIMEOUT');
+  await page.setContent('<main><div><div>Stage</div><div style="display:none">Working</div></div></main>');
+  assert.equal(await code(act.waitFor(body, { text: 'Stage Working', timeout: 500 })), 'TIMEOUT');
+  assert.equal((await act.waitFor(body, { text: 'Stage Working', gone: true, timeout: 500 })).neverSeen, true);
+  await page.setContent('<main><div style="height:0;overflow:hidden"><div>Stage</div><div>Working</div></div></main>');
+  assert.equal(await code(act.waitFor(body, { text: 'Stage Working', timeout: 500 })), 'TIMEOUT');
+});
+
 // No org: an SLDS assistive label (1x1, margin -1px) sits just outside its overflow:hidden box, as the App Launcher's
 // search label does; it had nothing a stage could cut, so it stays shown as it was before the carousel rule.
 test('waitFor still takes an assistive label at the edge of an overflow:hidden box as shown, no org', { timeout: 30_000 }, async (t) => {

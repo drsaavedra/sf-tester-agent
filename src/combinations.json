@@ -4647,6 +4647,43 @@
       ]
     },
     {
+      "id": "label-value-across-blocks@record-page",
+      "component": "record page field (label and value in two block elements)",
+      "container": "record page",
+      "interaction": "wait for a text the snapshot prints as one line across two blocks",
+      "task": "On the SF UI Probe record {{probeId}}, wait until the page shows the Tags field with its value, which the page snapshot prints as the one line \"Tags Alpha\".",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_wait",
+          "args": {
+            "recordId": "{{probeId}}",
+            "text": "Tags Alpha",
+            "timeoutMs": 10000
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-1"
+      },
+      "validity": {
+        "page": {
+          "object": "SfUiProbe__c",
+          "flexiPage": "SfUi_Probe_Record_Page",
+          "flexiPageHash": "fcf392a9b30e",
+          "formHash": "e9d7be8db4c2"
+        }
+      },
+      "notes": "a label and its value in two block elements read run together to getByText, so the wait missed a text its own snapshot prints (F-fixtures-16); the gone half is the node test's",
+      "break": [
+        "F-fixtures-16"
+      ]
+    },
+    {
       "id": "number-grouped@page-layout",
       "component": "Number of 1,000 or more",
       "container": "standard Edit dialog (page layout)",
