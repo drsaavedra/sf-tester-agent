@@ -454,13 +454,13 @@ tool('sf_start', 'Start a browser session logged into Lightning as the owner of 
       Object.assign(checks.ledger(ledgers, id), { headed: show, budget: limit, routesAsked, saveRoutes: routes, org, steps: [], app, noApp: false }); // a started session has a ledger, so a check never has to make one; app as asked, for the route's entry
       return { session: id, headed: show, ...(entry.s.production && { production: true }), saveRoutes: routes, userId: entry.s.tokenUserId, ...inApp, apiVersion: entry.s.apiVersion, loginAsEnabled: policy.loginAs, serverSkewMs: entry.s.serverSkewMs, timings: sw.ms };
     } catch (e) {
+      // A failed start says where its time went too: failed is the stage that threw, marked before the cleanup.
+      sw.mark('failed');
+      if (e instanceof lib.SfUiError) e.evidence = { ...e.evidence, timings: sw.ms };
       // A failed start frees its id and closes its browser; the id may already hold another start's entry.
       if (sessions.get(id) === entry) sessions.delete(id);
       if (entry.s) await lib.session.end(entry.s);
       if (ledgers.has(id)) ledgers.get(id).used = Date.now(); // the launch took time: the idle window starts at the failure
-      // A failed start says where its time went too: failed is the stage that threw.
-      sw.mark('failed');
-      if (e instanceof lib.SfUiError) e.evidence = { ...e.evidence, timings: sw.ms };
       throw e;
     }
   });
