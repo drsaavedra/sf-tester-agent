@@ -4463,6 +4463,53 @@
       ]
     },
     {
+      "id": "row-across-cells@custom-component",
+      "component": "custom LWC table (slds-table)",
+      "container": "record page sidebar card",
+      "interaction": "click a row's button by a row text that crosses two cells",
+      "task": "On the SF UI Probe record {{probeId}}, in the \"SF UI Probe\" card on the record page, click Pick in the row whose text reads \"row two Pick\" (the name cell, then the button cell), and confirm the card names row two.",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_click",
+          "args": {
+            "recordId": "{{probeId}}",
+            "lwcApiName": "sfUiProbe",
+            "name": "Pick",
+            "row": "row two Pick"
+          }
+        },
+        {
+          "tool": "sf_wait",
+          "args": {
+            "recordId": "{{probeId}}",
+            "lwcApiName": "sfUiProbe",
+            "text": "Picked row two",
+            "timeoutMs": 10000
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-1"
+      },
+      "validity": {
+        "page": {
+          "object": "SfUiProbe__c",
+          "flexiPage": "SfUi_Probe_Record_Page",
+          "flexiPageHash": "fcf392a9b30e",
+          "formHash": "e9d7be8db4c2"
+        }
+      },
+      "notes": "a row matches the text it shows, cells joined by a space, as the error's rows print it (F-flow-27)",
+      "break": [
+        "F-flow-27"
+      ]
+    },
+    {
       "id": "number-grouped@page-layout",
       "component": "Number of 1,000 or more",
       "container": "standard Edit dialog (page layout)",

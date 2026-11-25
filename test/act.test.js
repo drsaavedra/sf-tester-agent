@@ -874,6 +874,22 @@ test('hover by text reaches a label that holds a hidden hover card, no org', { t
   await assert.rejects(act.hover(body, { text: 'Shipmen', timeout: 1_000 }), (e) => e.code === 'NOT_FOUND'); // still exact
 });
 
+// No org: a row named by a text across two cells ("Todo 60"), as the error's rows print it (F-flow-27).
+test('row text that crosses a cell boundary finds its one row, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  const tr = (n, kind, score) => `<tr><td>Item ${n}</td><td>${kind}</td><td>${score}</td><td><input type=checkbox aria-label="Select Item ${n}"></td></tr>`;
+  await page.setContent(`<table>${tr(1, 'Todo', 6)}${tr(2, 'Todo', 60)}${tr(3, 'Done', 60)}</table>`);
+  const checked = () => page.$$eval('input', (els) => els.map((e) => e.checked));
+  await act.click(page, { role: 'checkbox', row: 'Todo 60', timeout: 1_000 });
+  assert.deepEqual(await checked(), [false, true, false]);
+  await act.hover(page, { role: 'checkbox', row: 'todo  60', timeout: 1_000 }); // case and spaces as before
+  await act.click(page, { role: 'checkbox', row: 'Item 2Todo', timeout: 1_000 }); // the cells run together still match
+  assert.deepEqual(await checked(), [false, false, false]);
+  await assert.rejects(act.click(page, { role: 'checkbox', row: 'Todo 6', timeout: 500 }),
+    (e) => e.code === 'AMBIGUOUS_ROW' && /2 of 3 rows/.test(e.message) && e.evidence.rows[1] === 'Item 2 Todo 60');
+  await assert.rejects(act.click(page, { role: 'checkbox', row: 'Todo 61', timeout: 500 }), (e) => e.code === 'ROW_NOT_FOUND');
+});
+
 // No org: a validation line that collapses on blur moves the button up between press and release, as on the
 // fixture's Check code, so no click reaches it; a click that lands and then moves its own button is not a miss.
 test('a click whose target moved before the release is TARGET_MOVED; one that lands and moves is not', { timeout: 30_000 }, async (t) => {

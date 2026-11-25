@@ -86,9 +86,16 @@ async function resolve(scope, { name, role, text, row, column, nth, timeout, inc
   const byRole = (at, r, opts) => (includeHidden ? at.getByRole(r, { ...opts, includeHidden }).locator('visible=true') : at.getByRole(r, opts));
   let within = scope;
   if (row) {
-    const rows = byRole(scope, 'row').filter({ hasText: row });
-    await rows.first().waitFor({ timeout }).catch(() => {});
-    const count = await rows.count();
+    // A row matches its text content, or its innerText with spaces collapsed, the text the error's rows print: a
+    // text across two cells ("Todo 60") is tab-joined there, while textContent runs the cells together.
+    const m = `${(marks += 1)}`;
+    const want = row.replace(/\s+/g, ' ').trim().toLowerCase();
+    const rows = byRole(scope, 'row').filter({ hasText: row }).or(scope.locator(`[data-sf-ui-row="${m}"]`));
+    let count = 0;
+    for (const end = Date.now() + timeout; ; await new Promise((r) => setTimeout(r, 100))) {
+      await byRole(scope, 'row').evaluateAll((els, [t, k]) => els.forEach((e) => e.innerText.replace(/\s+/g, ' ').toLowerCase().includes(t) && e.setAttribute('data-sf-ui-row', k)), [want, m]).catch(() => {});
+      if ((count = await rows.count()) || Date.now() >= end) break;
+    }
     if (count !== 1) {
       const texts = (await rows.allInnerTexts()).map((r) => r.replace(/\s+/g, ' ').trim().slice(0, 120));
       const of = await byRole(scope, 'row').count(); // 0 of 0 is no table yet, 0 of 40 a wrong text
