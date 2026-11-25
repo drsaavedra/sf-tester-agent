@@ -360,6 +360,11 @@ test('a run prints its time per stage before the counts, and splits the validate
   const plain = selecting(t);
   const p = await run(['verify', '--org', 'o', '--checks', plain.file], { sf: plain.sf });
   assert.match(p.out.at(-2), /^time: connect \d+ ms, generate \d+ ms, validate \d+ ms, report \d+ ms, total \d+ ms$/);
+  // A junit path that cannot be written throws, after the time and the counts.
+  const bad = selecting(t);
+  const out = [];
+  await assert.rejects(cli.main(['verify', '--org', 'o', '--checks', bad.file, '--junit', path.join(bad.dir, 'no-such-dir', 'x.xml')], { log: (l) => out.push(l), warn: (l) => out.push(l), connect: async () => ({ production: false, orgApiVersion: '68.0' }), sf: bad.sf }), /ENOENT/);
+  assert.deepEqual([/^time: /.test(out.at(-2)), /^changed 0, /.test(out.at(-1))], [true, true], out.join('\n'));
   // With --since, the diff has a stage of its own.
   const since = selecting(t);
   touch(since.dir, [`${D}${RULE}.validationRule-meta.xml`]);
