@@ -632,7 +632,7 @@ tool('sf_cancel', 'Cancel the open edit form; NO_FORM when none is open; FORM_CO
   state.form = null;
 });
 
-tool('sf_lwc_read', 'Find a custom component on a record page from FlexiPage metadata (opening its tabs), or rendered inside another component there, and return its accessibility snapshot and foundBy. A component placed twice is the copy that shows (none showing, the first); AMBIGUOUS, with each place and its visibilityRule, when both show.',
+tool('sf_lwc_read', 'Find a custom component on a record page from FlexiPage metadata (opening its tabs), or rendered inside another component there, and return its accessibility snapshot and foundBy. A component placed twice is the copy that shows (none showing, the first); AMBIGUOUS, with each place and its visibilityRule, when both show. An Aura component renders no host to scope by its name: BAD_ARGS at once (reason auraComponent), so aim at it by role and name on the page.',
   { recordId: z.string(), lwcApiName: z.string(), flexiPageApiName: z.string().optional() },
   async (at) => ({ snapshot: await snapshot(await scopeOf(need(), at)) }));
 
