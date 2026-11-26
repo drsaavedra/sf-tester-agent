@@ -449,6 +449,7 @@ async function waitFor(scope, { text, gone = false, any, timeout = 30_000 } = {}
   const docOf = () => page.evaluate(() => (window.__sfUiDoc ??= Math.random())).catch(() => null);
   // A text across block elements (a label and its value) is missed by getByText, which reads them run together, but
   // innerText and the snapshot put a break there: mark the deepest elements whose innerText holds it (shadow roots too).
+  // ponytail: read on every zero-match poll; measured 2-5 ms median up to an 8k-node page, under the count before it. Throttle if a page costs more.
   const across = async (text) => {
     if (norm(text).split(' ').length < 2) return null;
     const m = `${(marks += 1)}`;
