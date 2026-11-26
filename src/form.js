@@ -21,6 +21,12 @@ const ROLE = { Picklist: 'combobox', ComboBox: 'combobox', Reference: 'combobox'
 // listboxes; a required group's name is prefixed "required".
 const GROUP = ['DateTime', 'MultiPicklist'];
 const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Each match's label and the components (host tags) it sits in, for an AMBIGUOUS that names the controls.
+const controls = (loc) => loc.evaluateAll((els) => els.map((n) => {
+  const hosts = [];
+  for (let r = n.getRootNode(); r.host && hosts.length < 3; r = r.host.getRootNode()) hosts.push(r.host.localName);
+  return { label: (n.getAttribute('aria-label') || n.getAttribute('title') || n.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120), hosts };
+}));
 // An Aura picklist (a Task's Status) is an <a role=combobox> named by its label and its value: "Priority Normal".
 // ponytail: a second Aura picklist whose label starts with this one's and a space matches too.
 const groupOf = (f, label) => f.scope.getByRole('group', { name: new RegExp(`^(required)?${esc(label)}$`) });
@@ -66,9 +72,15 @@ async function createRecord(s, objectApiName, { recordType, timeout = 30_000 } =
   await nav.openList(s, objectApiName, undefined, { timeout });
   const label = esc(String(info.label || '').trim());
   const main = s.page.getByRole('main');
-  // New or New <label>, as a button or a menu item; both showing, the exact New, so neither clashes; two, the first.
+  // New or New <label>, as a button or a menu item; both showing, the exact New, so neither clashes; two of the one
+  // pressed are AMBIGUOUS naming each (F23): pressing the first would be a guess.
   const news = (at, role) => ({ exact: at.getByRole(role, { name: 'New', exact: true }), named: at.getByRole(role, { name: new RegExp(`^New${label ? ` ${label}` : ''}$`) }) });
-  const pressNew = async ({ exact, named }) => ((await exact.count()) ? exact : named).first().click({ timeout });
+  const pressNew = async ({ exact, named }) => {
+    const pick = (await exact.count()) ? exact : named;
+    const n = await pick.count();
+    if (n > 1) throw new SfUiError('AMBIGUOUS', `the ${objectApiName} home shows ${n} New controls, so the press would be a guess: press the one meant with sf_click`, { objectApiName, controls: await controls(pick) });
+    return pick.first().click({ timeout });
+  };
   const button = news(main, 'button');
   const more = main.getByRole('button', { name: action.MORE });
   const none = () => new SfUiError('ACTION_NOT_AVAILABLE', `the ${objectApiName} home shows no New button`, { objectApiName });
@@ -848,8 +860,10 @@ const press = async (f, name) => {
   await f.s.page.evaluate(() => { let a = document.activeElement; while (a && a.shadowRoot && a.shadowRoot.activeElement) a = a.shadowRoot.activeElement; if (a && a.blur) a.blur(); }).catch(() => {}); // a page gone is read by the click below
   return button.click({ timeout: 5_000 }).catch(async (e) => {
     await stillOpen(f);
+    const n = await button.count(); // two matches is Playwright's strict-mode error: AMBIGUOUS, naming each (F23)
+    if (n > 1) throw new SfUiError('AMBIGUOUS', `the form shows ${n} ${name} buttons, so the press would be a guess`, { recordId: f.recordId, button: name, controls: await controls(button) });
     if (e.name !== 'TimeoutError') throw e;
-    if (!(await button.count())) throw new SfUiError('ACTION_NOT_AVAILABLE', `the form shows no ${name} button`, { recordId: f.recordId, button: name });
+    if (!n) throw new SfUiError('ACTION_NOT_AVAILABLE', `the form shows no ${name} button`, { recordId: f.recordId, button: name });
     const disabled = await button.first().isDisabled({ timeout: 1_000 }).catch(() => null);
     throw new SfUiError('TIMEOUT', `${name} took no click in 5 s${disabled ? ': it stayed disabled' : ''}`, { recordId: f.recordId, button: name, disabled });
   });

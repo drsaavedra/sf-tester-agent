@@ -389,18 +389,38 @@ test('createRecord takes the exact New from the overflow menu when New <label> s
   assert.equal(await page.locator('[data-by=exact][data-pressed]').count(), 1, 'the exact New was pressed');
   assert.equal(await page.locator('[data-by=label][data-pressed]').count(), 0, 'not New Task');
 });
-// No org, the delta's row 8: two visible "New" items (two menus open) press the first, never a raw strict-mode error.
-test('createRecord presses the first of two exact New menu items, no org', { timeout: 30_000 }, async (t) => {
+// No org, F23 (Dave 2026-11-24): two visible "New" items (two menus open) or two New buttons on the home end AMBIGUOUS
+// naming each control, and nothing is pressed; one New presses (the tests above are the control).
+test('createRecord ends AMBIGUOUS on two New controls and presses neither, no org', { timeout: 30_000 }, async (t) => {
   const { localPage } = require('./helpers');
   const page = await localPage(t);
   const by = (who) => `data-by="${who}" onclick="this.dataset.pressed=1; document.body.insertAdjacentHTML('beforeend', '<div role=dialog><button>Save</button></div>')"`;
   t.mock.method(nav, 'openList', async () => {});
   t.mock.method(require('../src/discover'), 'formModel', async () => ({ fields: [] }));
   t.mock.method(api, 'call', async () => ({ createable: true, label: 'Task', recordTypeInfos: {} }));
+  const ambiguous = (e) => e.code === 'AMBIGUOUS' && e.evidence.controls.length === 2 && e.evidence.controls.every((c) => /^New/.test(c.label));
+  const pressed = () => page.locator('[data-pressed]').count();
   await page.setContent(`<main><button aria-haspopup="true" onclick="document.querySelectorAll('[role=menu]').forEach((m) => { m.hidden = false; })">Show 2 more actions</button></main>
     <div role="menu" hidden><div role="menuitem" ${by('one')}>New</div></div><div role="menu" hidden><div role="menuitem" ${by('two')}>New</div></div>`);
-  await form.createRecord({ page, origin: 'http://127.0.0.1:1' }, 'Task', { timeout: 3_000 });
-  assert.deepEqual(await page.locator('[data-pressed]').evaluateAll((els) => els.map((e) => e.dataset.by)), ['one']);
+  await assert.rejects(form.createRecord({ page, origin: 'http://127.0.0.1:1' }, 'Task', { timeout: 3_000 }), ambiguous);
+  assert.equal(await pressed(), 0, 'no menu item was pressed');
+  await page.setContent(`<main><button ${by('one')}>New</button><button ${by('two')}>New</button></main>`);
+  await assert.rejects(form.createRecord({ page, origin: 'http://127.0.0.1:1' }, 'Task', { timeout: 3_000 }), ambiguous);
+  assert.equal(await pressed(), 0, 'no button was pressed');
+  await page.setContent(`<main><button ${by('one')}>New Task</button><button ${by('two')}>New Task</button></main>`);
+  await assert.rejects(form.createRecord({ page, origin: 'http://127.0.0.1:1' }, 'Task', { timeout: 3_000 }), ambiguous);
+  assert.equal(await pressed(), 0, 'no New Task was pressed');
+});
+// No org, F23: two footer buttons of one name end AMBIGUOUS naming each, not Playwright's raw strict-mode error; one presses.
+test('a footer press with two matches ends AMBIGUOUS naming the buttons, no org', { timeout: 30_000 }, async (t) => {
+  const { localPage } = require('./helpers');
+  const page = await localPage(t);
+  const f = { scope: page.locator('#panel'), footer: page.locator('#footer'), s: { page }, recordId: '001000000000001AAA' };
+  await page.setContent(`<article id="panel"><div id="footer"><button onclick="this.dataset.pressed=1">Cancel</button><button title="Cancel edit" onclick="this.dataset.pressed=1">Cancel</button></div></article>`);
+  await assert.rejects(form.cancel(f), (e) => e.code === 'AMBIGUOUS' && e.evidence.button === 'Cancel' && e.evidence.controls.map((c) => c.label).join('|') === 'Cancel|Cancel edit');
+  assert.equal(await page.locator('[data-pressed]').count(), 0, 'neither was pressed');
+  await page.setContent(`<article id="panel"><div id="footer"><button onclick="document.getElementById('panel').hidden=true">Cancel</button></div></article>`);
+  await form.cancel(f); // control: one Cancel presses and the form closes
 });
 test('createRecord reports a missing New button, not another failure, as ACTION_NOT_AVAILABLE, no org', async (t) => {
   const { localPage } = require('./helpers');
