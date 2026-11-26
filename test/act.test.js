@@ -994,6 +994,18 @@ test('row text that crosses a cell boundary finds its one row, no org', { timeou
   await assert.rejects(act.click(page, { role: 'checkbox', row: 'Todo 61', timeout: 500 }), (e) => e.code === 'ROW_NOT_FOUND');
 });
 
+// No org: an SVG row has no innerText; it no longer stops the marking, so a text across two cells after it is found (R12).
+test('an SVG row before a table row does not stop the row text across cells, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent('<svg><g role="row"><text>chart</text></g></svg><table><tr><td>Item 2</td><td>Todo</td><td>60</td>'
+    + '<td><input type=checkbox aria-label="Select Item 2"></td></tr></table>');
+  await act.click(page, { role: 'checkbox', row: 'Todo 60', timeout: 1_000 });
+  assert.equal(await page.$eval('input', (e) => e.checked), true);
+  // A page error in the marking is that error, not ROW_NOT_FOUND with no cause.
+  await page.$eval('tr', (e) => Object.defineProperty(e, 'innerText', { get() { throw new Error('row read broke'); } }));
+  await assert.rejects(act.click(page, { role: 'checkbox', row: 'Todo 60', timeout: 500 }), /row read broke/);
+});
+
 // No org: sf_on_top and sf_measure aim with includeHidden, which adds aria-hidden text to a name: a column header's
 // hidden sort label, a required box's asterisk. The name the page shows still finds them (F-fixtures-11, -21).
 test('with includeHidden, a name the page shows finds its element, no org', { timeout: 30_000 }, async (t) => {

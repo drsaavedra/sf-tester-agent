@@ -80,10 +80,12 @@ async function near(asked, find) {
 
 // The rows holding the text, by text content or by innerText with spaces collapsed, the text the error's rows print:
 // a text across two cells ("Todo 60") is tab-joined there, while textContent runs the cells together. No wait.
+// An SVG row has no innerText (R12); only a lost page is forgiven, so a page error is not ROW_NOT_FOUND.
 async function rowsOf(scope, row, byRole = (at, r) => at.getByRole(r)) {
   const m = `${(marks += 1)}`;
   const want = row.replace(/\s+/g, ' ').trim().toLowerCase();
-  await byRole(scope, 'row').evaluateAll((els, [t, k]) => els.forEach((e) => e.innerText.replace(/\s+/g, ' ').toLowerCase().includes(t) && e.setAttribute('data-sf-ui-row', k)), [want, m]).catch(() => {});
+  await byRole(scope, 'row').evaluateAll((els, [t, k]) => els.forEach((e) => (e.innerText || '').replace(/\s+/g, ' ').toLowerCase().includes(t) && e.setAttribute('data-sf-ui-row', k)), [want, m])
+    .catch((e) => { if (!lost(e)) throw e; });
   return byRole(scope, 'row').filter({ hasText: row }).or(scope.locator(`[data-sf-ui-row="${m}"]`));
 }
 
