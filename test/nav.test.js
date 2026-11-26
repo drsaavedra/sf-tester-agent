@@ -123,6 +123,16 @@ test('nav', { skip, timeout: 600_000 }, async (t) => {
     assert.ok(await main.getByRole('rowheader').count(), await main.ariaSnapshot());
     assert.equal(await main.getByText('We searched for "my accounts"').count(), 0, 'the page this test needs prints no "We searched for"');
   });
+
+  // Step 68: a natural-language term with no rows ("created last year": this file's account is new) draws only a
+  // heading "No matching records"; the search returns that page, and a search from it returns the next results.
+  await t.test('search a natural-language term with no rows returns its empty results page', async () => {
+    await nav.openList(s, 'SfUiProbe__c');
+    const main = await nav.search(s, 'accounts created last year', { timeout: 30_000 });
+    assert.equal(await main.getByRole('heading', { name: 'No matching records' }).count(), 1, await main.ariaSnapshot());
+    await nav.search(s, 'my accounts', { timeout: 30_000 });
+    assert.ok(await main.getByRole('rowheader').count(), await main.ariaSnapshot());
+  });
 });
 
 // F-flow-20, no org: a stub of the header and the results page. The button is "Search", then "Search: <last term>";
@@ -205,6 +215,33 @@ test('search again from a natural-language results page returns the new results,
   assert.equal(await main.getByRole('rowheader').textContent(), 'hit BREAK inexact two 2');
   await nav.search({ page }, 'BREAK inexact two', { timeout: 3_000 });
   assert.equal(await main.getByRole('rowheader').textContent(), 'hit BREAK inexact two 3');
+});
+
+// Step 68, no org: a natural-language term with no rows draws only a heading "No matching records" (measured on
+// sfui-pool-1); the search returns that page, and a second search from it returns the redrawn rows.
+test('search a natural-language term with no rows returns its empty results page, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main></main>
+    <script>
+      const empty = '<h2>No matching records</h2><h2>Try searching instead:</h2><ul><li><button>accounts</button></li></ul>';
+      const rows = (term) => '<table><tr><th role=rowheader>hit ' + term + '</th></tr></table>';
+      q.onkeydown = (e) => {
+        if (e.key !== 'Enter') return;
+        const term = q.value, main = document.querySelector('main');
+        q.hidden = true;
+        document.querySelector('header button').setAttribute('aria-label', 'Search: ' + term);
+        if (location.hash) return setTimeout(() => { main.innerHTML = rows(term); }, 300);
+        location.hash = btoa(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop', term }));
+        main.innerHTML = empty;
+      };
+    </script></body></html>` }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  const main = await nav.search({ page }, 'accounts created last year', { timeout: 3_000 });
+  assert.equal(await main.getByRole('heading', { name: 'No matching records' }).count(), 1);
+  await nav.search({ page }, 'my accounts', { timeout: 3_000 });
+  assert.equal(await main.getByRole('rowheader').textContent(), 'hit my accounts');
 });
 
 // No org: the tab list as UI API serves it (test/nav-items.json), in two pages with the custom tabs on page 2, so a

@@ -252,7 +252,9 @@ async function search(s, text, { timeout = 60_000 } = {}) {
   const before = s.page.url();
   const main = s.page.getByRole('main');
   // main shows before its results: wait for a result row or the no-match text (F-flow-19).
-  const settled = main.getByRole('rowheader').or(main.getByText(/find any matches/)).first();
+  // A natural-language term with no rows prints only the heading "No matching records" (step 68).
+  const settled = main.getByRole('rowheader').or(main.getByText(/find any matches/))
+    .or(main.getByRole('heading', { name: 'No matching records' })).first();
   const again = isSearch(new URL(before));
   // On a results page the old rows already match settled: mark them, and wait for the redraw to drop them (R10).
   const old = again && (await settled.count()) > 0 && await settled.evaluate((e) => e.setAttribute('data-sf-tester-old', '')).then(() => true, () => false);
