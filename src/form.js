@@ -370,7 +370,7 @@ async function pick(f, field, input, value, v, read, timeout, object) {
     const isAura = !(await named.count()); // before the click, which closes an LWC lookup's named listbox
     if (id && !byName) {
       const k = ids.findIndex(hasId);
-      if (k >= 0) { if (await options.nth(k).click({ timeout: 2_000 }).then(() => true, () => false)) return { name, aura: isAura, id: ids[k] }; clickFailed = true; }
+      if (k >= 0) { if (await options.nth(k).click({ timeout: 2_000 }).then(() => true, () => false)) return { name, aura: isAura, id: ids[k], byId: true }; clickFailed = true; }
       continue;
     }
     const twins = names.flatMap((n, j) => (n === name ? [row(j)] : []));
@@ -504,7 +504,7 @@ async function setFields(f, values, { objects = {}, picklist } = {}) {
     const value = values[apiName];
     const field = fieldOf(f, apiName);
     let rich = false;
-    let confirm = false; // a lookup set by id but picked by name: save checks the stored id
+    let confirm = false; // a lookup picked by name for an id, or by id on Aura, or cleared: save checks the stored id
     let picked; // a lookup's option picked, with the record id it carried ('' when none)
     const input = locate(f, field);
     // A modelled field the form does not show (a visibility rule, a page that drifted) is said so, not waited on.
@@ -514,7 +514,8 @@ async function setFields(f, values, { objects = {}, picklist } = {}) {
     }
     if (field.dataType === 'Reference') {
       picked = await setLookup(f, field, input, value, { object: objects[apiName] });
-      confirm = !!(picked && picked.byName) || value == null || value === ''; // a clear: save checks the record holds none
+      // An Aura pick by id trusts the id from Aura's private runtime (a twin, a list that changed): the save reads it back.
+      confirm = !!(picked && (picked.byName || (picked.aura && picked.byId))) || value == null || value === '';
     } else if (field.dataType === 'Picklist') {
       await setPicklist(f, field, input, value, picklist);
       landed(field, value, String(value), (await input.innerText()).trim());
@@ -671,7 +672,7 @@ async function save(f, { timeout = 30_000 } = {}) {
   const shown = nav.recordIdOf(page.url()); // a create's page before the Save: never its new record
   const stale = await review.isVisible(); // an earlier block's banner stays until the dialog closes
   const tasks = !f.recordId && f.model.objectApiName === 'Task' ? await read((signal) => tasksNamed(f, signal)) : null;
-  // A lookup set by id on an Aura lookup (picked by its name) or cleared is proved by the stored id: compared, or held
+  // A lookup picked by name for an id, picked by id on Aura, or cleared is proved by the stored id: compared, or held
   // before, on a save that stays on the record or leaves it.
   const confirms = Object.keys(f.set || {}).filter((k) => f.set[k].confirm);
   const unprovedOf = (values) => confirms.filter((k) => !values.checked.includes(k) && !values.notChecked.some((x) => x.apiName === k && x.why === HELD));

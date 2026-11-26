@@ -205,7 +205,7 @@ test('form on a Task', { skip, timeout: 600_000 }, async (t) => {
     assert.deepEqual(await stored(), [c1, acct]);
     f = await form.editRecord(s, task);
     await form.setFields(f, { WhoId: c2 });
-    assert.equal(f.set.WhoId.confirm, undefined, 'picked by id, not by name');
+    assert.equal(f.set.WhoId.confirm, true, 'an Aura pick by id: the save reads the stored id back');
     assert.equal((await form.save(f)).outcome, 'saved');
     assert.deepEqual(await stored(), [c2, acct]);
   });
@@ -533,6 +533,7 @@ test('a lookup given a record id picks the option with that id, no org', { timeo
   const f = { scope: page.getByRole('dialog'), s: { page }, model: { objectApiName: 'Account', fields: [{ apiName: 'ParentId', label: 'Parent Account', dataType: 'Reference', editable: true }] } };
   await form.setFields(f, { ParentId: PARIS.slice(0, 15) });
   assert.equal(await page.evaluate(() => document.body.dataset.picked), 'Paris', 'the option whose data-value is the id, not the first Acme');
+  assert.equal(f.set.ParentId.confirm, undefined, 'control: an LWC pick by id reads its id from the DOM, no stored-id check');
   assert.equal(await page.evaluate(() => document.body.dataset.typed), 'Acme', 'the name the API read was typed');
   assert.equal(await page.evaluate(() => document.body.dataset.cleared), 'yes', 'control: a good id clears the old choice');
   assert.ok(calls.some((p) => p.includes('optionalFields=Account.Name')), calls.join());
@@ -754,6 +755,8 @@ test('an Aura lookup given a record id picks the option whose component holds th
   await form.setFields(f, { WhoId: ANN });
   assert.equal(await page.evaluate(() => document.body.dataset.picked), 'ann', 'the option with the id, not the first');
   assert.equal(f.set.WhoId.shown, 'Ann Lee', 'the pill was read back');
+  // F11: the id came from Aura's private runtime, so the save reads the stored id back (the next test).
+  assert.deepEqual([f.set.WhoId.confirm, f.set.WhoId.id], [true, ANN], 'an Aura pick by id is checked at save');
 });
 
 // No org: a save that stays on the record still reads it back when an Aura lookup was set by id, and refuses another id.
