@@ -23,11 +23,12 @@ const GROUP = ['DateTime', 'MultiPicklist'];
 const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // An Aura picklist (a Task's Status) is an <a role=combobox> named by its label and its value: "Priority Normal".
 // ponytail: a second Aura picklist whose label starts with this one's and a space matches too.
+const groupOf = (f, label) => f.scope.getByRole('group', { name: new RegExp(`^(required)?${esc(label)}$`) });
 const locate = (f, field) => {
   // A Geolocation draws group "Spot" with textboxes "Latitude" and "Longitude", whatever the model labels a part.
   const part = /__(Latitude|Longitude)__s$/.exec(field.apiName);
-  if (part && field.itemLabel) return f.scope.getByRole('group', { name: new RegExp(`^(required)?${esc(field.itemLabel)}$`) }).getByRole('textbox', { name: part[1], exact: true });
-  if (GROUP.includes(field.dataType)) return f.scope.getByRole('group', { name: new RegExp(`^(required)?${esc(field.label)}$`) });
+  if (part && field.itemLabel) return groupOf(f, field.itemLabel).getByRole('textbox', { name: part[1], exact: true });
+  if (GROUP.includes(field.dataType)) return groupOf(f, field.label);
   const exact = f.scope.getByRole(field.role || ROLE[field.dataType] || 'textbox', { name: field.label, exact: true });
   return field.dataType === 'Picklist' ? exact.or(f.scope.getByRole('combobox', { name: new RegExp(`^${esc(field.label)} `) }).and(f.scope.locator('a'))) : exact;
 };
