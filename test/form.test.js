@@ -510,8 +510,8 @@ test('a lookup with two records of the asked name is AMBIGUOUS, not the first, n
 });
 
 // No org: a record id types the name the API reads for it and picks the option whose data-value is that id, so a
-// twin of the name cannot make it AMBIGUOUS; an id no option carries is VALUE_NOT_FOUND naming the id.
-test('a lookup given a record id picks the option with that id, no org', { timeout: 80_000 }, async (t) => {
+// twin of the name cannot make it AMBIGUOUS; an id no option carries is searched again, then NOT_SEARCHABLE_YET.
+test('a lookup given a record id picks the option with that id, no org', { timeout: 150_000 }, async (t) => {
   const { localPage } = require('./helpers');
   const page = await localPage(t);
   const [LYON, PARIS] = ['001C100000XZ8PWIA1', '001C100000XVXrEIAX'];
@@ -571,10 +571,10 @@ test('a lookup given a record id picks the option with that id, no org', { timeo
   await form.setFields(f, { ParentId: 'AcmeCorporation' });
   assert.equal(await page.evaluate(() => document.body.dataset.picked), 'Nice', 'a 15-letter name the API does not know is picked by name');
   await page.evaluate(() => { delete document.body.dataset.picked; document.querySelectorAll('[role=option]')[2].remove(); });
-  // The name reads but no option carries the id: VALUE_NOT_FOUND naming the id and the options seen, nothing picked.
+  // The name reads but no option carries the id: searched again for 60 s (F10), then NOT_SEARCHABLE_YET naming the id and the options seen, nothing picked.
   await page.evaluate(() => document.querySelectorAll('[role=option]')[1].remove());
   await page.evaluate(() => document.querySelector('[role=group]').insertAdjacentHTML('beforeend', '<div role="option"><div>Acme</div><div>Account | Nice</div></div>'));
-  await assert.rejects(form.setFields(f, { ParentId: PARIS }), (e) => e.code === 'VALUE_NOT_FOUND' && e.message.includes(PARIS) && e.evidence.options.join() === `Acme | Account | Lyon (${LYON}),Acme | Account | Nice`);
+  await assert.rejects(form.setFields(f, { ParentId: PARIS }), (e) => e.code === 'NOT_SEARCHABLE_YET' && e.message.includes(PARIS) && e.evidence.options.join() === `Acme | Account | Lyon (${LYON}),Acme | Account | Nice`);
   await page.evaluate(() => document.querySelectorAll('[role=option]')[1].remove());
   assert.equal(await page.evaluate(() => document.body.dataset.picked), undefined, 'the other Acme was not picked');
   // The option with the id is there but the list changes on every read: the error says so, not that no option has it.
@@ -749,9 +749,7 @@ test('an Aura lookup given a record id picks the option whose component holds th
   const aura = '<script>window.$A = { getComponent: (g) => ({ getComponentValueProvider: () => ({ get: (k) => (k === \'v.value\' ? { id: g } : null) }) }) };</script>';
   const row = (id, second, where) => auraRow('Ann Lee', second, where).replace('<a ', `<a data-aura-rendered-by="${id}" `);
   const f = { scope: page.getByRole('dialog'), s: { page }, model: { objectApiName: 'Task', fields: [{ apiName: 'WhoId', label: 'Name', dataType: 'Reference', editable: true }] } };
-  await page.setContent(auraLookup(row(TWIN, 'Acme', 'twin')) + aura);
-  await assert.rejects(form.setFields(f, { WhoId: ANN }), (e) => e.code === 'VALUE_NOT_FOUND' && e.evidence.options.join() === `Ann Lee | Acme (${TWIN})`);
-  assert.equal(await page.evaluate(() => document.body.dataset.picked), undefined, 'the twin listed alone was not picked');
+  // A twin listed alone is searched again, then NOT_SEARCHABLE_YET: the next test.
   await page.setContent(auraLookup(row(TWIN, 'Acme', 'twin') + row(ANN, 'Globex', 'ann')) + aura);
   await form.setFields(f, { WhoId: ANN });
   assert.equal(await page.evaluate(() => document.body.dataset.picked), 'ann', 'the option with the id, not the first');
@@ -1879,6 +1877,31 @@ test('a lookup by an id the user reads searches again while its search lags, no 
   await lagging(99);
   await assert.rejects(form.setFields(f, { WhoId: '003C100000XHIDDEN1' }), (e) => e.code === 'VALUE_NOT_FOUND' && /404 NOT_FOUND for it as a record id, so this user cannot read a record with that id$/.test(e.message));
   assert.equal(await page.evaluate(() => window.n), 1, 'no search again for a 404');
+});
+
+// No org, F10 (Dave 2026-11-24): a pick by id whose dropdown lists a same-name twin but not the target searches again
+// for up to 60 s, as when it lists no record, so a lagging target is picked; a true miss is NOT_SEARCHABLE_YET, twin never picked.
+test('a lookup by id with only a same-name twin listed searches again, then NOT_SEARCHABLE_YET, no org', { timeout: 150_000 }, async (t) => {
+  const { localPage } = require('./helpers');
+  const page = await localPage(t);
+  const [GUY, TWIN] = ['003C100000XZ8PWIA1', '003C100000XZ8PXIA1'];
+  t.mock.method(api, 'call', async (s, path) => {
+    if (path === '/ui-api/object-info/Task') return { fields: { WhoId: { referenceToInfos: [{ apiName: 'Contact', nameFields: ['Name'] }] } } };
+    return { apiName: 'Contact', fields: { Name: { value: 'New Guy' } } };
+  });
+  const row = (id, where) => auraRow('New Guy', where, where).replace('<a ', `<a data-aura-rendered-by="${id}" `);
+  const lagging = (after) => page.setContent(`<div role="dialog"><ul><li><span>Name</span><div id="box"><input role="combobox" aria-label="Name" oninput="find(this.value)"><div role="listbox" id="lb"></div></div></li></ul><button>Save</button></div>
+    <script>window.$A = { getComponent: (g) => ({ getComponentValueProvider: () => ({ get: (k) => (k === 'v.value' ? { id: g } : null) }) }) };
+      window.n = 0; window.pill = (name) => { box.innerHTML = '<ul role="list" aria-label="Name - Current Selection: ' + name + ' (Contact)"><li><div>' + name + '</div></li></ul>'; };
+      window.find = (v) => { if (!v) return; n++; lb.innerHTML = ${JSON.stringify(row(TWIN, 'twin'))} + (n >= ${after} ? ${JSON.stringify(row(GUY, 'guy'))} : ''); };</script>`);
+  const f = { scope: page.getByRole('dialog'), s: { page }, model: { objectApiName: 'Task', fields: [{ apiName: 'WhoId', label: 'Name', dataType: 'Reference', editable: true }] } };
+  await lagging(3);
+  await form.setFields(f, { WhoId: GUY });
+  assert.deepEqual(await page.evaluate(() => [document.body.dataset.picked, window.n]), ['guy', 3], 'picked on the third search, past the twin');
+  await lagging(999);
+  await assert.rejects(form.setFields(f, { WhoId: GUY }), (e) => e.code === 'NOT_SEARCHABLE_YET' && e.evidence.options.join() === `New Guy | twin (${TWIN})` && /no option with that id/.test(e.message));
+  assert.equal(await page.evaluate(() => document.body.dataset.picked), undefined, 'the twin was never picked');
+  assert.ok(await page.evaluate(() => window.n) > 1, 'searched again');
 });
 
 // No org, the gate's unverified read-back: after an Aura pick the box can stay a moment before the pill replaces it,

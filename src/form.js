@@ -390,6 +390,8 @@ async function pick(f, field, input, value, v, read, timeout, object) {
   const only = names.length ? [] : (await aura.getByRole('option').allInnerTexts().catch(() => [])).filter((t) => /" in \S/.test(t));
   const full = only.length ? only[0].replace(/\s+/g, ' ').trim() : '';
   if (id && full) throw new SfUiError('NOT_SEARCHABLE_YET', `${field.label}: this user reads record ${value} ("${name}"), but its search, made again for up to 60 s, listed no record, only its full search (${full}); a record another user made can take about a minute to be searchable`, { apiName: field.apiName, value, ...(searched && { searched }) });
+  // Options carry ids and none is the target's (a same-name twin, say): the target's search may lag too, so search again.
+  if (id && ids.some(Boolean) && !listed) throw new SfUiError('NOT_SEARCHABLE_YET', `${field.label}: this user reads record ${value} ("${name}"), but its search, made again for up to 60 s, listed no option with that id, only other records; a record another user made can take about a minute to be searchable`, { apiName: field.apiName, value, options: names.map((_, j) => row(j)), ...(searched && { searched }) });
   const where = `${searched ? ` in ${searched}` : ''}${full ? `; the dropdown listed no record, only its full search (${full}): not searchable yet for this user (a record another user made in the last minute), or not visible to this user` : ''}`;
   const none = id ? `no ${field.label} option for record ${value} ("${name}")${where}` : `no ${field.label} record named "${value}"${where}${asId}`;
   const why = changing ? `the ${field.label} results kept changing, so ${what} was not picked` : failed ? `the ${field.label} option for ${what} is listed, but every click on it failed` : none;
