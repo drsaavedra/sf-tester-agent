@@ -22,7 +22,7 @@ const ROLE = { Picklist: 'combobox', ComboBox: 'combobox', Reference: 'combobox'
 const GROUP = ['DateTime', 'MultiPicklist'];
 const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // Each match's label and the components (host tags) it sits in, for an AMBIGUOUS that names the controls.
-const controls = (loc) => loc.evaluateAll((els) => els.map((n) => {
+const controlsOf = (loc) => loc.evaluateAll((els) => els.map((n) => {
   const hosts = [];
   for (let r = n.getRootNode(); r.host && hosts.length < 3; r = r.host.getRootNode()) hosts.push(r.host.localName);
   return { label: (n.getAttribute('aria-label') || n.getAttribute('title') || n.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120), hosts };
@@ -78,7 +78,7 @@ async function createRecord(s, objectApiName, { recordType, timeout = 30_000 } =
   const pressNew = async ({ exact, named }) => {
     const pick = (await exact.count()) ? exact : named;
     const n = await pick.count();
-    if (n > 1) throw new SfUiError('AMBIGUOUS', `the ${objectApiName} home shows ${n} New controls, so the press would be a guess: press the one meant with sf_click`, { objectApiName, controls: await controls(pick) });
+    if (n > 1) throw new SfUiError('AMBIGUOUS', `the ${objectApiName} home shows ${n} New controls, so the press would be a guess: press the one meant with sf_click`, { objectApiName, controls: await controlsOf(pick) });
     return pick.first().click({ timeout });
   };
   const button = news(main, 'button');
@@ -865,7 +865,7 @@ const press = async (f, name) => {
   return button.click({ timeout: 5_000 }).catch(async (e) => {
     await stillOpen(f);
     const n = await button.count(); // two matches is Playwright's strict-mode error: AMBIGUOUS, naming each (F23)
-    if (n > 1) throw new SfUiError('AMBIGUOUS', `the form shows ${n} ${name} buttons, so the press would be a guess`, { recordId: f.recordId, button: name, controls: await controls(button) });
+    if (n > 1) throw new SfUiError('AMBIGUOUS', `the form shows ${n} ${name} buttons, so the press would be a guess`, { recordId: f.recordId, button: name, controls: await controlsOf(button) });
     if (e.name !== 'TimeoutError') throw e;
     if (!n) throw new SfUiError('ACTION_NOT_AVAILABLE', `the form shows no ${name} button`, { recordId: f.recordId, button: name });
     const disabled = await button.first().isDisabled({ timeout: 1_000 }).catch(() => null);
