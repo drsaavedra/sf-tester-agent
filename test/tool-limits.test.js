@@ -176,6 +176,18 @@ test('sf_screenshot writes only an absolute .png path', async () => {
   assert.equal((await answer('sf_screenshot', { path: '/tmp/a.png' })).code, 'NO_SESSION', 'control: a .png reaches the session check');
 });
 
+test('sf_screenshot refuses a path where a file exists, as a call and as a route step', async (t) => {
+  const file = path.join(fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'sf-ui-shot-')), 'old.png');
+  fs.writeFileSync(file, 'old');
+  t.after(() => fs.rmSync(path.dirname(file), { recursive: true }));
+  const refused = await answer('sf_screenshot', { path: file });
+  assert.equal(refused.code, 'BAD_ARGS', JSON.stringify(refused));
+  assert.match(refused.message, /already exists/);
+  assert.match((await answer('sf_run_route', { steps: [{ tool: 'sf_screenshot', args: { path: file } }] })).message, /step 0 sf_screenshot: a file already exists/);
+  assert.equal(fs.readFileSync(file, 'utf8'), 'old', 'the old file is untouched');
+  assert.equal((await answer('sf_screenshot', { path: `${file}.png` })).code, 'NO_SESSION', 'control: a new path reaches the session check');
+});
+
 test('a look is a tool classed read or apiRead, and none of the state steps a route never drops', () => {
   for (const tool of LOOKS) assert.ok([...CLASSES.read, ...CLASSES.apiRead].includes(tool), tool);
   for (const tool of ['sf_apex', 'sf_viewport', 'sf_modal', 'sf_cancel', 'sf_set_fields']) assert.equal(LOOKS.includes(tool), false, tool);

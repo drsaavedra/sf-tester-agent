@@ -5,6 +5,7 @@
 // recorder survives between calls. Results are compact JSON; coded errors come back as tool errors.
 const { AsyncLocalStorage } = require('node:async_hooks');
 const { isAbsolute, join } = require('node:path');
+const { existsSync } = require('node:fs');
 const { createHash } = require('node:crypto');
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
@@ -30,7 +31,11 @@ let minted = 0;
 const current = new AsyncLocalStorage();
 const slot = (k) => (k === 'foundBy' || k === 'scoped' ? current.getStore() : current.getStore().entry);
 const state = new Proxy({}, { get: (_, k) => slot(k)[k], set: (_, k, v) => { slot(k)[k] = v; return true; } });
-const assertPng = (path) => { if (!(isAbsolute(path) && path.endsWith('.png'))) throw new lib.SfUiError('BAD_ARGS', `path must be an absolute .png path, not ${path}`, { path }); };
+const assertPng = (path) => {
+  if (!(isAbsolute(path) && path.endsWith('.png'))) throw new lib.SfUiError('BAD_ARGS', `path must be an absolute .png path, not ${path}`, { path });
+  // A .png in the project can be source (a static resource), and the tester never replaces one.
+  if (existsSync(path)) throw new lib.SfUiError('BAD_ARGS', `a file already exists at ${path}; give a new path, sf_screenshot never replaces a file`, { path });
+};
 const server = new McpServer({ name: 'sf-tester', version: require('../package.json').version });
 
 const noSession = (id) => new lib.SfUiError('NO_SESSION', `no open session ${id}: never started, ended, or closed after ${IDLE_MS / 60_000} min idle (${CAP_IDLE_MS / 60_000} min at the session cap); sf_start opens one`, { session: id });
@@ -805,7 +810,7 @@ tool('sf_page_errors', 'Uncaught errors and console errors the page produced sin
 tool('sf_page_snapshot', 'Accessibility snapshot of the current page main area: what a screen reader sees. No vision. On a record page recordId is the record shown, for a later route step ({{stepN.recordId}} after a Clone or a New that a click saved).', {},
   async () => { const url = need().page.url(); return { url, recordId: lib.nav.recordIdOf(url), snapshot: await snapshot(await lib.act.mainOf(state.s.page)) }; });
 
-tool('sf_screenshot', 'A screenshot for pixel or layout measurement only, never for navigation. With no path it comes back in this result and no file is written; give a path only when the brief asks to keep the image.',
+tool('sf_screenshot', 'A screenshot for pixel or layout measurement only, never for navigation. With no path it comes back in this result and no file is written; give a path only when the brief asks to keep the image; a path where a file already exists is BAD_ARGS, never replaced.',
   { path: z.string().optional().describe('absolute .png path, to keep the file') },
   async ({ path }) => {
     if (path) { assertPng(path); await need().page.screenshot({ path }); return { path, kept: true }; }
