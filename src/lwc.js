@@ -1,7 +1,7 @@
 'use strict';
 
 // Reach a custom component from FlexiPage metadata instead of looking: which page rendered, which tabs hold
-// the component, then its live host. ponytail: the host wait is untested; no case here rendered late enough.
+// the component, then its live host, waited for when it paints late (no-org test in test/lwc.test.js).
 const { SfUiError } = require('./errors');
 const nav = require('./nav');
 const discover = require('./discover');

@@ -1,7 +1,8 @@
 'use strict';
 
 // Modals render at page level, outside the component that opened them (LightningModal goes into
-// lightning-overlay-container), so always search from the page and take the newest visible dialog.
+// lightning-overlay-container), so always search from the page. `find` prefers an aria-modal dialog, then a
+// dialog the page did not hide, then the newest visible one.
 
 const { requireEnglish } = require('./session');
 
