@@ -282,6 +282,45 @@ test('a search that fails from a results page leaves no search mark on it, no or
   assert.equal(await page.locator('main section [data-sf-tester-old]').count(), 0, 'the failed call left its mark');
 });
 
+// Step 75 (D9), no org: the results page opens 800 ms after Enter and draws its row 800 ms later. Each wait alone is
+// under the 2 s timeout; the call is not, so it ends SEARCH_FAILED at the timeout.
+test('search keeps one deadline across its waits, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main></main>
+    <script>
+      q.onkeydown = (e) => {
+        if (e.key !== 'Enter') return;
+        const term = q.value;
+        setTimeout(() => {
+          location.hash = btoa(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop', term }));
+          setTimeout(() => { document.querySelector('main').innerHTML = '<table><tr><th role=rowheader>hit</th></tr></table>'; }, 800);
+        }, 800);
+      };
+    </script></body></html>` }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  const start = Date.now();
+  await assert.rejects(nav.search({ page }, 'BREAK slow', { timeout: 2_000 }), { code: 'SEARCH_FAILED' });
+  assert.ok(Date.now() - start < 2_700, `took ${Date.now() - start} ms on a 2000 ms timeout`);
+});
+
+// Step 75 (D10, R10 b), no org: a results page with nothing on it before Enter cannot be marked; the SEARCH_FAILED says why.
+test('a search from an unmarked results page names why on its SEARCH_FAILED, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main></main>
+    <script>
+      q.onkeydown = (e) => {
+        if (e.key === 'Enter') document.querySelector('main').innerHTML = '<table><tr><th role=rowheader>hit</th></tr></table>';
+      };
+    </script></body></html>` }));
+  await page.goto(`https://x.lightning.force.com/one/one.app#${Buffer.from(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop' })).toString('base64')}`);
+  await assert.rejects(nav.search({ page }, 'BREAK unmarked', { timeout: 2_500 }),
+    (e) => e.code === 'SEARCH_FAILED' && e.evidence.notMarked === 'no result row or no-match text before Enter');
+});
+
 // No org: the tab list as UI API serves it (test/nav-items.json), in two pages with the custom tabs on page 2, so a
 // missing nextPageUrl loop goes red. The page is a stub that knows which tab names exist.
 const items = require('./nav-items.json').navItems;
