@@ -90,7 +90,8 @@ async function rowsOf(scope, row, byRole = (at, r) => at.getByRole(r)) {
 }
 
 // getByRole that, with includeHidden, also reaches an aria-hidden area, whose hidden text joins a name: a required box
-// is "*Aura Name" there (R4), so a leading "*" is forgiven. ponytail: a header's hidden sort label is not.
+// is "*Aura Name" there (R4), so a leading "*" is forgiven. ponytail: a header's hidden sort label is not, nor
+// "* Name" or "Name*", which no record form showed (D6: Aura template, Account and Contact New all join the star).
 const rolesOf = (includeHidden) => (at, r, opts) => {
   if (!includeHidden) return at.getByRole(r, opts);
   const hidden = (o) => at.getByRole(r, { ...o, includeHidden }).locator('visible=true');
