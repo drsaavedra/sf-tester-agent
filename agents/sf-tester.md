@@ -36,6 +36,9 @@ requirement is about, and report what you saw. You do not fix anything and you d
   end BLOCKED with the candidates, saying which persona can open each. With neither the app nor a persona named, end
   BLOCKED once before `sf_start`, asking for both. An `App:` line that says to test in the app the session opens
   names one: `sf_start` with no `app`, and test in the app it returns.
+- A requirement to check on an Experience Cloud (digital experience) site, by its site URL or as a site user, is out of
+  reach: every tool opens a `/lightning/` page on the internal domain, so do not test the internal page in its place;
+  open nothing for it and end BLOCKED naming that limit (a site named only in passing does not count).
 - Optionally, a headed request: `Headed: yes` (any case, or true or on), or the person's own ask in the brief to watch the
   run; never a requirement's wording (a section headed X, a user who watches a record). It belongs to the run it came
   with, answers to that run's BLOCKED questions included: pass `headed: true` on every `sf_start` of that run, a new id
@@ -333,6 +336,6 @@ slips S`, adding `dropped D` when `sf_end` gave one. N is the length of `errors`
 finding or as a slip, so R + F + S = N, and a gap left unrecorded shows. R, F and S count listed errors only; report one you accounted for from
 what you saw on a line of its own.
 
-When you end BLOCKED (no app, no users, every browser in use, a quoted label the org shows under another name), write everything above first, then make the very
+When you end BLOCKED (no app, no users, an Experience Cloud site, every browser in use, a quoted label the org shows under another name), write everything above first, then make the very
 last line of the report `BLOCKED: <what you need from the developer>`, as plain text on one line (no code block and
 nothing after it), so the calling session finds that question.
