@@ -180,6 +180,20 @@ test('mass runs a list button from an overflow menu that counts its items', asyn
   await s.page.goto(`${ORIGIN}/lightning/o/SfUiProbe__c/list?filterName=All`);
   const r = await list.ACTIONS.mass[0](s, { rows: ['probe one'], button: 'Delete', timeout: 2_000 });
   assert.match(r.dialog, /sure\?/);
+  assert.equal(r.hiddenBy, undefined, 'control: a shown dialog is its snapshot');
+});
+
+// R9: a stacked panel hides the viewport holding the dialog once it is counted (F-fixtures-26). Its accessibility
+// snapshot is empty, so mass answers the dialog's text and the hider, as sf_modal does.
+test('mass answers the text and the hider of a dialog the page hid after it opened', async (t) => {
+  stub(t, LISTS);
+  const draw = "setTimeout(() => { const v = document.getElementById('vp'); v.setAttribute('aria-hidden', 'true'); v.querySelector('[role=dialog]').insertAdjacentHTML('beforeend', '<input aria-label=Owner>'); }, 300)";
+  const open = `document.body.insertAdjacentHTML('beforeend', '<div class=viewport id=vp><div role=dialog aria-modal=true aria-label=Hidden><p>Move these?</p></div></div>'); ${draw}`;
+  const s = await page(t, TABLE().replace('<button>Refresh</button>', `<button onclick="${open}">Move</button>`));
+  await s.page.goto(`${ORIGIN}/lightning/o/SfUiProbe__c/list?filterName=All`);
+  const r = await list.ACTIONS.mass[0](s, { rows: ['probe one'], button: 'Move', timeout: 3_000 });
+  assert.equal(r.hiddenBy, '<div class="viewport">');
+  assert.match(r.dialog, /Move these\?/);
 });
 
 test('mass refuses before it ticks anything when a row not named is selected, and names it', async (t) => {

@@ -20,7 +20,11 @@ async function find(s, { timeout = 30_000, body = false } = {}) {
   const modal = (hidden) => s.page.locator('[aria-modal="true"]').and(role(hidden)).locator('visible=true');
   let dialog = any.last();
   for (const l of [modal(false), modal(true), role(false).locator('visible=true')]) {
-    if (await l.count()) { dialog = l.last(); break; }
+    if (!(await l.count())) continue;
+    // Held by its place in `any`: a locator of shown dialogs loses it when the page hides it a moment later (R9).
+    const at = await any.evaluateAll((els, h) => els.indexOf(h), await l.last().elementHandle({ timeout: left() }));
+    if (at >= 0) dialog = any.nth(at);
+    break;
   }
   // body, for a caller that reads the dialog at once: its frame and footer (Submit, Next) show before its body, so wait
   // for the body to hold text or a field and no empty group, returning it either way. Steps inside wait on their own.

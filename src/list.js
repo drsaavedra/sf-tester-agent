@@ -408,7 +408,11 @@ async function mass(s, { rows, button, timeout = 10_000 }) {
     { timeout, code: 'ACTION_NOT_OPENED', message: () => `${button} opened no dialog and no page` }).catch((e) => {
     throw Object.assign(e, { evidence: { button, url: s.page.url(), toasts: act.raised(s.page), dialogsBefore: had } });
   });
-  if (opened.dialogs > had) return { selected, recordIds, button, dialog: await act.snapshot(await modal.find(s, { timeout, body: true })) };
+  if (opened.dialogs > had) {
+    // A dialog the page hides (aria-hidden) has an empty snapshot: its text and the hider instead, as sf_modal (R9).
+    const r = await modal.read(await modal.find(s, { timeout, body: true }), act.snapshot);
+    return { selected, recordIds, button, dialog: r.snapshot ?? r.text, ...(r.hiddenBy && { hiddenBy: r.hiddenBy }) };
+  }
   return { selected, recordIds, button, url: opened.url };
 }
 
