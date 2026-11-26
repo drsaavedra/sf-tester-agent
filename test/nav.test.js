@@ -306,6 +306,21 @@ test('search keeps one deadline across its waits, no org', async (t) => {
 });
 
 // Step 75 (D10, R10 b), no org: a results page with nothing on it before Enter cannot be marked; the SEARCH_FAILED says why.
+// No org: a results page whose old row refuses the mark. The call then waits as from an unmarked page, and its
+// SEARCH_FAILED names the failed mark.
+test('a search whose mark fails names that on its SEARCH_FAILED, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main><table><tr><th role=rowheader>old hit</th></tr></table></main>
+    <script>
+      document.querySelector('th').setAttribute = () => { throw new Error('mark refused'); };
+    </script></body></html>` }));
+  await page.goto(`https://x.lightning.force.com/one/one.app#${Buffer.from(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop' })).toString('base64')}`);
+  await assert.rejects(nav.search({ page }, 'BREAK mark fails', { timeout: 2_500 }),
+    (e) => e.code === 'SEARCH_FAILED' && /^the mark failed: .*mark refused/.test(e.evidence.notMarked));
+});
+
 // No org: a header Search button under a cover takes no click. Each try is bounded, so the call ends by its own deadline
 // and not after Playwright's 30 s default for one click.
 test('search gives up on a covered Search button by its deadline, no org', async (t) => {
