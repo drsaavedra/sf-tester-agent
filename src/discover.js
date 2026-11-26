@@ -250,4 +250,4 @@ async function objectContext(s, objectApiName, { users = [], fields } = {}) {
   };
 }
 
-module.exports = { userId, metadataOf, formModel, objectContext, renderedPage, placements, lwcOnPage, actions, kebab };
+module.exports = { userId, metadataOf, formModel, objectContext, renderedPage, placements, lwcOnPage, actions, kebab, escRe };

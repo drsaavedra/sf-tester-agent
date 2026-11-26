@@ -120,7 +120,7 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   const spaced = (v) => v.replace(/[ \t]+/g, ' ');
   // A part is found inside its compound's text ("Suite 9, Oakland\n94607 CA"), between line breaks, commas or spaces.
   // ponytail: a part that starts a longer one ("2 Break St" of "2 Break St\nSuite 9") passes via ui; via both catches it.
-  const inWhole = () => want !== '' && new RegExp(`(^|[\\s,])${spaced(want).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[\\s,])`).test(spaced(result.ui));
+  const inWhole = () => want !== '' && new RegExp(`(^|[\\s,])${discover.escRe(spaced(want))}(?=$|[\\s,])`).test(spaced(result.ui));
   // An empty part leaves no text in its compound to find, so via both it rests on the stored value.
   const uiOk = !('ui' in result) || (whole ? (want === '' ? storedOk : inWhole()) : spaced(shown) === spaced(want)) || num(field.dataType, result.ui) === num(field.dataType, want)
     || sameSet(result.ui)
