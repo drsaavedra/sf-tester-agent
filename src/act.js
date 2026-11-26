@@ -78,17 +78,41 @@ async function near(asked, find) {
   return out;
 }
 
+// The rows holding the text, by text content or by innerText with spaces collapsed, the text the error's rows print:
+// a text across two cells ("Todo 60") is tab-joined there, while textContent runs the cells together. No wait.
+// An SVG row has no innerText (R12); only a lost page is forgiven, so a page error is not ROW_NOT_FOUND.
+async function rowsOf(scope, row, byRole = (at, r) => at.getByRole(r)) {
+  const m = `${(marks += 1)}`;
+  const want = row.replace(/\s+/g, ' ').trim().toLowerCase();
+  await byRole(scope, 'row').evaluateAll((els, [t, k]) => els.forEach((e) => (e.innerText || '').replace(/\s+/g, ' ').toLowerCase().includes(t) && e.setAttribute('data-sf-ui-row', k)), [want, m])
+    .catch((e) => { if (!lost(e)) throw e; });
+  return byRole(scope, 'row').filter({ hasText: row }).or(scope.locator(`[data-sf-ui-row="${m}"]`));
+}
+
+// getByRole that, with includeHidden, also reaches an aria-hidden area, whose hidden text joins a name: a required box
+// is "*Aura Name" there (R4), so a leading "*" is forgiven. ponytail: a header's hidden sort label is not.
+const rolesOf = (includeHidden) => (at, r, opts) => {
+  if (!includeHidden) return at.getByRole(r, opts);
+  const hidden = (o) => at.getByRole(r, { ...o, includeHidden }).locator('visible=true');
+  const all = at.getByRole(r, opts).or(hidden(opts));
+  return typeof opts?.name === 'string' && opts.name ? all.or(hidden({ ...opts, name: `*${opts.name}` })) : all;
+};
+
 // The one element with that role and name (or, for an element with no role, that exact text), in the row and the
-// cell under the column header when named. includeHidden also reaches what an open modal hides, if it renders.
-async function resolve(scope, { name, role, text, row, column, nth, timeout, includeHidden = false }) {
+// cell under the column header when named. includeHidden also reaches what an open modal hides, if it renders; it is
+// the default in a dialog modal.find marked hiddenBy (an Aura template page hides its own dialogs, F-fixtures-26).
+async function resolve(scope, { name, role, text, row, column, nth, timeout, includeHidden = Boolean(scope.hiddenBy) }) {
   // In a row, a role alone is that row's one such element: a list view names its checkbox by position ("Select Item 2").
   if (name == null && text == null && !row) throw new SfUiError('BAD_ARGS', 'give a name ("" for an unnamed icon button), a text, or a row for a role alone');
-  const byRole = (at, r, opts) => (includeHidden ? at.getByRole(r, { ...opts, includeHidden }).locator('visible=true') : at.getByRole(r, opts));
+  const byRole = rolesOf(includeHidden);
   let within = scope;
   if (row) {
-    const rows = byRole(scope, 'row').filter({ hasText: row });
-    await rows.first().waitFor({ timeout }).catch(() => {});
-    const count = await rows.count();
+    let rows;
+    let count = 0;
+    for (const end = Date.now() + timeout; ; await new Promise((r) => setTimeout(r, 100))) {
+      rows = await rowsOf(scope, row, byRole);
+      if ((count = await rows.count()) || Date.now() >= end) break;
+    }
     if (count !== 1) {
       const texts = (await rows.allInnerTexts()).map((r) => r.replace(/\s+/g, ' ').trim().slice(0, 120));
       const of = await byRole(scope, 'row').count(); // 0 of 0 is no table yet, 0 of 40 a wrong text
@@ -98,13 +122,32 @@ async function resolve(scope, { name, role, text, row, column, nth, timeout, inc
     within = rows;
   }
   if (column) {
-    const header = await resolve(scope, { name: column, role: 'columnheader', timeout, includeHidden });
+    // With a row, the header is the one in that row's own table: two tables on a page can share a column label.
+    let headers = scope;
+    if (row) {
+      const m = `${(marks += 1)}`;
+      const table = await within.evaluate((el, k) => {
+        const t = el.closest('table,[role=grid],[role=treegrid],[role=table]');
+        t?.setAttribute('data-sf-ui-table', k);
+        return !!t;
+      }, m);
+      if (table) headers = scope.locator(`[data-sf-ui-table="${m}"]`);
+    }
+    const header = await resolve(headers, { name: column, role: 'columnheader', timeout, includeHidden });
     const at = await header.evaluate((th) => [...th.parentElement.children].indexOf(th) + 1);
     within = (row ? within : byRole(scope, 'row')).locator(`:scope > :nth-child(${at})`);
   }
-  const all = text ? within.getByText(text, { exact: true }).locator('visible=true') : byRole(within, role, { name, exact: true });
+  let all = text ? within.getByText(text, { exact: true }).locator('visible=true') : byRole(within, role, { name, exact: true });
+  // Under a column, the scoped cell can be the target itself (role cell, gridcell, rowheader), not only what it holds.
+  if (column && !text) all = all.or(within.and(byRole(scope, role, { name, exact: true })));
   await all.first().waitFor({ timeout }).catch(() => {});
-  const count = await all.count();
+  let count = await all.count();
+  if (text && !count) {
+    // A label that holds a hidden child (a CSS hover card) has the child's text in its own: match the text it shows.
+    const m = `${(marks += 1)}`;
+    count = await within.getByText(text).locator('visible=true').evaluateAll((els, [t, k]) => els.filter((e) => e.innerText.replace(/\s+/g, ' ').trim() === t && !e.setAttribute('data-sf-ui-text', k)).length, [`${text}`.replace(/\s+/g, ' ').trim(), m]);
+    if (count) all = within.locator(`[data-sf-ui-text="${m}"]`);
+  }
   if (nth ? count < nth : count !== 1) {
     const what = text ? `elements with text "${text}"` : `${role}s${name == null ? '' : ` named "${name}"`}`;
     const where = `${row ? ` in the row with "${row}"` : ''}${column ? ` under "${column}"` : ''}`;
@@ -138,12 +181,42 @@ const lists = new WeakMap(); // context -> its session's toasts
 async function recordToasts(context) {
   lists.set(context, []);
   await context.exposeFunction('__sfUiToast', (t) => lists.get(context).push(t));
-  await context.addInitScript(() => window.addEventListener('force:showToast', (e) => {
-    const d = (e.getParams && e.getParams()) || (e.detail && (e.detail.data || e.detail)) || {};
-    const data = d.messageTemplateData || [];
-    const fill = (t) => (t || '').replace(/\{(\d+)\}/g, (_, i) => { const v = data[i]; return v && typeof v === 'object' ? v.label : v; });
-    window.__sfUiToast({ type: d.type, title: d.title, message: d.messageTemplate ? fill(d.messageTemplate) : d.message });
-  }, true));
+  await context.addInitScript(() => {
+    const pending = new Set(); // LWC toasts no force:showToast has answered yet
+    window.addEventListener('force:showToast', (e) => {
+      const d = (e.getParams && e.getParams()) || (e.detail && (e.detail.data || e.detail)) || {};
+      for (const p of pending) if (!p.label || p.label === d.title) { pending.delete(p); break; }
+      const data = d.messageTemplateData || [];
+      // A missing entry or label fills as nothing, as the page shows it (the favorites star's "{1}" has neither).
+      const fill = (t) => (t || '').replace(/\{(\d+)\}/g, (_, i) => { const v = data[i]; return v == null ? '' : typeof v === 'object' ? (v.label ?? '') : v; }).trim();
+      window.__sfUiToast({ type: d.type, title: d.title, message: d.messageTemplate ? fill(d.messageTemplate) : d.message });
+    }, true);
+    // An LWC toast with messageData, or one from lightning/toast, fires no force:showToast here, so the toast Lightning
+    // renders for it is read off the page, for up to 5 s: Aura's .forceToastMessage, or a lightning-toast in its container.
+    window.addEventListener('lightning__showtoast', (e) => {
+      // The container sits in lightning-overlay-container's shadow in Lightning Experience.
+      const inside = (hosts, sel) => [...hosts].flatMap((h) => [...(h.shadowRoot?.querySelectorAll(sel) || [])]);
+      const shown = () => [...document.querySelectorAll('.forceToastMessage'),
+        ...inside(inside(document.querySelectorAll('lightning-overlay-container'), 'lightning-toast-container'), 'lightning-toast')];
+      const text = (el) => (el ? el.textContent : '').replace(/\s+/g, ' ').trim();
+      const read = (el) => {
+        if (el.localName !== 'lightning-toast') return { type: el.dataset.key, title: text(el.querySelector('.toastTitle')), message: text(el.querySelector('.toastMessage')) };
+        const r = el.shadowRoot || el;
+        const type = (r.querySelector('.slds-notify_toast')?.className.match(/slds-theme_(\w+)/) || [])[1];
+        return { type, title: text(r.querySelector('.slds-notify__content h2')), message: text(r.querySelector('slot[name="message"]')) };
+      };
+      const p = { label: e.detail && e.detail.label, before: new Set(shown()), end: Date.now() + 5_000 };
+      pending.add(p);
+      const look = () => {
+        if (!pending.has(p)) return;
+        const el = shown().find((x) => !p.before.has(x) && (!p.label || read(x).title === p.label));
+        if (!el) return Date.now() < p.end ? setTimeout(look, 100) : pending.delete(p);
+        pending.delete(p);
+        window.__sfUiToast(read(el));
+      };
+      setTimeout(look, 100);
+    }, true);
+  });
   return lists.get(context);
 }
 const armToasts = async (page) => { lists.get(page.context())?.splice(0); };
@@ -264,25 +337,38 @@ async function press(page, { key }) {
   return { [AT]: { pressed: new Date().toISOString() } };
 }
 
+// A Rich Text Area's group: one of that name that holds a toolbar. form's shownOf counts it, openRich opens it (R13).
+function richGroup(scope, name) {
+  const byRole = rolesOf(Boolean(scope.hiddenBy)); // as resolve finds the textbox after
+  const page = typeof scope.page === 'function' ? scope.page() : scope; // a `has` locator is matched inside the group
+  return byRole(scope, 'group', { name, exact: true }).filter({ has: byRole(page, 'toolbar') });
+}
+
+// Clicks the area under a rich text editor's toolbar, which mounts its textbox; false when no one such group is named.
+async function openRich(scope, name, { timeout } = {}) {
+  const group = richGroup(scope, name);
+  const toolbar = rolesOf(Boolean(scope.hiddenBy))(group, 'toolbar').first();
+  if ((await group.count()) !== 1) return false;
+  await group.scrollIntoViewIfNeeded({ timeout });
+  const [g, bar] = [await group.boundingBox(), await toolbar.boundingBox()];
+  await group.click({ position: { x: 20, y: bar.y + bar.height - g.y + 15 }, timeout });
+  return true;
+}
+
 // Replaces the box's text the way typing would, firing the input and change events components listen to.
 async function fill(scope, { name, value, role = 'textbox', row, column, nth, timeout = 10_000 } = {}) {
   const box = await resolve(scope, { name, role, row, column, nth, timeout }).catch(async (e) => {
     // lightning-input-rich-text renders its textbox only once the area under its toolbar is clicked. It ignores row and
     // column and adds one textbox, so only a plain miss opens it; with an nth past 1 something already matched.
-    if (e.code !== 'NOT_FOUND' || role !== 'textbox' || row || column || (nth ?? 1) > 1) throw e;
-    const group = scope.getByRole('group', { name, exact: true });
-    const toolbar = group.getByRole('toolbar').first();
-    if ((await group.count()) !== 1 || !(await toolbar.count())) throw e;
-    await group.scrollIntoViewIfNeeded({ timeout });
-    const [g, bar] = [await group.boundingBox(), await toolbar.boundingBox()];
-    await group.click({ position: { x: 20, y: bar.y + bar.height - g.y + 15 }, timeout });
+    if (e.code !== 'NOT_FOUND' || role !== 'textbox' || row || column || (nth ?? 1) > 1 || !(await openRich(scope, name, { timeout }))) throw e;
     return resolve(scope, { name, role, row, column, nth, timeout });
   });
   // A native select (an Aura dialog, a Visualforce page) takes an option by its label, not typing.
   const kind = await box.evaluate((e) => (e.localName === 'select' ? 'select' : e.type), null, { timeout });
   if (kind === 'select') {
-    const options = await box.locator('option').allInnerTexts();
-    if (!options.map((o) => o.trim()).includes(String(value))) throw new SfUiError('VALUE_NOT_FOUND', `${name} offers no "${value}"`, { name, value, options: options.map((o) => o.trim()) });
+    // Read off the element: a locator query finds no option in a select a Lightning component renders (F-flow-3).
+    const options = await box.evaluate((e) => [...e.options].map((o) => o.label), null, { timeout });
+    if (!options.includes(String(value))) throw new SfUiError('VALUE_NOT_FOUND', `${name} offers no "${value}"`, { name, value, options });
     await box.selectOption({ label: String(value) }, { timeout });
   } else {
     // A searchable combobox (record picker, lookup) lists its matches only once pressed, as a user does before typing.
@@ -361,11 +447,31 @@ async function waitFor(scope, { text, gone = false, any, timeout = 30_000 } = {}
   const collapsed = (r) => !!r && !r.checked && r.clipped; // cut to nothing by a collapsed box (height or width 0)
   // The document a count ran in, read before and after it: a 0 read while a navigation swapped it is not a 0.
   const docOf = () => page.evaluate(() => (window.__sfUiDoc ??= Math.random())).catch(() => null);
+  // A text across block elements (a label and its value) is missed by getByText, which reads them run together, but
+  // innerText and the snapshot put a break there: mark the deepest elements whose innerText holds it (shadow roots too).
+  // ponytail: read on every zero-match poll; measured 2-5 ms median up to an 8k-node page, under the count before it. Throttle if a page costs more.
+  const across = async (text) => {
+    if (norm(text).split(' ').length < 2) return null;
+    const m = `${(marks += 1)}`;
+    const root = typeof scope.page === 'function' ? scope : scope.locator('body');
+    const n = await root.evaluateAll((roots, [t, k]) => {
+      const has = (e) => (e.innerText || '').replace(/\s+/g, ' ').toLowerCase().includes(t);
+      let count = 0;
+      const walk = (e) => {
+        const inner = [...e.children, ...(e.shadowRoot?.children || [])].filter(has);
+        if (inner.length) inner.forEach(walk); else { e.setAttribute('data-sf-ui-across', k); count++; }
+      };
+      roots.filter(has).forEach(walk);
+      return count;
+    }, [norm(text), m]).catch((e) => { if (lost(e)) return 0; throw e; });
+    return n ? [scope.locator(`[data-sf-ui-across="${m}"]`), n] : null;
+  };
   const holds = async (c, index) => {
     if (c.toast != null) return raised(page).some((t) => [t.title, t.message].some((x) => norm(x).includes(norm(c.toast))));
-    const shown = scope.getByText(c.text).locator('visible=true');
+    let shown = scope.getByText(c.text).locator('visible=true');
     const doc = c.gone && (await docOf());
-    const n = await shown.count();
+    let n = await shown.count();
+    if (!n) [shown, n] = (await across(c.text)) || [shown, 0];
     unread.delete(index);
     if (n === 0) { covers.delete(index); return !!c.gone && doc !== null && doc === (await docOf()); }
     if (c.gone) { // gone once every copy is collapsed, as shown reads them; a lost read or an 11th copy is still there
@@ -430,4 +536,4 @@ async function waitFor(scope, { text, gone = false, any, timeout = 30_000 } = {}
   throw new SfUiError('TIMEOUT', `none of ${what.join(', ')} within ${timeout} ms`, { conditions: conds, timeout, toasts: raised(page), snapshot: await snapshot(scope) });
 }
 
-module.exports = { near, click, hover, press, fill, replaceText, boxValue, readBack, waitFor, toasts, armToasts, recordToasts, raised, mainOf, snapshot, marked, cut, resolve };
+module.exports = { near, click, hover, press, fill, openRich, richGroup, replaceText, boxValue, readBack, waitFor, toasts, armToasts, recordToasts, raised, mainOf, snapshot, marked, cut, resolve, rowsOf };

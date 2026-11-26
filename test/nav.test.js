@@ -5,7 +5,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { session, nav, api } = require('..');
-const { auth, env, skip, account, probe, record: own, stamp } = require('./helpers');
+const { auth, env, skip, account, probe, record: own, stamp, localPage } = require('./helpers');
 
 test('nav', { skip, timeout: 600_000 }, async (t) => {
   const s = await session.start(await auth(env.org));
@@ -29,6 +29,16 @@ test('nav', { skip, timeout: 600_000 }, async (t) => {
     const event = await own(s, t, 'Event', { Subject: `L11 nav event ${stamp()}`, StartDateTime: new Date(Date.now() + 86_400_000).toISOString(), DurationInMinutes: 30 });
     assert.equal((await nav.openRecord(s, task)).objectApiName, 'Task');
     assert.equal((await nav.openRecord(s, event)).objectApiName, 'Event');
+  });
+
+  // F-fixtures-25: SfUiC_Tpl_1__c's View override (test/fixture-components, every app) is a template with no Highlights Panel.
+  await t.test('openRecord opens a record page with no Highlights Panel', async (st) => {
+    if (await api.call(s, '/sobjects/SfUiC_Tpl_1__c/describe', { as: 'admin' }).then(() => false, () => true)) return st.skip('the org has no test/fixture-components object SfUiC_Tpl_1__c');
+    const id = await own(s, t, 'SfUiC_Tpl_1__c', { Name: `BREAK fix tpl1 ${stamp()}` });
+    const started = Date.now();
+    const r = await nav.openRecord(s, id);
+    assert.deepEqual([r.objectApiName, r.highlights], ['SfUiC_Tpl_1__c', false]);
+    assert.ok(Date.now() - started < 20_000, `took ${Date.now() - started} ms`);
   });
 
   await t.test('openRecord throws RECORD_UNAVAILABLE for an id that does not exist', async () => {
@@ -93,6 +103,108 @@ test('nav', { skip, timeout: 600_000 }, async (t) => {
     const main = await nav.search(s, name);
     assert.ok(await main.getByText(/didn.t find any matches/).count(), await main.ariaSnapshot());
   });
+
+  // F-flow-20: on a results page the header button is "Search: <last term>", and a search redraws that page in place.
+  await t.test('search again from a results page opens the new results page', async () => {
+    const [first, second] = [`sfuinomatch${stamp()}a`, `sfuinomatch${stamp()}b`];
+    await nav.openList(s, 'SfUiProbe__c');
+    await nav.search(s, first);
+    const main = await nav.search(s, second, { timeout: 30_000 });
+    assert.ok(await main.getByText(`We searched for "${second}"`).count(), await main.ariaSnapshot());
+    assert.ok(await main.getByText(/didn.t find any matches/).count(), await main.ariaSnapshot());
+  });
+
+  // Step 67: a natural-language term ("my accounts", the admin owns this file's account) gets a results page with
+  // no "We searched for" line; searched from a results page it must still return that page.
+  await t.test('search again for a natural-language term opens its results page', async () => {
+    await nav.openList(s, 'SfUiProbe__c');
+    await nav.search(s, `sfuinomatch${stamp()}c`);
+    const main = await nav.search(s, 'my accounts', { timeout: 30_000 });
+    assert.ok(await main.getByRole('rowheader').count(), await main.ariaSnapshot());
+    assert.equal(await main.getByText('We searched for "my accounts"').count(), 0, 'the page this test needs prints no "We searched for"');
+  });
+});
+
+// F-flow-20, no org: a stub of the header and the results page. The button is "Search", then "Search: <last term>";
+// a search from a results page keeps the url and redraws main, the old rows first, the new ones 300 ms later.
+test('search twice in a row returns the second results page, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main></main>
+    <script>
+      const shows = (term) => '<p>We searched for "' + term + '".</p><table><tr><th role=rowheader>hit ' + term + '</th></tr></table>';
+      q.onkeydown = (e) => {
+        if (e.key !== 'Enter') return;
+        const term = q.value, main = document.querySelector('main');
+        q.hidden = true;
+        document.querySelector('header button').setAttribute('aria-label', 'Search: ' + term);
+        if (location.hash) return setTimeout(() => { main.innerHTML = shows(term); }, 300);
+        location.hash = btoa(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop', term }));
+        main.innerHTML = shows(term);
+      };
+    </script></body></html>` }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  const main = await nav.search({ page }, 'BREAK flow clone', { timeout: 5_000 });
+  assert.equal(await main.getByRole('rowheader').textContent(), 'hit BREAK flow clone');
+  await nav.search({ page }, 'sf-ui probe 7805767', { timeout: 5_000 });
+  assert.equal(await main.getByRole('rowheader').textContent(), 'hit sf-ui probe 7805767');
+});
+
+// R10, no org: the same term again from a results page. "We searched for" and the old rows already match, so the
+// second search must wait for the redraw (500 ms after Enter) before it returns; each draw numbers its row.
+test('search the same term again waits for the results page to redraw, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main></main>
+    <script>
+      let draws = 0;
+      const draw = (term) => { document.querySelector('main').innerHTML = '<p>We searched for "' + term + '".</p><table><tr><th role=rowheader>hit ' + term + ' ' + (++draws) + '</th></tr></table>'; };
+      q.onkeydown = (e) => {
+        if (e.key !== 'Enter') return;
+        const term = q.value;
+        q.hidden = true;
+        document.querySelector('header button').setAttribute('aria-label', 'Search: ' + term);
+        if (location.hash) return setTimeout(() => draw(term), 500);
+        location.hash = btoa(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop', term }));
+        draw(term);
+      };
+    </script></body></html>` }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  const main = await nav.search({ page }, 'BREAK same term', { timeout: 5_000 });
+  assert.equal(await main.getByRole('rowheader').textContent(), 'hit BREAK same term 1');
+  await nav.search({ page }, 'BREAK same term', { timeout: 5_000 });
+  assert.equal(await main.getByRole('rowheader').textContent(), 'hit BREAK same term 2');
+});
+
+// No org: a natural-language results page prints no "We searched for", only "try exact word matches"; a second search from it
+// must still return the redrawn page (step 67, measured on sfui-pool-1). Each draw numbers its row.
+test('search again from a natural-language results page returns the new results, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main></main>
+    <script>
+      let draws = 0;
+      const draw = (term) => { document.querySelector('main').innerHTML = '<p>Not what you are looking for? Try exact word matches for "' + term + '".</p><table><tr><th role=rowheader>hit ' + term + ' ' + (++draws) + '</th></tr></table>'; };
+      q.onkeydown = (e) => {
+        if (e.key !== 'Enter') return;
+        const term = q.value;
+        q.hidden = true;
+        document.querySelector('header button').setAttribute('aria-label', 'Search: ' + term);
+        if (location.hash) return setTimeout(() => draw(term), 300);
+        location.hash = btoa(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop', term }));
+        draw(term);
+      };
+    </script></body></html>` }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  const main = await nav.search({ page }, 'BREAK inexact one', { timeout: 3_000 });
+  assert.equal(await main.getByRole('rowheader').textContent(), 'hit BREAK inexact one 1');
+  await nav.search({ page }, 'BREAK inexact two', { timeout: 3_000 });
+  assert.equal(await main.getByRole('rowheader').textContent(), 'hit BREAK inexact two 2');
+  await nav.search({ page }, 'BREAK inexact two', { timeout: 3_000 });
+  assert.equal(await main.getByRole('rowheader').textContent(), 'hit BREAK inexact two 3');
 });
 
 // No org: the tab list as UI API serves it (test/nav-items.json), in two pages with the custom tabs on page 2, so a

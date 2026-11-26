@@ -5,8 +5,7 @@
 const { SfUiError } = require('./errors');
 const { resolve } = require('./act');
 
-// Runs in the page. ponytail: hit tests skip pointer-events:none layers, and clipping ignores an absolute or
-// fixed box escaping its overflow ancestor; add containing-block rules when a case needs them.
+// Runs in the page. ponytail: hit tests skip pointer-events:none layers.
 // hit: false skips the hit tests and adds the rect at 0.1 px, overflow and the named computed styles; textBox adds
 // where the element's text draws, one box per line, so a word's edge is readable where the element box is wider.
 function read(el, { hit = true, styles = [], textBox = false, withBox = false, covered = false, scroll = false, budget = 1000 } = {}) {
@@ -118,15 +117,18 @@ function read(el, { hit = true, styles = [], textBox = false, withBox = false, c
   };
   const area = (b) => Math.max(0, b.right - b.left) * Math.max(0, b.bottom - b.top);
   // b cut to the clipping ancestors from n up (not body or html), the first that cut it, and shut when a collapsed one
-  // clips it (a closed accordion); an absolute or fixed box escapes up to its containing block. ponytail: shut only.
-  const clipFrom = (n, b) => {
-    let [by, shut, out] = [null, false, null];
+  // clips it (a closed accordion); an absolute or fixed box (out, el's own position) is not cut below its containing block.
+  // ponytail: transform, filter, backdrop-filter, perspective, contain, content-visibility auto and will-change make a
+  // fixed box's containing block, not other rules (container-type is left out: unmeasured).
+  const clipFrom = (n, b, out = null) => {
+    let [by, shut] = [null, false];
     for (; n; n = up(n)) {
       if (n.nodeType !== 1 || n === document.body || n === document.documentElement) continue;
       const c = getComputedStyle(n);
-      if (out === 'absolute' && c.position !== 'static') out = null; // n is the containing block, so it clips
-      const free = out;
-      if (out !== 'fixed' && ['absolute', 'fixed'].includes(c.position)) out = c.position;
+      const holds = c.transform !== 'none' || c.perspective !== 'none' || c.filter !== 'none' || c.backdropFilter !== 'none' || c.contentVisibility === 'auto' || /paint|layout|strict|content/.test(c.contain) || /transform|perspective|filter/.test(c.willChange);
+      if (holds || (out === 'absolute' && c.position !== 'static')) out = null; // n is the containing block, so it clips
+      if (out) continue; // a fixed calendar over a scrolling modal's edge (F-flow-16)
+      if (['absolute', 'fixed'].includes(c.position)) out = c.position;
       const [cx, cy] = [c.overflowX !== 'visible', c.overflowY !== 'visible'];
       if ((!cx && !cy) || ['inline', 'contents'].includes(c.display)) continue; // overflow has no effect on an inline box
       const p = n.getBoundingClientRect();
@@ -136,11 +138,11 @@ function read(el, { hit = true, styles = [], textBox = false, withBox = false, c
         top: cy ? Math.max(b.top, top) : b.top, bottom: cy ? Math.min(b.bottom, top + n.clientHeight) : b.bottom,
       };
       if (!by && area(next) < area(b) - 0.5) by = describe(n);
-      shut ||= !free && ((cx && n.clientWidth === 0) || (cy && n.clientHeight === 0));
+      shut ||= (cx && n.clientWidth === 0) || (cy && n.clientHeight === 0);
       // Cut to nothing by a box the user cannot scroll (a carousel stage): shut too. A 1x1 assistive box is no stage:
       // it does not shut its own text (whose line can start below its 1 px), and what it leaves has nothing to cut.
       const fixedIn = (o) => ['hidden', 'clip'].includes(o);
-      shut ||= !free && n.clientWidth > 1 && n.clientHeight > 1
+      shut ||= n.clientWidth > 1 && n.clientHeight > 1
         && ((fixedIn(c.overflowX) && b.right - b.left > 1 && next.right - next.left <= 0.5) || (fixedIn(c.overflowY) && b.bottom - b.top > 1 && next.bottom - next.top <= 0.5));
       b = next;
     }
@@ -257,7 +259,8 @@ function read(el, { hit = true, styles = [], textBox = false, withBox = false, c
 
   const r = el.getBoundingClientRect();
   const box0 = { left: Math.max(r.left, 0), top: Math.max(r.top, 0), right: Math.min(r.right, innerWidth), bottom: Math.min(r.bottom, innerHeight) };
-  const { box, by: clippedBy } = clipFrom(up(el), box0);
+  const own = getComputedStyle(el).position;
+  const { box, by: clippedBy } = clipFrom(up(el), box0, ['absolute', 'fixed'].includes(own) ? own : null);
 
   const at = [['centre', 0.5, 0.5], ['topLeft', 0.2, 0.2], ['topRight', 0.8, 0.2], ['bottomLeft', 0.2, 0.8], ['bottomRight', 0.8, 0.8]];
   const points = !hit ? null : at.map(([name, fx, fy]) => {

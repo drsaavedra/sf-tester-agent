@@ -229,8 +229,16 @@ async function currentApp(s, list) {
   // Empty for a few seconds after a page load: waited for up to 15 s, but not on a page with no Aura (no app there).
   await s.page.waitForFunction(() => !window.$A || $A.get('$Global.appContextId'), null, { timeout: 15_000 }).catch(() => {}); // then read what is there
   const id = await s.page.evaluate(() => (window.$A ? $A.get('$Global.appContextId') : ''));
-  const { label, developerName } = (list || await apps(s)).find((a) => a.id === id) || {};
-  return { label, developerName, id };
+  list ||= await apps(s);
+  const found = list.find((a) => a.id === id);
+  if (found) return { label: found.label, developerName: found.developerName, id };
+  // After a Visualforce page Lightning can leave appContextId empty while its navigation bar still names the app
+  // (F-flow-29): take the app by that label, the session's own first when two apps share it.
+  const bar = (await s.page.locator('one-appnav .appName, .slds-context-bar__app-name').first().innerText({ timeout: 1_000 }).catch(() => '')).trim();
+  const named = bar ? list.filter((a) => a.label === bar) : [];
+  const app = named.find((a) => a.id === s.app?.id) || (named.length === 1 && named[0]);
+  if (!app) return { label: undefined, developerName: undefined, id };
+  return { label: app.label, developerName: app.developerName, id: app.id, reason: 'Lightning does not name the app on this page: read from its navigation bar' };
 }
 
 // Opens an app in this browser by its URL, leaving the user's last-used app in the org as it was; kept as s.app.

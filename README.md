@@ -99,7 +99,7 @@ All three passed 18 of 18. The Lightning tools alone barely beat the generic age
 
 ## Known limits
 
-- **Break runs.** I tried to break it on three scratch orgs: 93 findings, each reproduced by a second agent. By class: 13 false greens, 39 false reds, 19 unclear errors, 13 components with no tool, 9 crashes or hangs. 11 of the 42 fix-list entries are fixed in this preview. The open ones are listed in [docs/known-limits.md](docs/known-limits.md) with the tool and the case: until they are fixed, a PASS or FAIL in those cases can be wrong.
+- **Break runs.** I tried to break it on three scratch orgs: 93 findings, each reproduced by a second agent. By class: 13 false greens, 39 false reds, 19 unclear errors, 13 components with no tool, 9 crashes or hangs. 39 of the 42 fix-list entries are fixed in this preview, and 3 are fixed in part. The open cases of those 3 are listed in [docs/known-limits.md](docs/known-limits.md) with the tool and the case: until they are fixed, a PASS or FAIL in those cases can be wrong.
 - **Lightning Experience only.** Every tool opens a `/lightning/` page. No Experience Cloud sites yet, and no Setup pages, because it never changes org settings. For Setup automation, see [sfdx-browserforce-plugin](https://github.com/amtrack/sfdx-browserforce-plugin).
 - **English Lightning UI only.** It finds Lightning's own controls by their English names.
 - **Screen flows** come back as `NEEDS BROWSER` from the access check: Salesforce refuses to start a screen flow from Apex.

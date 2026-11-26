@@ -5,11 +5,11 @@ const { SfUiError } = require('./errors');
 const nav = require('./nav');
 const discover = require('./discover');
 const api = require('./api');
-const { armToasts, raised, boxValue, readBack, replaceText } = require('./act');
+const { armToasts, raised, boxValue, readBack, replaceText, openRich, richGroup } = require('./act');
 const lwc = require('./lwc');
 const action = require('./action');
 const { requireEnglish } = require('./session');
-const { sameValue } = require('./assert');
+const { sameValue, multiSet } = require('./assert');
 const { dateOk, instantOf } = require('./iso');
 const A = require('./anchors');
 
@@ -23,8 +23,12 @@ const GROUP = ['DateTime', 'MultiPicklist'];
 const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // An Aura picklist (a Task's Status) is an <a role=combobox> named by its label and its value: "Priority Normal".
 // ponytail: a second Aura picklist whose label starts with this one's and a space matches too.
+const groupOf = (f, label) => f.scope.getByRole('group', { name: new RegExp(`^(required)?${esc(label)}$`) });
 const locate = (f, field) => {
-  if (GROUP.includes(field.dataType)) return f.scope.getByRole('group', { name: new RegExp(`^(required)?${esc(field.label)}$`) });
+  // A Geolocation draws group "Spot" with textboxes "Latitude" and "Longitude", whatever the model labels a part.
+  const part = /__(Latitude|Longitude)__s$/.exec(field.apiName);
+  if (part && field.itemLabel) return groupOf(f, field.itemLabel).getByRole('textbox', { name: part[1], exact: true });
+  if (GROUP.includes(field.dataType)) return groupOf(f, field.label);
   const exact = f.scope.getByRole(field.role || ROLE[field.dataType] || 'textbox', { name: field.label, exact: true });
   return field.dataType === 'Picklist' ? exact.or(f.scope.getByRole('combobox', { name: new RegExp(`^${esc(field.label)} `) }).and(f.scope.locator('a'))) : exact;
 };
@@ -45,8 +49,8 @@ async function editRecord(s, recordId, { timeout = 30_000, actionTimeout = 10_00
   return formOf(s, recordId, model, s.page.getByRole('dialog').filter({ has: save }));
 }
 
-// The New dialog for an object, from the Create layout of the record type chosen. ponytail: the layout even on a
-// Dynamic Forms object, whose New dialog may follow the page instead (unmeasured).
+// The New dialog for an object, from the Create layout of the record type chosen, or from the record page the dialog
+// follows when that page is Dynamic Forms (measured: it shows the page's fields).
 async function createRecord(s, objectApiName, { recordType, timeout = 30_000 } = {}) {
   nav.segment(objectApiName);
   // Refused from object-info before any page: no create access, or a record type to choose that the caller did not name.
@@ -92,7 +96,8 @@ async function createRecord(s, objectApiName, { recordType, timeout = 30_000 } =
   const save = s.page.getByRole('button', { name: 'Save', exact: true });
   await save.waitFor({ timeout });
   const recordTypeId = recordType != null ? types.find((r) => r.name === recordType).recordTypeId : undefined;
-  const model = await discover.formModel(s, null, { mode: 'Create', objectApiName, recordTypeId });
+  const flexiPageApiName = await discover.renderedPage(s, { create: objectApiName });
+  const model = await discover.formModel(s, null, { mode: 'Create', objectApiName, recordTypeId, flexiPageApiName });
   return formOf(s, null, model, s.page.getByRole('dialog').filter({ has: save }));
 }
 
@@ -232,7 +237,10 @@ async function switchTo(f, field, object) {
 
 // An Aura lookup (a Task's Name and Related To) shows its choice as a pill in a list "<label> - Current Selection: …".
 const pillOf = (f, field) => f.scope.getByRole('list', { name: new RegExp(`^${esc(field.label)} - Current Selection`) });
-const shownOf = (f, field) => (field.dataType === 'Reference' ? locate(f, field).or(pillOf(f, field)) : locate(f, field));
+// A Rich Text Area shows a group with a toolbar and no textbox until a click mounts its editor (F-cascade-3).
+const richOf = (f, field) => richGroup(f.scope, field.label);
+const shownOf = (f, field) => (field.dataType === 'Reference' ? locate(f, field).or(pillOf(f, field))
+  : field.dataType === 'TextArea' ? locate(f, field).or(richOf(f, field)) : locate(f, field));
 
 // Types the record name (clearing the old choice once any id is read) and picks the first-line match once two reads
 // agree; two such options are AMBIGUOUS. A record id types its name and picks the option with that id, or when no
@@ -534,6 +542,7 @@ async function setFields(f, values, { objects = {}, picklist } = {}) {
       landed(field, value, typed, await input.inputValue()); // before the blur formats it
       await input.press('Tab');
     } else {
+      if (field.dataType === 'TextArea' && !(await input.count()) && (await openRich(f.scope, field.label))) await input.waitFor({ timeout: 5_000 });
       await replaceText(input, String(value));
       const [got, isRich] = await boxValue(input); // a Rich Text Area is a contenteditable, not an input
       landed(field, value, String(value), got, (rich = isRich));
@@ -606,8 +615,7 @@ function stored(kind, typed, { value, displayValue }, name, scale) {
   }
   if (kind === 'DateTime') return value != null && instantOf(want) === instantOf(value); // the whole instant
   if (kind === 'Time') return String(value ?? '').slice(0, 5) === want;
-  const set = (v) => String(v ?? '').split(';').map((x) => x.trim()).filter(Boolean).sort().join(';');
-  if (kind === 'MultiPicklist') return set(want) === set(value) || (displayValue != null && set(want) === set(displayValue)); // labels, as setMulti picks
+  if (kind === 'MultiPicklist') return multiSet(want) === multiSet(value) || (displayValue != null && multiSet(want) === multiSet(displayValue)); // labels, as setMulti picks
   if (kind === 'Reference') return sameValue(want, value, name, { id: true, name: true });
   if (kind === 'Picklist') return sameValue(want, value, displayValue, { name: true }); // a label, or the API value
   // The org trims text at both ends and lowercases an email, so each compares in that form.

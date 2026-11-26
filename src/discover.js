@@ -35,7 +35,7 @@ async function formModel(s, recordId, { mode = 'Edit', objectApiName: given, rec
     api.call(s, `/ui-api/layout/${objectApiName}?mode=${mode}${recordTypeId ? `&recordTypeId=${recordTypeId}` : ''}`),
     early || api.call(s, `/ui-api/object-info/${objectApiName}`),
   ]);
-  const dynamic = flexiPageApiName && (await dynamicFields(s, flexiPageApiName, info, mode));
+  const dynamic = flexiPageApiName && (await dynamicFields(s, flexiPageApiName, info, mode, layout));
   if (dynamic) return { objectApiName, recordTypeId, flexiPageApiName, source: 'dynamicForms', mode, fields: dynamic };
   const fields = layout.sections.flatMap((section) => section.layoutRows.flatMap((row) => row.layoutItems.flatMap((item) =>
     item.layoutComponents.filter((c) => c.componentType === 'Field').map((c) => ({
@@ -54,11 +54,20 @@ async function formModel(s, recordId, { mode = 'Edit', objectApiName: given, rec
 }
 
 // Field instances of a Dynamic Forms page, labelled as the dialog labels them. A compound instance (an address,
-// a location) becomes its parts, as on a layout; a part's "Loc (Latitude)" shows as "Latitude".
+// a location) becomes its parts, as on a layout; a location part's "Loc (Latitude)" shows as "Latitude".
 // Null when the page places no field (not Dynamic Forms); [] when it places only fields this user cannot read.
 // ponytail: metadata order, not visual order; a field with a visibility rule is marked conditional, not evaluated.
 const escRe = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-async function dynamicFields(s, flexiPageApiName, info, mode) {
+async function dynamicFields(s, flexiPageApiName, info, mode, layout) {
+  // The form labels a field as the layout does ("Account Name"), not as object-info ("Account ID").
+  // ponytail: a field the layout does not carry keeps the object-info label.
+  const items = layout.sections.flatMap((x) => x.layoutRows.flatMap((r) => r.layoutItems));
+  const shown = new Map(items.filter((i) => i.layoutComponents.length === 1).map((i) => [i.layoutComponents[0].apiName, i.label]));
+  // A compound item is labelled, and its pencil named, as the layout does ("Name"), not as object-info ("Full Name").
+  for (const i of items.filter((x) => x.layoutComponents.length > 1)) {
+    const parent = info.fields[i.layoutComponents[0].apiName]?.compoundFieldName;
+    if (parent && !shown.has(parent)) shown.set(parent, i.label);
+  }
   const page = await metadataOf(s, 'FlexiPage', flexiPageApiName);
   const placed = page ? page.flexiPageRegions.flatMap((r) => (r.itemInstances || []).filter((i) => i.fieldInstance)) : [];
   if (!placed.length) return null;
@@ -68,13 +77,16 @@ async function dynamicFields(s, flexiPageApiName, info, mode) {
     if (!field) return [];
     const behavior = (fi.fieldInstanceProperties || []).find((p) => p.name === 'uiBehavior');
     const ui = behavior ? behavior.value : 'none';
-    const parts = Object.values(info.fields).filter((p) => p.compoundFieldName === apiName);
+    // An address form shows no box for its coordinates, as a layout lists none (measured on a custom Address).
+    const parts = Object.values(info.fields).filter((p) => p.compoundFieldName === apiName
+      && !(field.dataType === 'Address' && /(Latitude|Longitude|GeocodeAccuracy)(__s)?$/.test(p.apiName)));
     return (parts.length ? parts : [field]).map((p) => {
-      const inner = parts.length && new RegExp(`^${escRe(field.label)} \\((.*)\\)$`).exec(p.label);
+      // An address's boxes keep "Site (City)"; only a location's show as "Latitude".
+      const inner = field.dataType === 'Location' && new RegExp(`^${escRe(field.label)} \\((.*)\\)$`).exec(p.label);
       return {
         apiName: p.apiName,
-        label: inner ? inner[1] : p.label,
-        itemLabel: field.label,
+        label: inner ? inner[1] : shown.get(p.apiName) || p.label,
+        itemLabel: shown.get(apiName) || field.label,
         dataType: p.dataType,
         scale: p.scale,
         role: field.dataType === 'Location' ? 'textbox' : undefined, // a location's numbers are typed as text
@@ -90,15 +102,18 @@ async function dynamicFields(s, flexiPageApiName, info, mode) {
 
 // The record page the user actually got: Lightning tags the rendered page with its FlexiPage name, lowercased
 // (forcegenerated-flexipage_my_record_page_ns__thing__c__view_js...), so no assignment rules to resolve.
-async function renderedPage(s) {
+// Given create (an object), the page the open New dialog follows (..._thing__c__create_js...).
+async function renderedPage(s, { create } = {}) {
   // The shown one: Lightning keeps the last record's page in the DOM, hidden, after an in-app navigation.
-  const host = s.page.locator(`${A.recordHome} > *`).locator('visible=true').first();
-  const found = await host.waitFor({ state: 'attached', timeout: 3_000 }).then(() => true, (e) => { if (e.name !== 'TimeoutError') throw e; return false; });
+  const host = s.page.locator(`${create ? A.recordAction : A.recordHome} > *`).locator('visible=true').first();
+  // An open New dialog has drawn its page host, if it has one, by the time its Save shows: no wait.
+  const found = create ? (await host.count()) > 0
+    : await host.waitFor({ state: 'attached', timeout: 3_000 }).then(() => true, (e) => { if (e.name !== 'TimeoutError') throw e; return false; });
   if (!found) return null; // not a record FlexiPage
   const tag = await host.evaluate((e) => e.tagName.toLowerCase());
   if (!tag.startsWith(A.generatedPagePrefix)) return null; // not a generated page: no FlexiPage name to query
-  const object = new URL(s.page.url()).pathname.split('/')[3].toLowerCase();
-  const lower = tag.slice(A.generatedPagePrefix.length).split(`_${object}__view_js`)[0];
+  const object = (create || new URL(s.page.url()).pathname.split('/')[3]).toLowerCase();
+  const lower = tag.slice(A.generatedPagePrefix.length).split(`_${object}__${create ? 'create' : 'view'}_js`)[0];
   const q = `SELECT DeveloperName FROM FlexiPage WHERE DeveloperName = '${lower.replace(/'/g, '')}'`;
   const { records } = await api.call(s, `/tooling/query?q=${encodeURIComponent(q)}`, { as: 'admin' });
   return records.length ? records[0].DeveloperName : null;
@@ -235,4 +250,4 @@ async function objectContext(s, objectApiName, { users = [], fields } = {}) {
   };
 }
 
-module.exports = { userId, metadataOf, formModel, objectContext, renderedPage, placements, lwcOnPage, actions, kebab };
+module.exports = { userId, metadataOf, formModel, objectContext, renderedPage, placements, lwcOnPage, actions, kebab, escRe };

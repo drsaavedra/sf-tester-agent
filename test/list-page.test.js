@@ -180,6 +180,20 @@ test('mass runs a list button from an overflow menu that counts its items', asyn
   await s.page.goto(`${ORIGIN}/lightning/o/SfUiProbe__c/list?filterName=All`);
   const r = await list.ACTIONS.mass[0](s, { rows: ['probe one'], button: 'Delete', timeout: 2_000 });
   assert.match(r.dialog, /sure\?/);
+  assert.equal(r.hiddenBy, undefined, 'control: a shown dialog is its snapshot');
+});
+
+// R9: a stacked panel hides the viewport holding the dialog once it is counted (F-fixtures-26). Its accessibility
+// snapshot is empty, so mass answers the dialog's text and the hider, as sf_modal does.
+test('mass answers the text and the hider of a dialog the page hid after it opened', async (t) => {
+  stub(t, LISTS);
+  const draw = "setTimeout(() => { const v = document.getElementById('vp'); v.setAttribute('aria-hidden', 'true'); v.querySelector('[role=dialog]').insertAdjacentHTML('beforeend', '<input aria-label=Owner>'); }, 300)";
+  const open = `document.body.insertAdjacentHTML('beforeend', '<div class=viewport id=vp><div role=dialog aria-modal=true aria-label=Hidden><p>Move these?</p></div></div>'); ${draw}`;
+  const s = await page(t, TABLE().replace('<button>Refresh</button>', `<button onclick="${open}">Move</button>`));
+  await s.page.goto(`${ORIGIN}/lightning/o/SfUiProbe__c/list?filterName=All`);
+  const r = await list.ACTIONS.mass[0](s, { rows: ['probe one'], button: 'Move', timeout: 3_000 });
+  assert.equal(r.hiddenBy, '<div class="viewport">');
+  assert.match(r.dialog, /Move these\?/);
 });
 
 test('mass refuses before it ticks anything when a row not named is selected, and names it', async (t) => {
@@ -566,6 +580,20 @@ test('massEdit ticks "Update N selected items" by its label and confirms every r
   await s.page.goto(`${ORIGIN}/lightning/o/SfUiProbe__c/list?filterName=All`);
   const r = await list.ACTIONS.massEdit[0](s, { rows: ['probe 1', 'probe 2'], column: 'Count', value: 5, timeout: 2_000 });
   assert.deepEqual([r.recordIds, r.field, await s.page.evaluate(() => window.saved.all)], [[ID, ID2], 'Count__c', true]);
+});
+
+// "Todo 60" spans two cells: textContent runs them together ("Todo60"), so only act.resolve's innerText match finds it.
+test('select and massEdit find a row by a text that crosses two cells, and massEdit unticks it after', async (t) => {
+  stub(t, LISTS);
+  const one = await page(t, TABLE().replace('probe one</a></th>', 'probe one</a></th><td>Todo</td><td>60</td>'));
+  await one.page.goto(`${ORIGIN}/lightning/o/SfUiProbe__c/list?filterName=All`);
+  assert.deepEqual((await list.ACTIONS.select[0](one, { rows: ['Todo 60'], timeout: 2_000 })).recordIds, [ID]);
+  const s = await page(t, MASS.replace('probe 1</a></th>', 'probe 1</a></th><td>Todo</td><td>60</td>'));
+  stub(t, massApi(s));
+  await s.page.goto(`${ORIGIN}/lightning/o/SfUiProbe__c/list?filterName=All`);
+  const r = await list.ACTIONS.massEdit[0](s, { rows: ['Todo 60', 'probe 2'], column: 'Count', value: 5, timeout: 2_000 });
+  assert.deepEqual(r.recordIds, [ID, ID2]);
+  assert.equal(await s.page.getByRole('checkbox', { name: 'Select item 1' }).isChecked(), false, 'the row massEdit ticked is unticked after');
 });
 
 test('massEdit fails NOT_SAVED naming the record the save left, and refuses rows not named before ticking', async (t) => {

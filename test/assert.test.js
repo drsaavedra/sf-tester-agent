@@ -184,7 +184,165 @@ test('assert, no org: via ui, a Date, DateTime or Time given as ISO matches the 
   assert.equal(paths.length, 0);
 });
 
+// F-cascade-2, no org: the API holds a Text Area with CRLF line ends; the page shows its blank line and a tab as a space.
+test('assert, no org: a Text Area of several lines matches as typed, via api, ui and both', { timeout: 60_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const fields = [{ apiName: 'Memo__c', label: 'Memo', dataType: 'TextArea' }, { apiName: 'Long__c', label: 'Long', dataType: 'TextArea' }];
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'SfUiC_Field__c', fields }));
+  const stored = { Memo__c: 'line one\r\n\r\nline three', Long__c: 'lead\ttab\r\nsecond' };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => ({ fields: { [p.split('.').pop()]: { value: stored[p.split('.').pop()], displayValue: null } } }));
+  const item = (label, text) => `<${A.layoutItem} field-label="${label}"><div>${label}</div><div style="white-space: pre-line">${text}</div><div>Edit ${label}</div></${A.layoutItem}>`;
+  await page.setContent(item('Memo', 'line one\n\nline three') + item('Long', 'lead\ttab\nsecond'));
+  for (const via of ['api', 'ui', 'both']) {
+    await lib.assert.fieldValue({ page }, 'a0x', 'Memo__c', 'line one\n\nline three', { via });
+    await lib.assert.fieldValue({ page }, 'a0x', 'Long__c', 'lead\ttab\nsecond', { via });
+    await lib.assert.fieldValue({ page }, 'a0x', 'Memo__c', stored.Memo__c, { via }); // expected as the API stores it
+    // Control: a lost blank line, or a line break typed as a space, is still red.
+    await assert.rejects(lib.assert.fieldValue({ page }, 'a0x', 'Memo__c', 'line one\nline three', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+    await assert.rejects(lib.assert.fieldValue({ page }, 'a0x', 'Long__c', 'lead\ttab second', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+  }
+});
+
+// F-cascade-5, F-flow-15, no org: the page groups a Number's digits (12,345) and adds a Percent's sign (25%); the
+// API gives no display value for either. The number, typed either way, matches via api, ui and both.
+test('assert, no org: a Number of 1,000 or more and a Percent match as the number, via api, ui and both', { timeout: 60_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const fields = [{ apiName: 'Count__c', label: 'Count', dataType: 'Double' }, { apiName: 'F_Pct__c', label: 'F Pct', dataType: 'Percent' },
+    { apiName: 'Code__c', label: 'Code', dataType: 'String' }];
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'SfUiC_Field__c', fields }));
+  const stored = { Count__c: 12345, F_Pct__c: 25, Code__c: '12345' };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => ({ fields: { [p.split('.').pop()]: { value: stored[p.split('.').pop()], displayValue: null } } }));
+  const item = (label, text) => `<${A.layoutItem} field-label="${label}"><div>${label}</div><div>${text}</div><div>Edit ${label}</div></${A.layoutItem}>`;
+  await page.setContent(item('Count', '12,345') + item('F Pct', '25%') + item('Code', '12,345'));
+  const red = (f, v, via) => assert.rejects(lib.assert.fieldValue({ page }, 'a0x', f, v, { via }), { code: 'FIELD_VALUE_MISMATCH' });
+  for (const via of ['api', 'ui', 'both']) {
+    for (const v of [12345, '12345', '12,345']) await lib.assert.fieldValue({ page }, 'a0x', 'Count__c', v, { via });
+    for (const v of [25, '25', '25%']) await lib.assert.fieldValue({ page }, 'a0x', 'F_Pct__c', v, { via });
+    // Control: another number is still red.
+    await red('Count__c', 12346, via);
+    await red('F_Pct__c', 26, via);
+  }
+  for (const v of ['1,2345', '12345%', '']) await red('Count__c', v, 'api'); // digits grouped wrong, a % on a Number, empty
+  await red('Code__c', 12345, 'ui'); // a text field compares the page text whole
+});
+
+// F-cascade-21, no org: a checkbox expected as the text the page shows ("False") passes, via api, ui and both.
+test('assert, no org: a checkbox matches as the page shows it, True or False, via api, ui and both', { timeout: 60_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const fields = [{ apiName: 'Done__c', label: 'Done', dataType: 'Boolean' }, { apiName: 'Open__c', label: 'Open', dataType: 'Boolean' }];
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'SfUiC_Field__c', fields }));
+  const stored = { Done__c: false, Open__c: true };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => ({ fields: { [p.split('.').pop()]: { value: stored[p.split('.').pop()], displayValue: null } } }));
+  const item = (label, text) => `<${A.layoutItem} field-label="${label}"><div>${label}</div><div>${text}</div><div>Edit ${label}</div></${A.layoutItem}>`;
+  await page.setContent(item('Done', 'False') + item('Open', 'True'));
+  const red = (f, v, via) => assert.rejects(lib.assert.fieldValue({ page }, 'a0x', f, v, { via }), { code: 'FIELD_VALUE_MISMATCH' });
+  for (const via of ['api', 'ui', 'both']) {
+    for (const v of ['False', 'false', false]) await lib.assert.fieldValue({ page }, 'a0x', 'Done__c', v, { via });
+    for (const v of ['True', 'true', true]) await lib.assert.fieldValue({ page }, 'a0x', 'Open__c', v, { via });
+    // Control: the other value is still red.
+    for (const v of ['True', true]) await red('Done__c', v, via);
+    for (const v of ['False', false]) await red('Open__c', v, via);
+  }
+});
+
+// F-cascade-24, no org: the org stores and shows a multi-select in picklist order, which need not be the order typed.
+test('assert, no org: a multi-select matches as a set, in any order, via api, ui and both', { timeout: 60_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const fields = [{ apiName: 'Tags__c', label: 'Tags', dataType: 'MultiPicklist' }, { apiName: 'Kinds__c', label: 'Kinds', dataType: 'MultiPicklist' }];
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'SfUiProbe__c', fields }));
+  // Kinds__c's picklist puts Gamma before Alpha, so its stored order is not the sorted one.
+  const stored = { Tags__c: 'Beta;Gamma', Kinds__c: 'Gamma;Alpha' };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => { const k = p.split('.').pop(); return { fields: { [k]: { value: stored[k], displayValue: stored[k] } } }; });
+  const item = (label, text) => `<${A.layoutItem} field-label="${label}"><div>${label}</div><div>${text}</div><div>Edit ${label}</div></${A.layoutItem}>`;
+  await page.setContent(item('Tags', 'Beta;Gamma') + item('Kinds', 'Gamma;Alpha'));
+  const red = (f, v, via) => assert.rejects(lib.assert.fieldValue({ page }, 'a0x', f, v, { via }), { code: 'FIELD_VALUE_MISMATCH' });
+  for (const via of ['api', 'ui', 'both']) {
+    for (const v of ['Gamma;Beta', 'Beta;Gamma']) await lib.assert.fieldValue({ page }, 'a0x', 'Tags__c', v, { via });
+    for (const v of ['Alpha;Gamma', 'Gamma;Alpha']) await lib.assert.fieldValue({ page }, 'a0x', 'Kinds__c', v, { via });
+    // Control: another set is still red, a subset and a superset included.
+    for (const v of ['Gamma', 'Alpha;Beta', 'Alpha;Beta;Gamma']) await red('Tags__c', v, via);
+    await red('Kinds__c', 'Alpha', via);
+  }
+});
+
 // No org: a field only a Dynamic Forms page places is not in the layout's View model; the page is still read.
+// F-cascade-6, no org: a field with help text carries a lightning-helptext whose text ("Help <label>") innerText reads.
+test('assert, no org: a field with help text is read without its help button, via ui and both', { timeout: 60_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const fields = [{ apiName: 'Email__c', label: 'Email', dataType: 'Email' }, { apiName: 'Note__c', label: 'Note', dataType: 'String' }];
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'SfUiC_Field__c', fields }));
+  const stored = { Email__c: 'a@b.example', Note__c: 'Help Note' };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => ({ fields: { [p.split('.').pop()]: { value: stored[p.split('.').pop()], displayValue: null } } }));
+  const help = (label) => `<${A.helptext}><button><span>Help ${label}</span></button></${A.helptext}>`;
+  const item = (label, text, h = '') => `<${A.layoutItem} field-label="${label}"><div>${label}</div>${h}<div>${text}</div><div>Edit ${label}</div></${A.layoutItem}>`;
+  await page.setContent(item('Email', 'a@b.example', help('Email')) + item('Note', 'Help Note'));
+  for (const via of ['ui', 'both']) {
+    assert.equal((await lib.assert.fieldValue({ page }, 'a0x', 'Email__c', 'a@b.example', { via })).ui, 'a@b.example');
+    // Control: with no help button, a value that reads like one is the value.
+    assert.equal((await lib.assert.fieldValue({ page }, 'a0x', 'Note__c', 'Help Note', { via })).ui, 'Help Note');
+    await assert.rejects(lib.assert.fieldValue({ page }, 'a0x', 'Email__c', 'c@d.example', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+  }
+});
+
+// F-cascade-7, no org: an Owner item also holds the Change Owner button, a Created By item the date and the page label
+// "Created By" (object-info: "Created By ID"); a polymorphic Owner has a display value only when its Name is asked for.
+test('assert, no org: Owner and Created By are read as the user\'s name, by name and by id, via ui and both', { timeout: 60_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const fields = [{ apiName: 'OwnerId', label: 'Owner', itemLabel: 'Owner', dataType: 'Reference' },
+    { apiName: 'CreatedById', label: 'Created By ID', itemLabel: 'Created By', dataType: 'Reference' },
+    { apiName: 'Code__c', label: 'Code', itemLabel: 'Site Code', dataType: 'String' }];
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'SfUiC_Field__c', fields }));
+  const ID = '005HE000005QFbmYAG';
+  const info = { fields: { OwnerId: { relationshipName: 'Owner' }, CreatedById: { relationshipName: 'CreatedBy' } } };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => {
+    if (p.startsWith('/ui-api/object-info/')) return info;
+    const name = (rel) => (p.includes(`.${rel}.Name`) ? 'User User' : null); // Owner, polymorphic, needs its Name asked
+    return { fields: { OwnerId: { value: ID }, CreatedById: { value: ID }, Owner: { displayValue: name('Owner') }, CreatedBy: { displayValue: 'User User' } } };
+  });
+  const link = '<force-lookup><records-hoverable-link><div><a>User User</a></div><div>Preview</div></records-hoverable-link></force-lookup>';
+  await page.setContent(`<${A.layoutItem} field-label="Owner"><div>Owner</div>${link}<div><button>Change Owner</button></div></${A.layoutItem}>`
+    + `<${A.layoutItem} field-label="Created By"><div>Created By</div>${link}<div>, 11/25/2026, 8:07 PM</div></${A.layoutItem}>`
+    + `<${A.layoutItem} field-label="Site Code"><div>Site Code</div><div>C-1</div><div>Edit Site Code</div></${A.layoutItem}>`);
+  for (const f of ['OwnerId', 'CreatedById']) {
+    assert.equal((await lib.assert.fieldValue({ page }, 'a0x', f, 'User User', { via: 'ui' })).ui, 'User User');
+    for (const want of ['User User', ID, ID.slice(0, 15)]) await lib.assert.fieldValue({ page }, 'a0x', f, want, { via: 'both' });
+    // Control: another user's name is still red.
+    for (const via of ['ui', 'both']) await assert.rejects(lib.assert.fieldValue({ page }, 'a0x', f, 'Other User', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+  }
+  // A field that is no lookup, found by its page label, is read without that label and its pencil.
+  assert.equal((await lib.assert.fieldValue({ page }, 'a0x', 'Code__c', 'C-1', { via: 'ui' })).ui, 'C-1');
+});
+
+// R2, no org: CreatedDate shares the "Created By" item with the user's link; its page value is the date after the link.
+test('assert, no org: CreatedDate in the Created By item is read as the date, not the user\'s name, via ui and both', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const fields = [{ apiName: 'CreatedDate', label: 'Created Date', itemLabel: 'Created By', dataType: 'DateTime' }];
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'Account', fields }));
+  const ISO = '2026-11-25T12:07:00.000Z';
+  t.mock.method(require('../src/api'), 'call', async () => ({ fields: { CreatedDate: { value: ISO, displayValue: '11/25/2026, 8:07 PM' } } }));
+  const link = '<force-lookup><records-hoverable-link><div><a>User User</a></div><div>Preview</div></records-hoverable-link></force-lookup>';
+  await page.setContent(`<${A.layoutItem} field-label="Created By"><div>Created By</div>${link}<span>, </span><div>11/25/2026, 8:07 PM</div></${A.layoutItem}>`);
+  for (const via of ['ui', 'both']) {
+    assert.equal((await lib.assert.fieldValue({ page }, 'a0x', 'CreatedDate', ISO, { via })).ui, '11/25/2026, 8:07 PM');
+    // Control: another instant is still red.
+    await assert.rejects(lib.assert.fieldValue({ page }, 'a0x', 'CreatedDate', '2026-11-25T13:07:00.000Z', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+  }
+});
+
 test('assert, no org: a field off the layout is read from the Dynamic Forms page by its object-info label', { timeout: 30_000 }, async (t) => {
   const page = await localPage(t);
   page.setDefaultTimeout(2_000);
@@ -196,6 +354,88 @@ test('assert, no org: a field off the layout is read from the Dynamic Forms page
   await assert.rejects(lib.assert.fieldValue({ page }, 'a0x', 'Note__c', 'other', { via: 'ui' }), { code: 'FIELD_VALUE_MISMATCH' });
   // Control: a field this user cannot see at all is still FIELD_NOT_ON_FORM.
   await assert.rejects(lib.assert.fieldValue({ page }, 'a0x', 'Secret__c', 'x', { via: 'ui' }), { code: 'FIELD_NOT_ON_FORM' });
+});
+
+// F-cascade-11, no org: an address part shows inside its compound's one item ("Billing Address", or a Dynamic Forms
+// Site__c), as measured on sfui-pool-2; the part is matched inside that text.
+test('assert, no org: a part of a standard or custom Address is matched inside the Address the page shows', { timeout: 60_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  const models = {
+    '001x': { objectApiName: 'Account', fields: ['Street', 'City', 'State'].map((p) => ({ apiName: `Billing${p}`, label: `Billing ${p}`, itemLabel: 'Billing Address', dataType: 'String' })) },
+    a0x: { objectApiName: 'SfUiC_Place__c', fields: [] }, // Site__c is placed by the Dynamic Forms page only
+  };
+  t.mock.method(require('../src/discover'), 'formModel', async (s, id) => models[id]);
+  const part = (apiName, label, whole) => ({ apiName, label, dataType: 'String', compoundFieldName: whole });
+  const info = {
+    Account: { BillingAddress: { apiName: 'BillingAddress', label: 'Billing Address', dataType: 'Address' }, BillingStreet: part('BillingStreet', 'Billing Street', 'BillingAddress'),
+      BillingCity: part('BillingCity', 'Billing City', 'BillingAddress'), BillingState: part('BillingState', 'Billing State', 'BillingAddress') },
+    SfUiC_Place__c: { Site__c: { apiName: 'Site__c', label: 'Site', dataType: 'Address' }, Site__City__s: part('Site__City__s', 'Site (City)', 'Site__c') },
+  };
+  const stored = { BillingStreet: '2 Break St\r\nSuite 9', BillingCity: 'Oakland', BillingState: 'CA', Site__City__s: 'Oakland' };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => (p.startsWith('/ui-api/object-info/') ? { fields: info[p.split('/').pop()] }
+    : { fields: { [p.split('.').pop()]: { value: stored[p.split('.').pop()], displayValue: null } } }));
+  await page.setContent(`<div role="tablist"><button role="tab">Details</button></div><${A.layoutItem} field-label="Billing Address"><div>Billing Address</div>`
+    + `<a href="#"><div>2 Break St</div><div>Suite 9, Oakland</div><div>94607 CA</div><div>USA</div></a><button>Edit Billing Address</button></${A.layoutItem}>`
+    + '<div data-target-selection-name="sfdc:RecordField.SfUiC_Place__c.Site__c"><div>Site</div><div>2 Break Street, Oakland</div><div>Edit Site</div></div>');
+  for (const via of ['ui', 'both']) {
+    await lib.assert.fieldValue({ page }, '001x', 'BillingCity', 'Oakland', { via });
+    await lib.assert.fieldValue({ page }, '001x', 'BillingStreet', '2 Break St\nSuite 9', { via });
+    await lib.assert.fieldValue({ page }, '001x', 'BillingState', 'CA', { via });
+    await lib.assert.fieldValue({ page }, 'a0x', 'Site__City__s', 'Oakland', { via });
+    // Control: a value the Address does not hold, or only a piece of a word in it, is red and carries the page's text.
+    for (const [id, f, want] of [['001x', 'BillingCity', 'Berkeley'], ['001x', 'BillingCity', 'Oak'], ['a0x', 'Site__City__s', 'Berkeley']]) {
+      await assert.rejects(lib.assert.fieldValue({ page }, id, f, want, { via }), (e) => e.code === 'FIELD_VALUE_MISMATCH' && /Oakland/.test(e.evidence.ui));
+    }
+  }
+});
+
+// R1, no org: an empty part (BillingState null) has no text in the Address to find, so via both it passes on the stored value.
+test('assert, no org: an empty part of an Address expected null passes via both when the stored part is empty', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'Account',
+    fields: ['City', 'State'].map((p) => ({ apiName: `Billing${p}`, label: `Billing ${p}`, itemLabel: 'Billing Address', dataType: 'String' })) }));
+  const part = (apiName) => ({ apiName, label: apiName, dataType: 'String', compoundFieldName: 'BillingAddress' });
+  const info = { BillingAddress: { apiName: 'BillingAddress', label: 'Billing Address', dataType: 'Address' }, BillingCity: part('BillingCity'), BillingState: part('BillingState') };
+  const stored = { BillingCity: 'Oakland', BillingState: null };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => (p.startsWith('/ui-api/object-info/') ? { fields: info }
+    : { fields: { [p.split('.').pop()]: { value: stored[p.split('.').pop()], displayValue: null } } }));
+  await page.setContent(`<div role="tablist"><button role="tab">Details</button></div><${A.layoutItem} field-label="Billing Address"><div>Billing Address</div>`
+    + `<a href="#"><div>2 Break St</div><div>Oakland</div><div>USA</div></a><button>Edit Billing Address</button></${A.layoutItem}>`);
+  await lib.assert.fieldValue({ page }, '001x', 'BillingState', null, { via: 'both' });
+  await lib.assert.fieldValue({ page }, '001x', 'BillingCity', 'Oakland', { via: 'both' });
+  // Control: a value the stored part does not hold is still red.
+  await assert.rejects(lib.assert.fieldValue({ page }, '001x', 'BillingState', 'CA', { via: 'both' }), { code: 'FIELD_VALUE_MISMATCH' });
+  stored.BillingState = 'CA';
+  await assert.rejects(lib.assert.fieldValue({ page }, '001x', 'BillingState', null, { via: 'both' }), { code: 'FIELD_VALUE_MISMATCH' });
+});
+
+// D1, no org: via ui a part also needs its stored value, so City "Portland" does not pass on the street "1 Portland Ave".
+test('assert, no org: via ui a part of an Address must be the stored part, not any text of the Address', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'Account',
+    fields: ['Street', 'City', 'State'].map((p) => ({ apiName: `Billing${p}`, label: `Billing ${p}`, itemLabel: 'Billing Address', dataType: 'String' })) }));
+  const part = (apiName) => ({ apiName, label: apiName, dataType: 'String', compoundFieldName: 'BillingAddress' });
+  const info = { BillingAddress: { apiName: 'BillingAddress', label: 'Billing Address', dataType: 'Address' },
+    BillingStreet: part('BillingStreet'), BillingCity: part('BillingCity'), BillingState: part('BillingState') };
+  const stored = { BillingStreet: '1 Portland Ave', BillingCity: 'Seattle', BillingState: null };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => (p.startsWith('/ui-api/object-info/') ? { fields: info }
+    : { fields: { [p.split('.').pop()]: { value: stored[p.split('.').pop()], displayValue: null } } }));
+  await page.setContent(`<div role="tablist"><button role="tab">Details</button></div><${A.layoutItem} field-label="Billing Address"><div>Billing Address</div>`
+    + `<a href="#"><div>1 Portland Ave</div><div>Seattle</div><div>USA</div></a><button>Edit Billing Address</button></${A.layoutItem}>`);
+  await assert.rejects(lib.assert.fieldValue({ page }, '001x', 'BillingCity', 'Portland', { via: 'ui' }),
+    (e) => e.code === 'FIELD_VALUE_MISMATCH' && /Portland Ave/.test(e.evidence.ui) && !('api' in e.evidence));
+  await lib.assert.fieldValue({ page }, '001x', 'BillingCity', 'Seattle', { via: 'ui' });
+  // An empty part has no text to find, so via ui it now rests on the stored value too (R1's via-ui half).
+  await lib.assert.fieldValue({ page }, '001x', 'BillingState', null, { via: 'ui' });
+  // Control: the page must still show the part; a stored value the page lacks is red.
+  stored.BillingCity = 'Portland';
+  await assert.rejects(lib.assert.fieldValue({ page }, '001x', 'BillingCity', 'Seattle', { via: 'ui' }), { code: 'FIELD_VALUE_MISMATCH' });
 });
 
 // No org: a lookup only a Dynamic Forms page places is not in the View model; object-info says it is a lookup.
@@ -214,7 +454,7 @@ test('assert, no org: an off-layout lookup expected by its 15-char id matches th
   await assert.rejects(lib.assert.fieldValue({}, 'a0x', 'Code__c', ID.slice(0, 15), { via: 'api' }), { code: 'FIELD_VALUE_MISMATCH' });
 });
 
-test('assert', { skip, timeout: 300_000 }, async (t) => {
+test('assert', { skip, timeout: 480_000 }, async (t) => {
   const s = await lib.session.start(await auth(env.org));
   t.after(() => lib.session.end(s));
   const record = await account(s, t, { Rating: 'Warm' });
@@ -244,6 +484,16 @@ test('assert', { skip, timeout: 300_000 }, async (t) => {
     const r = await lib.assert.fieldValue(s, id, 'Done__c', true);
     assert.deepEqual([r.api, r.ui], [true, 'True']);
     await assert.rejects(lib.assert.fieldValue(s, id, 'Done__c', false), { code: 'FIELD_VALUE_MISMATCH' });
+  });
+
+  // F-cascade-21: a checkbox expected as the text the page shows ("False") passes, via ui and both.
+  await t.test('assert.fieldValue passes a checkbox expected as the page text, False or True, via ui and both', async () => {
+    const id = await probe(s, t, { Done__c: false });
+    for (const via of ['ui', 'both']) {
+      const r = await lib.assert.fieldValue(s, id, 'Done__c', 'False', { via });
+      assert.equal(r.ui, 'False');
+      await assert.rejects(lib.assert.fieldValue(s, id, 'Done__c', 'True', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+    }
   });
 
   // The API stores ...00.000Z; a datetime or time typed without milliseconds is the same value, page side included.
@@ -348,5 +598,104 @@ test('assert', { skip, timeout: 300_000 }, async (t) => {
       await open();
     }
     assert.equal((await memo()).ui, 'BREAK fix memo'); // control: open again, read again
+  });
+
+  // F-cascade-5, F-flow-15: the page shows 12,345 and 25%; the API holds 12345 and 25 with no display value.
+  await t.test('assert.fieldValue passes a Number of 1,000 or more and a Percent as the number, via api, ui and both', async (st) => {
+    const id = await probe(s, t, { Name: `BREAK fix number ${stamp()}`, Count__c: 12345 });
+    for (const via of ['api', 'ui', 'both']) {
+      for (const v of [12345, '12,345']) await lib.assert.fieldValue(s, id, 'Count__c', v, { via });
+      await assert.rejects(lib.assert.fieldValue(s, id, 'Count__c', 12346, { via }), { code: 'FIELD_VALUE_MISMATCH' });
+    }
+    assert.equal((await lib.assert.fieldValue(s, id, 'Count__c', 12345)).ui, '12,345', 'the page groups the digits');
+    const pct = await rec(s, t, 'SfUiC_Field__c', { Name: `BREAK fix pct ${stamp()}` })
+      .catch((e) => { if (e.evidence?.status === 404) return null; throw e; });
+    if (!pct) return st.skip('the org has no test/fixture-components object SfUiC_Field__c');
+    for (const via of ['api', 'ui', 'both']) {
+      for (const v of [25, '25%']) await lib.assert.fieldValue(s, pct, 'F_Pct__c', v, { via });
+      await assert.rejects(lib.assert.fieldValue(s, pct, 'F_Pct__c', 26, { via }), { code: 'FIELD_VALUE_MISMATCH' });
+    }
+  });
+
+  // F-cascade-2: a UI save stores a Text Area with CRLF line ends; the page shows its blank line and a tab as a space.
+  await t.test('assert.fieldValue passes a Text Area of several lines as typed, via api, ui and both', async (st) => {
+    const id = await rec(s, t, 'SfUiC_Field__c', { Name: `BREAK fix lines ${stamp()}`, Memo__c: 'line one\r\n\r\nline three', Long__c: 'lead\ttab\r\nsecond' })
+      .catch((e) => { if (e.evidence?.status === 404) return null; throw e; });
+    if (!id) return st.skip('the org has no test/fixture-components object SfUiC_Field__c');
+    for (const via of ['api', 'ui', 'both']) {
+      await lib.assert.fieldValue(s, id, 'Memo__c', 'line one\n\nline three', { via });
+      await lib.assert.fieldValue(s, id, 'Long__c', 'lead\ttab\nsecond', { via });
+      // Control: a lost blank line, or a line break typed as a space, is still red.
+      await assert.rejects(lib.assert.fieldValue(s, id, 'Memo__c', 'line one\nline three', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+      await assert.rejects(lib.assert.fieldValue(s, id, 'Long__c', 'lead\ttab second', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+    }
+  });
+
+  // F-cascade-6: a field with help text shows a "Help <label>" button; the page side read it as part of the value.
+  await t.test('assert.fieldValue reads a field with help text without its help button, via ui and both', async (st) => {
+    const email = `break.fix.${stamp()}@sfuic.example`.toLowerCase();
+    const id = await rec(s, t, 'SfUiC_Field__c', { Name: `BREAK fix help ${stamp()}`, Email__c: email, Flagged__c: true, Tone__c: 'Calm' })
+      .catch((e) => { if (e.evidence?.status === 404) return null; throw e; });
+    if (!id) return st.skip('the org has no test/fixture-components object SfUiC_Field__c');
+    const ref = (await lib.assert.fieldValue(s, id, 'Ref__c', 'x', { via: 'api' }).catch((e) => e.evidence)).api;
+    for (const via of ['ui', 'both']) {
+      assert.equal((await lib.assert.fieldValue(s, id, 'Email__c', email, { via })).ui, email);
+      await lib.assert.fieldValue(s, id, 'Flagged__c', true, { via });
+      await lib.assert.fieldValue(s, id, 'Tone__c', 'Calm', { via });
+      await lib.assert.fieldValue(s, id, 'Ref__c', ref, { via });
+      // Control: a wrong value is still red.
+      await assert.rejects(lib.assert.fieldValue(s, id, 'Tone__c', 'Bright', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+    }
+  });
+
+  // F-cascade-7: the Owner item also holds Change Owner, the Created By item a date; a custom object's Owner is
+  // polymorphic and had no API display value. The Account is the standard-object shape of the same finding.
+  await t.test('assert.fieldValue reads Owner and Created By as the user\'s name, by name and by id, via ui and both', async (st) => {
+    const custom = await rec(s, t, 'SfUiC_Field__c', { Name: `BREAK fix owner ${stamp()}` })
+      .catch((e) => { if (e.evidence?.status === 404) return null; throw e; });
+    if (!custom) return st.skip('the org has no test/fixture-components object SfUiC_Field__c');
+    for (const [obj, id, fields] of [['SfUiC_Field__c', custom, ['OwnerId', 'CreatedById']], ['Account', record, ['OwnerId']]]) {
+      const q = `SELECT OwnerId, Owner.Name, CreatedById, CreatedBy.Name FROM ${obj} WHERE Id = '${id}'`;
+      const [row] = (await lib.api.call(s, `/query?q=${encodeURIComponent(q)}`, { as: 'admin' })).records;
+      for (const f of fields) {
+        const [uid, name] = f === 'OwnerId' ? [row.OwnerId, row.Owner.Name] : [row.CreatedById, row.CreatedBy.Name];
+        assert.equal((await lib.assert.fieldValue(s, id, f, name, { via: 'ui' })).ui, name, `${obj}.${f}`);
+        for (const want of [name, uid]) await lib.assert.fieldValue(s, id, f, want, { via: 'both' });
+        // Control: another name is still red on the page.
+        await assert.rejects(lib.assert.fieldValue(s, id, f, 'Not That User', { via: 'ui' }), { code: 'FIELD_VALUE_MISMATCH' });
+      }
+    }
+  });
+
+  // R2: CreatedDate and LastModifiedDate share their item with the user's link; the page side is the date.
+  await t.test('assert.fieldValue reads CreatedDate and LastModifiedDate as the date, via ui and both', async () => {
+    const { fields } = await lib.api.call(s, `/ui-api/records/${record}?fields=Account.CreatedDate,Account.LastModifiedDate`);
+    for (const f of ['CreatedDate', 'LastModifiedDate']) {
+      for (const via of ['ui', 'both']) {
+        assert.equal((await lib.assert.fieldValue(s, record, f, fields[f].value, { via })).ui, fields[f].displayValue, `${f} via ${via}`);
+      }
+      // Control: a day later is still red on the page.
+      const later = new Date(Date.parse(fields[f].value) + 86_400_000).toISOString();
+      await assert.rejects(lib.assert.fieldValue(s, record, f, later, { via: 'ui' }), { code: 'FIELD_VALUE_MISMATCH' });
+    }
+  });
+
+  // F-cascade-11: a part of the standard Billing Address, and of the custom Address Site__c that SfUiC_App's Dynamic
+  // Forms page places, is read inside the one Address item the page shows. Last: it leaves SfUiC_App open.
+  await t.test('assert.fieldValue reads a part of a standard and a custom Address, via ui and both', async (st) => {
+    const acct = await account(s, t, { Name: `BREAK fix address ${stamp()}`, BillingStreet: '2 Break St\nSuite 9', BillingCity: 'Oakland', BillingState: 'CA', BillingPostalCode: '94607' });
+    const app = await lib.session.openApp(s, 'SfUiC_App').catch((e) => { if (e.code === 'APP_UNAVAILABLE') return null; throw e; });
+    const place = app && await rec(s, t, 'SfUiC_Place__c', { Name: `BREAK fix place ${stamp()}`, Site__Street__s: '2 Break Street', Site__City__s: 'Oakland' });
+    for (const via of ['ui', 'both']) {
+      await lib.assert.fieldValue(s, acct, 'BillingCity', 'Oakland', { via });
+      await lib.assert.fieldValue(s, acct, 'BillingStreet', '2 Break St\nSuite 9', { via });
+      await lib.assert.fieldValue(s, acct, 'BillingPostalCode', '94607', { via });
+      // Control: a city the Address does not hold is red, with the Address text as the page side.
+      await assert.rejects(lib.assert.fieldValue(s, acct, 'BillingCity', 'Berkeley', { via }), (e) => e.code === 'FIELD_VALUE_MISMATCH' && /Oakland/.test(e.evidence.ui));
+      if (!place) continue;
+      await lib.assert.fieldValue(s, place, 'Site__City__s', 'Oakland', { via });
+      await assert.rejects(lib.assert.fieldValue(s, place, 'Site__City__s', 'Berkeley', { via }), { code: 'FIELD_VALUE_MISMATCH' });
+    }
+    if (!place) st.skip('the org has no test/fixture-components app SfUiC_App: the custom Address half did not run');
   });
 });

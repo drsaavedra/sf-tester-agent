@@ -4253,6 +4253,55 @@
       }
     },
     {
+      "id": "multi-select-order@edit-dialog",
+      "component": "multi-select picklist",
+      "container": "standard Edit dialog (page layout)",
+      "interaction": "set fields, save, assert via both",
+      "task": "On the SF UI Probe record {{probeId}}, edit the record, set Tags to Gamma and Beta only, typed in that order, save, and confirm through the API and the record page that they saved.",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_edit_record",
+          "args": {
+            "recordId": "{{probeId}}",
+            "source": "pageLayout"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "Tags__c": "Gamma;Beta"
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{probeId}}",
+            "field": "Tags__c",
+            "expected": "Gamma;Beta",
+            "via": "both"
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-2"
+      },
+      "notes": "the org stores and shows a multi-select in picklist order, so it is asserted as a set (F-cascade-24)",
+      "break": [
+        "F-cascade-24"
+      ]
+    },
+    {
       "id": "time@edit-dialog",
       "component": "time field",
       "container": "standard Edit dialog (page layout)",
@@ -4373,6 +4422,677 @@
       "notes": "via ui takes the ISO value: the stored value bridges it to the page's text (F-tz-1)",
       "break": [
         "F-tz-1"
+      ]
+    },
+    {
+      "id": "textarea-lines@page-layout",
+      "component": "Text Area (Long) of several lines",
+      "container": "standard Edit dialog (page layout)",
+      "interaction": "set fields, save, assert via both",
+      "task": "On the Account {{accountId}}, edit the record, set Description to three lines with a blank middle line, save, and confirm through the API and the record page that it saved as typed.",
+      "needs": [
+        "accountId"
+      ],
+      "route": [
+        {
+          "tool": "sf_edit_record",
+          "args": {
+            "recordId": "{{accountId}}",
+            "source": "pageLayout"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "Description": "line one\n\nline three"
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{accountId}}",
+            "field": "Description",
+            "expected": "line one\n\nline three",
+            "via": "both"
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-2"
+      },
+      "notes": "a UI save stores CRLF line ends and the page keeps the blank line (F-cascade-2)",
+      "break": [
+        "F-cascade-2"
+      ]
+    },
+    {
+      "id": "hover-card@app-page",
+      "component": "pure-CSS hover card in a label (sfUiClipCard)",
+      "container": "Lightning app page from a custom tab",
+      "interaction": "hover the label by its text, wait for the card",
+      "task": "Open the \"SF UI Clip App\" tab; on that app page, put the mouse on the label Shipment and confirm its hover card opens.",
+      "needs": [],
+      "route": [
+        {
+          "tool": "sf_open_tab",
+          "args": {
+            "tab": "SF UI Clip App"
+          }
+        },
+        {
+          "tool": "sf_hover",
+          "args": {
+            "text": "Shipment"
+          }
+        },
+        {
+          "tool": "sf_wait",
+          "args": {
+            "text": "Hover card: three parcels, one pallet",
+            "timeoutMs": 10000
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-1"
+      },
+      "notes": "the label holds its hidden card, so its own text is the label and the card: the text aim matches what it shows (F-flow-21)",
+      "break": [
+        "F-flow-21"
+      ]
+    },
+    {
+      "id": "row-across-cells@custom-component",
+      "component": "custom LWC table (slds-table)",
+      "container": "record page sidebar card",
+      "interaction": "click a row's button by a row text that crosses two cells",
+      "task": "On the SF UI Probe record {{probeId}}, in the \"SF UI Probe\" card on the record page, click Pick in the row whose text reads \"row two Pick\" (the name cell, then the button cell), and confirm the card names row two.",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_click",
+          "args": {
+            "recordId": "{{probeId}}",
+            "lwcApiName": "sfUiProbe",
+            "name": "Pick",
+            "row": "row two Pick"
+          }
+        },
+        {
+          "tool": "sf_wait",
+          "args": {
+            "recordId": "{{probeId}}",
+            "lwcApiName": "sfUiProbe",
+            "text": "Picked row two",
+            "timeoutMs": 10000
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-1"
+      },
+      "validity": {
+        "page": {
+          "object": "SfUiProbe__c",
+          "flexiPage": "SfUi_Probe_Record_Page",
+          "flexiPageHash": "fcf392a9b30e",
+          "formHash": "e9d7be8db4c2"
+        }
+      },
+      "notes": "a row matches the text it shows, cells joined by a space, as the error's rows print it (F-flow-27)",
+      "break": [
+        "F-flow-27"
+      ]
+    },
+    {
+      "id": "on-top-under-column@datatable",
+      "component": "lightning-datatable (sortable column)",
+      "container": "record page tab",
+      "interaction": "stacking check on a cell aimed by row and column",
+      "task": "On the SF UI Probe record {{probeId}}, in the \"SF UI More\" card on the record page's \"More\" tab, check that the Washer cell under the Part column of the parts table is on top.",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_on_top",
+          "args": {
+            "recordId": "{{probeId}}",
+            "lwcApiName": "sfUiMore",
+            "text": "Washer",
+            "row": "Washer",
+            "column": "Part",
+            "expect": {
+              "path": "onTop",
+              "value": true
+            }
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-1"
+      },
+      "validity": {
+        "page": {
+          "object": "SfUiProbe__c",
+          "flexiPage": "SfUi_Probe_Record_Page",
+          "flexiPageHash": "fcf392a9b30e",
+          "formHash": "e9d7be8db4c2"
+        }
+      },
+      "notes": "sf_on_top aims with hidden text included, which adds the sortable header's hidden text to its name: the header name the page shows still finds the column (F-fixtures-11, F-fixtures-21)",
+      "break": [
+        "F-fixtures-11",
+        "F-fixtures-21"
+      ]
+    },
+    {
+      "id": "cell-under-column@datatable",
+      "component": "lightning-datatable (sortable column)",
+      "container": "record page tab",
+      "interaction": "stacking check on a cell aimed by its own role, row and column",
+      "task": "On the SF UI Probe record {{probeId}}, in the \"SF UI More\" card on the record page's \"More\" tab, check that the Stock cell of the Washer row in the parts table, aimed as a grid cell named 2, is on top.",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_on_top",
+          "args": {
+            "recordId": "{{probeId}}",
+            "lwcApiName": "sfUiMore",
+            "role": "gridcell",
+            "name": "2",
+            "row": "Washer",
+            "column": "Stock",
+            "expect": {
+              "path": "onTop",
+              "value": true
+            }
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-1"
+      },
+      "validity": {
+        "page": {
+          "object": "SfUiProbe__c",
+          "flexiPage": "SfUi_Probe_Record_Page",
+          "flexiPageHash": "fcf392a9b30e",
+          "formHash": "e9d7be8db4c2"
+        }
+      },
+      "notes": "the cell under the column is the target itself, aimed by its own role, not only what it holds (F-fixtures-22)",
+      "break": [
+        "F-fixtures-22"
+      ]
+    },
+    {
+      "id": "label-value-across-blocks@record-page",
+      "component": "record page field (label and value in two block elements)",
+      "container": "record page",
+      "interaction": "wait for a text the snapshot prints as one line across two blocks",
+      "task": "On the SF UI Probe record {{probeId}}, wait until the page shows the Tags field with its value, which the page snapshot prints as the one line \"Tags Alpha\".",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_wait",
+          "args": {
+            "recordId": "{{probeId}}",
+            "text": "Tags Alpha",
+            "timeoutMs": 10000
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-1"
+      },
+      "validity": {
+        "page": {
+          "object": "SfUiProbe__c",
+          "flexiPage": "SfUi_Probe_Record_Page",
+          "flexiPageHash": "fcf392a9b30e",
+          "formHash": "e9d7be8db4c2"
+        }
+      },
+      "notes": "a label and its value in two block elements read run together to getByText, so the wait missed a text its own snapshot prints (F-fixtures-16); the gone half is the node test's",
+      "break": [
+        "F-fixtures-16"
+      ]
+    },
+    {
+      "id": "number-grouped@page-layout",
+      "component": "Number of 1,000 or more",
+      "container": "standard Edit dialog (page layout)",
+      "interaction": "set fields, save, assert via both",
+      "task": "On the SF UI Probe record {{probeId}}, edit the record, set Count to 12345, save, and confirm through the API and the record page that it saved, typed as 12345 and as 12,345.",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_edit_record",
+          "args": {
+            "recordId": "{{probeId}}",
+            "source": "pageLayout"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "Count__c": 12345
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{probeId}}",
+            "field": "Count__c",
+            "expected": 12345,
+            "via": "both"
+          }
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{probeId}}",
+            "field": "Count__c",
+            "expected": "12,345",
+            "via": "both"
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-2"
+      },
+      "notes": "the page groups the digits (12,345) and the UI API gives no display value (F-cascade-5, F-flow-15)",
+      "break": [
+        "F-cascade-5",
+        "F-flow-15"
+      ]
+    },
+    {
+      "id": "checkbox-text@page-layout",
+      "component": "checkbox shown as True or False",
+      "container": "standard Edit dialog (page layout)",
+      "interaction": "set fields, save, assert via both",
+      "task": "On the SF UI Probe record {{probeId}}, edit the record, untick Done, save, and confirm through the API and the record page that Done is False, typed as the page shows it.",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_edit_record",
+          "args": {
+            "recordId": "{{probeId}}",
+            "source": "pageLayout"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "Done__c": false
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{probeId}}",
+            "field": "Done__c",
+            "expected": "False",
+            "via": "both"
+          }
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{probeId}}",
+            "field": "Done__c",
+            "expected": false,
+            "via": "both"
+          }
+        }
+      ],
+      "status": "tested",
+      "notes": "the page shows a checkbox as True or False, the API as true or false (F-cascade-21)",
+      "break": [
+        "F-cascade-21"
+      ]
+    },
+    {
+      "id": "geolocation-parts@new-dialog",
+      "component": "Geolocation (Latitude and Longitude)",
+      "container": "object New action (page layout)",
+      "interaction": "create with a location, check and delete",
+      "task": "Create an SF UI Dynamic named \"sf-ui combo spot {{stamp}}n{{routeIndex}}\" from the standard New dialog with Loc Latitude 37.5 and Longitude -122.25, confirm through the API that it holds both, then delete the record from its Delete action and confirm it was deleted.",
+      "needs": [],
+      "route": [
+        {
+          "tool": "sf_create_record",
+          "args": {
+            "objectApiName": "SfUiDyn__c"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "Name": "sf-ui combo spot {{stamp}}n{{routeIndex}}",
+              "Loc__Latitude__s": 37.5,
+              "Loc__Longitude__s": -122.25
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "field": "Loc__Latitude__s",
+            "expected": 37.5,
+            "via": "api"
+          }
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "field": "Loc__Longitude__s",
+            "expected": -122.25,
+            "via": "api"
+          }
+        },
+        {
+          "tool": "sf_launch_action",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "apiName": "Delete"
+          }
+        },
+        {
+          "tool": "sf_click",
+          "args": {
+            "inModal": true,
+            "name": "Delete"
+          }
+        },
+        {
+          "tool": "sf_wait",
+          "args": {
+            "any": [
+              {
+                "toast": "was deleted"
+              }
+            ],
+            "timeoutMs": 10000
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-3"
+      },
+      "notes": "the New dialog draws group \"Loc\" with textboxes \"Latitude\" and \"Longitude\", the layout model labels them \"Loc (Latitude)\" (F-cascade-17, F-flow-22); via api only, the page read of a part is step 32's; a route that fails between the save and the Delete leaves the record behind",
+      "break": [
+        "F-cascade-17",
+        "F-flow-22"
+      ]
+    },
+    {
+      "id": "text-entities@new-dialog",
+      "component": "text fields holding & < > ' or \"",
+      "container": "object New action (page layout)",
+      "interaction": "create with markup characters, check and delete",
+      "task": "Create an SF UI Dynamic named \"BREAK fix R&D <1> O'Neil \"q\" {{stamp}}n{{routeIndex}}\" from the standard New dialog with Note \"Tom & Jerry &amp; <b>x</b>\", confirm the save and that the record holds both values exactly as typed, the Note through the API and on the page, then delete the record from its Delete action and confirm it was deleted.",
+      "needs": [],
+      "route": [
+        {
+          "tool": "sf_create_record",
+          "args": {
+            "objectApiName": "SfUiDyn__c"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "Name": "BREAK fix R&D <1> O'Neil \"q\" {{stamp}}n{{routeIndex}}",
+              "Note__c": "Tom & Jerry &amp; <b>x</b>"
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "field": "Name",
+            "expected": "BREAK fix R&D <1> O'Neil \"q\" {{stamp}}n{{routeIndex}}",
+            "via": "api"
+          }
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "field": "Note__c",
+            "expected": "Tom & Jerry &amp; <b>x</b>",
+            "via": "both"
+          }
+        },
+        {
+          "tool": "sf_launch_action",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "apiName": "Delete"
+          }
+        },
+        {
+          "tool": "sf_click",
+          "args": {
+            "inModal": true,
+            "name": "Delete"
+          }
+        },
+        {
+          "tool": "sf_wait",
+          "args": {
+            "any": [
+              {
+                "toast": "was deleted"
+              }
+            ],
+            "timeoutMs": 10000
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-2"
+      },
+      "notes": "UI API sends a record's text entity-escaped (R&amp;D) where the form and SOQL hold it as typed, so the create's read-back and the api read compare it unescaped; the typed &amp; checks the unescape is one pass (F-cascade-30, F-cascade-4); a route that fails between the save and the Delete leaves the record behind",
+      "break": [
+        "F-cascade-30",
+        "F-cascade-4"
+      ]
+    },
+    {
+      "id": "lookup-on-page@dynamic-forms-new-dialog",
+      "component": "lookup field placed only on a Dynamic Forms page",
+      "container": "object New action (Dynamic Forms page)",
+      "interaction": "create with a lookup only the page places, check and delete",
+      "task": "Create an SF UI Dynamic named \"sf-ui combo pagenew {{stamp}}n{{routeIndex}}\" from the standard New dialog with Probe set to the probe \"{{probeName}}\", confirm through the API that its Probe is that probe, then delete the record from its Delete action and confirm it was deleted.",
+      "needs": [
+        "probeName"
+      ],
+      "route": [
+        {
+          "tool": "sf_create_record",
+          "args": {
+            "objectApiName": "SfUiDyn__c"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "Name": "sf-ui combo pagenew {{stamp}}n{{routeIndex}}",
+              "Probe__c": "{{probeName}}"
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "field": "Probe__c",
+            "expected": "{{probeId}}",
+            "via": "api"
+          }
+        },
+        {
+          "tool": "sf_launch_action",
+          "args": {
+            "recordId": "{{step2.recordId}}",
+            "apiName": "Delete"
+          }
+        },
+        {
+          "tool": "sf_click",
+          "args": {
+            "inModal": true,
+            "name": "Delete"
+          }
+        },
+        {
+          "tool": "sf_wait",
+          "args": {
+            "any": [
+              {
+                "toast": "was deleted"
+              }
+            ],
+            "timeoutMs": 10000
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-3"
+      },
+      "notes": "SfUiDyn__c's New dialog follows its Dynamic Forms record page: it shows combobox \"Probe\", which the Create layout lacks (F-cascade-25, F-flow-23); a route that fails between the save and the Delete leaves the record behind",
+      "break": [
+        "F-cascade-25",
+        "F-flow-23"
+      ]
+    },
+    {
+      "id": "address-parts@edit-record",
+      "component": "standard compound Address (Billing Address)",
+      "container": "record Edit dialog (page layout)",
+      "interaction": "set the parts, save, check each part on the record page",
+      "task": "On the Account {{accountId}}, edit the record, set the Billing Address to street \"2 Break St\" and \"Suite 9\" on two lines, city Oakland, postal code 94607, save, and confirm the record page shows the city and the street.",
+      "needs": [
+        "accountId"
+      ],
+      "route": [
+        {
+          "tool": "sf_edit_record",
+          "args": {
+            "recordId": "{{accountId}}"
+          }
+        },
+        {
+          "tool": "sf_set_fields",
+          "args": {
+            "values": {
+              "BillingStreet": "2 Break St\nSuite 9",
+              "BillingCity": "Oakland",
+              "BillingPostalCode": "94607"
+            }
+          }
+        },
+        {
+          "tool": "sf_save",
+          "args": {}
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{accountId}}",
+            "field": "BillingCity",
+            "expected": "Oakland",
+            "via": "both"
+          }
+        },
+        {
+          "tool": "sf_assert_field",
+          "args": {
+            "recordId": "{{accountId}}",
+            "field": "BillingStreet",
+            "expected": "2 Break St\nSuite 9",
+            "via": "ui"
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-2"
+      },
+      "notes": "the record page shows the parts as one item, \"Billing Address\", so a part is read inside that item's text (F-cascade-11); it sets no State or Country, which are picklists (BillingStateCode) in an org with State and Country/Territory Picklists on",
+      "break": [
+        "F-cascade-11"
       ]
     },
     {
@@ -20730,6 +21450,96 @@
           "by": "a person"
         }
       }
+    },
+    {
+      "id": "search-again@header",
+      "component": "global search",
+      "container": "header search box, from a results page",
+      "interaction": "search twice in a row",
+      "task": "Search the org from the header for \"sfuinomatchbreakone\", then, from its results page, search for \"sfuinomatchbreaktwo\" and confirm the results page says it searched for the second term.",
+      "needs": [],
+      "route": [
+        {
+          "tool": "sf_search",
+          "args": {
+            "text": "sfuinomatchbreakone"
+          }
+        },
+        {
+          "tool": "sf_search",
+          "args": {
+            "text": "sfuinomatchbreaktwo"
+          }
+        },
+        {
+          "tool": "sf_wait",
+          "args": {
+            "text": "We searched for \"sfuinomatchbreaktwo\"",
+            "timeoutMs": 10000
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-3"
+      },
+      "notes": "on a results page the header button is \"Search: <last term>\", and the search redraws that page and keeps its url (F-flow-20)",
+      "break": [
+        "F-flow-20"
+      ]
+    },
+    {
+      "id": "date-picker-calendar@clone-dialog",
+      "component": "lightning-datepicker calendar (position: fixed)",
+      "container": "standard Clone dialog (page layout)",
+      "interaction": "open a Date field's calendar, check its Today button is drawn whole",
+      "task": "On the SF UI Probe record {{probeId}}, press Clone, open the calendar of the Due date in the dialog, confirm its Today button is drawn whole and on top, then close the dialog without saving.",
+      "needs": [
+        "probeId"
+      ],
+      "route": [
+        {
+          "tool": "sf_launch_action",
+          "args": {
+            "recordId": "{{probeId}}",
+            "apiName": "Clone"
+          }
+        },
+        {
+          "tool": "sf_click",
+          "args": {
+            "inModal": true,
+            "name": "Select a date for Due"
+          }
+        },
+        {
+          "tool": "sf_on_top",
+          "args": {
+            "inModal": true,
+            "name": "Today",
+            "expect": {
+              "path": "visible",
+              "value": 1
+            }
+          }
+        },
+        {
+          "tool": "sf_modal",
+          "args": {
+            "action": "close"
+          }
+        }
+      ],
+      "status": "tested",
+      "verified": {
+        "on": "2026-11-25",
+        "by": "replay on sfui-pool-3"
+      },
+      "notes": "the calendar is position: fixed and draws past the bottom of the dialog's scrolling body, which is not its containing block, so it is not clipped (F-flow-16)",
+      "break": [
+        "F-flow-16"
+      ]
     }
   ],
   "candidates": [

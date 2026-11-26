@@ -10,15 +10,20 @@ const { unxml } = require('./xml');
 // A tool argument that goes into a page URL is one path segment: a slash or a ? would open another page.
 const segment = (...values) => { for (const v of values) if (v !== undefined && !/^\w+$/.test(v)) throw new SfUiError('BAD_ARGS', `not an id or an API name: ${v}`, { value: v }); };
 
-// Loaded = the highlights panel renders; failed = the flexipage error card (about 6 s for a bad id).
+// Loaded = the highlights panel renders, or the record home draws and no panel follows within PANEL_MS (a template
+// with none: highlights false); failed = the flexipage error card, which comes with the record home.
+const PANEL_MS = 5_000; // the panel came 0 to 0.3 s after the record home, cold page included (measured on sfui-pool-2)
 async function openRecord(s, recordId, { objectApiName, timeout = 60_000 } = {}) {
   segment(recordId, objectApiName);
   const path = `/lightning/r/${objectApiName ? `${objectApiName}/` : ''}${recordId}/view`;
   await s.page.goto(s.origin + path);
-  await s.page.locator(`${A.highlights}, ${A.pageError}`).first().waitFor({ state: 'visible', timeout }).catch((e) => {
+  const loaded = s.page.locator(`${A.highlights}, ${A.pageError}`).first();
+  const home = s.page.locator(`${A.recordHome} > *`).locator('visible=true').first();
+  await loaded.or(home).first().waitFor({ state: 'visible', timeout }).catch((e) => {
     if (e.name !== 'TimeoutError') throw e;
-    throw new SfUiError('NO_HIGHLIGHTS', `${recordId}'s page showed no Highlights Panel and no error card within ${timeout} ms: a slow page, or a page with no panel (the record tools need one)`, { recordId, url: s.page.url() });
+    throw new SfUiError('NO_HIGHLIGHTS', `${recordId}'s page drew no record page and no error card within ${timeout} ms: a slow page, or an object the user cannot read`, { recordId, url: s.page.url() });
   });
+  const highlights = await loaded.waitFor({ state: 'visible', timeout: PANEL_MS }).then(() => true, (e) => { if (e.name !== 'TimeoutError') throw e; return false; });
   if (await s.page.locator(A.pageError).first().isVisible()) {
     const text = (await s.page.locator(A.pageError).first().innerText()).slice(0, 200);
     throw new SfUiError('RECORD_UNAVAILABLE', `${recordId} did not load`, { recordId, text });
@@ -27,7 +32,7 @@ async function openRecord(s, recordId, { objectApiName, timeout = 60_000 } = {})
   await s.page.waitForURL(new RegExp(`/lightning/r/[^/]+/${recordId}\\w{0,3}/view`), { timeout });
   await requireEnglish(s); // every record-page tool comes through here
   const [, object] = new URL(s.page.url()).pathname.match(/\/lightning\/r\/([^/]+)\//);
-  return { recordId, objectApiName: object, url: s.page.url() };
+  return { recordId, objectApiName: object, url: s.page.url(), ...(!highlights && { highlights: false }) };
 }
 
 const SPLIT = 'Select an item from this list to open it.'; // the split view's list pane: in main (Sales), not (SF UI App)
@@ -233,25 +238,37 @@ async function openTab(s, tab, { timeout = 60_000 } = {}) {
 
 // Global search from the header box, as a user types it; returns the results page's main area.
 // The header's Search button opens the box only once the header has loaded, so it is pressed until the box shows.
+// On a results page that button is named "Search: <last term>" (F-flow-20).
 async function search(s, text, { timeout = 60_000 } = {}) {
   await requireEnglish(s);
   const box = s.page.locator('input[placeholder="Search..."]').locator('visible=true');
-  const button = s.page.getByRole('button', { name: 'Search', exact: true });
+  const button = s.page.getByRole('button', { name: /^Search(: .*)?$/ });
   for (const end = Date.now() + 20_000; !(await box.count()); await s.page.waitForTimeout(1_000)) {
     if (Date.now() > end) throw new SfUiError('ACTION_NOT_AVAILABLE', 'the header search box did not open', { url: s.page.url() });
     await button.click().catch(() => {});
   }
+  // Results open at /one/one.app#<base64 of {"componentDef":"forceSearch:searchPageDesktop",...}>.
+  const isSearch = (u) => Buffer.from(u.hash.slice(1), 'base64').toString().includes('forceSearch');
   const before = s.page.url();
+  const main = s.page.getByRole('main');
+  // main shows before its results: wait for a result row or the no-match text (F-flow-19).
+  const settled = main.getByRole('rowheader').or(main.getByText(/find any matches/)).first();
+  const again = isSearch(new URL(before));
+  // On a results page the old rows already match settled: mark them, and wait for the redraw to drop them (R10).
+  const old = again && (await settled.count()) > 0 && await settled.evaluate((e) => e.setAttribute('data-sf-tester-old', '')).then(() => true, () => false);
   await box.first().fill(String(text));
   await box.first().press('Enter');
-  // Results open at /one/one.app#<base64 of {"componentDef":"forceSearch:searchPageDesktop",...}>.
-  const isResults = (u) => u.href !== before && Buffer.from(u.hash.slice(1), 'base64').toString().includes('forceSearch');
-  await s.page.waitForURL(isResults, { timeout }).catch(() => {
+  // A search from a results page redraws it in place (F-flow-20): the marked old results leaving is the redraw (R10).
+  // Only unmarked does it wait for "We searched for", which a natural-language results page never prints.
+  if (old) await s.page.locator('[data-sf-tester-old]').waitFor({ state: 'detached', timeout }).catch(() => {
+    throw new SfUiError('SEARCH_FAILED', `the results page for "${text}" was not redrawn: the old results are still on it`, { text, url: s.page.url() });
+  });
+  else await (again
+    ? main.getByText(`We searched for "${text}"`).first().waitFor({ timeout })
+    : s.page.waitForURL((u) => u.href !== before && isSearch(u), { timeout })
+  ).catch(() => {
     throw new SfUiError('SEARCH_FAILED', `searching for "${text}" did not open the results page`, { text, url: s.page.url() });
   });
-  // main shows before its results: wait for a result row or the no-match text (F-flow-19).
-  const main = s.page.getByRole('main');
-  const settled = main.getByRole('rowheader').or(main.getByText(/find any matches/)).first();
   await settled.waitFor({ timeout }).catch(() => {
     throw new SfUiError('SEARCH_FAILED', `the results page for "${text}" never showed a result row or "no matches"`, { text, url: s.page.url() });
   });

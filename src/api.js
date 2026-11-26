@@ -5,6 +5,7 @@
 // as:'admin' uses the session's token from Node, for queries and metadata the user cannot read.
 const { randomBytes } = require('node:crypto');
 const { SfUiError, fetchCoded } = require('./errors');
+const { unxml } = require('./xml');
 
 async function call(s, path, { method = 'GET', body, as = 'user', signal } = {}) {
   if (method === 'GET') assertRead(path); // object names and ids reach this path from tool arguments
@@ -27,8 +28,13 @@ async function call(s, path, { method = 'GET', body, as = 'user', signal } = {})
     const errorCode = Array.isArray(json) && json[0] ? json[0].errorCode : undefined;
     throw new SfUiError('API_ERROR', `${method} ${path} as ${as} answered ${res.status}${errorCode ? ` ${errorCode}` : ''}${json === undefined ? ', not JSON' : ''}`, { status: res.status, errorCode, body: json ?? res.text.trim().slice(0, 500) });
   }
-  return json;
+  return /^ui-api\/(list-)?records(\/|$)/.test(routeOf(path)) ? asStored(json) : json;
 }
+
+// UI API sends a record's text entity-escaped (R&amp;D), in a list's records and nested ones too, where SOQL sends it
+// as stored (measured, F-cascade-30): each string value and displayValue is unescaped in one pass, so a typed &amp; stays.
+const asStored = (x) => (Array.isArray(x) ? x.map(asStored) : x && typeof x === 'object'
+  ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, (k === 'value' || k === 'displayValue') && typeof v === 'string' ? unxml(v) : asStored(v)])) : x);
 
 // For calls that must not move with the org's release; a live session uses its own version. A route's app and FlexiPage
 // hashes are read at this version, so a change here moves those baselines.

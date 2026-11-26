@@ -5,8 +5,9 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { session, form, api, discover } = require('..');
-const { auth, env, skip, record, probe, stamp } = require('./helpers');
+const lib = require('..');
+const { session, form, api, discover } = lib;
+const { auth, env, skip, record, account, probe, stamp } = require('./helpers');
 
 test('dynamic forms', { skip, timeout: 300_000 }, async (t) => {
   const s = await session.start(await auth(env.org));
@@ -19,6 +20,19 @@ test('dynamic forms', { skip, timeout: 300_000 }, async (t) => {
     assert.deepEqual(f.model.fields.map((x) => x.apiName), ['Name', 'Note__c', 'Level__c', 'Loc__Latitude__s', 'Loc__Longitude__s', 'Probe__c']);
     assert.deepEqual(f.missing, []);
     await form.cancel(f);
+  });
+
+  // The New dialog follows the page too: it shows Probe and no Hidden (F-cascade-25, F-flow-23).
+  await t.test('createRecord on a Dynamic Forms object models the page\'s fields, not the Create layout\'s', async () => {
+    const name = (await api.call(s, `/sobjects/SfUiProbe__c/${await probe(s, t)}`, { as: 'admin' })).Name;
+    const f = await form.createRecord(s, 'SfUiDyn__c');
+    try {
+      assert.equal(f.model.source, 'dynamicForms');
+      assert.deepEqual(f.model.fields.map((x) => x.apiName), ['Name', 'Note__c', 'Level__c', 'Loc__Latitude__s', 'Loc__Longitude__s', 'Probe__c']);
+      assert.deepEqual(f.missing, []);
+      await form.setFields(f, { Probe__c: name });
+      await assert.rejects(form.setFields(f, { Hidden__c: 'x' }), { code: 'FIELD_NOT_ON_FORM' });
+    } finally { await form.cancel(f); }
   });
 
   await t.test('setFields and save work on the Dynamic Forms dialog', async () => {
@@ -82,4 +96,59 @@ test('a Dynamic Forms page that shows the user no field models no field', { skip
   assert.equal(a.model.source, 'pageLayout');
   assert.ok(a.model.fields.some((x) => x.apiName === 'Name'));
   await form.cancel(a);
+});
+
+// F-cascade-14: SfUiC_Contact_Page (SfUiC_App) places the standard lookup AccountId. Object-info labels it "Account ID",
+// the dialog "Account Name" as the layout does, so the model must take the layout's label to find the box.
+test('a standard lookup on a Dynamic Forms page is labelled as the form labels it', { skip, timeout: 300_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const app = await session.openApp(s, 'SfUiC_App').catch((e) => { if (e.code === 'APP_UNAVAILABLE') return null; throw e; });
+  if (!app) return t.skip('the org has no test/fixture-components app SfUiC_App');
+  const acct = await account(s, t, { Name: `BREAK fix account ${stamp()}` });
+  const id = await record(s, t, 'Contact', { LastName: `BREAK fix contact ${stamp()}` });
+  const f = await form.editRecord(s, id);
+  assert.equal(f.model.flexiPageApiName, 'SfUiC_Contact_Page');
+  assert.equal(f.model.fields.find((x) => x.apiName === 'AccountId').label, 'Account Name');
+  assert.ok(!f.missing.includes('AccountId'), `missing: ${f.missing}`);
+  await form.setFields(f, { AccountId: acct });
+  assert.equal((await form.save(f)).outcome, 'saved');
+  assert.equal((await api.call(s, `/ui-api/records/${id}?fields=Contact.AccountId`)).fields.AccountId.value, acct);
+});
+
+// F-cascade-18: SfUiC_Place_App_Page (SfUiC_App) places the custom Address Site__c. The dialog names its boxes as
+// object-info labels the parts ("Site (City)"), so the model must keep that label to find them.
+test('a custom Address on a Dynamic Forms page is labelled as the form labels its parts', { skip, timeout: 300_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const app = await session.openApp(s, 'SfUiC_App').catch((e) => { if (e.code === 'APP_UNAVAILABLE') return null; throw e; });
+  if (!app) return t.skip('the org has no test/fixture-components app SfUiC_App');
+  const id = await record(s, t, 'SfUiC_Place__c', { Name: `BREAK fix place ${stamp()}` });
+  const f = await form.editRecord(s, id);
+  assert.equal(f.model.flexiPageApiName, 'SfUiC_Place_App_Page');
+  const label = (api) => f.model.fields.find((x) => x.apiName === api).label;
+  assert.deepEqual([label('Site__City__s'), label('Site__Street__s')], ['Site (City)', 'Site (Street)']);
+  assert.deepEqual(f.missing, []); // the coordinates have no box on an address form, so they are not modelled
+  await form.setFields(f, { Site__City__s: 'Oakland', Site__Street__s: '2 Break Street' });
+  assert.equal((await form.save(f)).outcome, 'saved');
+  const { fields } = await api.call(s, `/ui-api/records/${id}?fields=SfUiC_Place__c.Site__City__s,SfUiC_Place__c.Site__Street__s`);
+  assert.deepEqual([fields.Site__City__s.value, fields.Site__Street__s.value], ['Oakland', '2 Break Street']);
+});
+
+// F-cascade-15: SfUiC_Contact_Page (SfUiC_App) places the compound Name. The page labels the item "Name" (pencil
+// "Edit Name") as the layout does; object-info says "Full Name", so the pencil and the value's label line were missed.
+test('a compound Name on a Dynamic Forms page is found by the label the page gives it', { skip, timeout: 300_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const app = await session.openApp(s, 'SfUiC_App').catch((e) => { if (e.code === 'APP_UNAVAILABLE') return null; throw e; });
+  if (!app) return t.skip('the org has no test/fixture-components app SfUiC_App');
+  const last = `BREAK fix contact ${stamp()}`;
+  const id = await record(s, t, 'Contact', { Salutation: 'Dr.', FirstName: 'Samm', LastName: last });
+  const f = await form.editInline(s, id, 'FirstName');
+  assert.equal(f.model.flexiPageApiName, 'SfUiC_Contact_Page');
+  await form.setFields(f, { FirstName: 'Sammy' });
+  assert.equal((await form.save(f)).outcome, 'saved');
+  assert.equal((await api.call(s, `/ui-api/records/${id}?fields=Contact.FirstName`)).fields.FirstName.value, 'Sammy');
+  // The page shows the salutation the API Name leaves out, so via ui is what can pass here.
+  assert.deepEqual(await lib.assert.fieldValue(s, id, 'Name', `Dr. Sammy ${last}`, { via: 'ui' }), { ui: `Dr. Sammy ${last}` });
 });

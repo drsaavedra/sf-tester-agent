@@ -592,7 +592,7 @@ The safety class says what a tool can do to the org and the disk. The classes ar
 | `sf_scenario` | `localFile` | Mark the scenarios you test the requirements with, so the transcript shows each one under its requirement and `end` can judge it. |
 | `sf_start` | `login` | Start a browser session logged into Lightning as the owner of an sf CLI alias, ending that session first if open. |
 | `sf_login_as` | `login` | Become another user for this whole session (needs Login As enabled). |
-| `sf_whoami` | `read` | The user Id the page runs as, app (the Lightning app the page is in) and apps (the Lightning apps this user can open: label, developerName, console); app null and appReason when they cannot be read. |
+| `sf_whoami` | `read` | The user Id the page runs as, app (the Lightning app the page is in) and apps (the Lightning apps this user can open: label, developerName, console); app null and appReason when they cannot be read ... |
 | `sf_open_record` | `readSideEffect` | Open a record page and wait until it has loaded. |
 | `sf_open_tab` | `readSideEffect` | Open a custom tab by its API name or its label (a Visualforce, Lightning component or web tab), as the App Launcher would. |
 | `sf_open_list` | `readSideEffect` | Open an object's list view by its API name (DeveloperName), or the object home when listView is left out. |
@@ -678,7 +678,7 @@ A tool error carries a `code`, and its message starts with that code. This table
 | `APP_NOT_OPENED` | 1 | `session.js` | {name} did not open in {...} s: the page shows app {...} at {...} |
 | `APP_UNAVAILABLE` | 1 | `session.js` | {name} is not a Lightning app this user can open |
 | `AUTH_UNREADABLE` | 1 | `session.js` | {alias} has auth, but it could not be read (keychain or file access); try sf org display -o {alias} |
-| `BAD_ARGS` | 43 | `access.js`, `act.js`, `checks.js`, `combinations.js`, `deploy.js`, `form.js`, `improvements.js`, `layer.js`, `list.js`, `lwc.js`, `nav.js`, `navmap.js`, `replay.js`, `server.js`, `watch.js` | give a name ("" for an unnamed icon button), a text, or a row for a role alone |
+| `BAD_ARGS` | 44 | `access.js`, `act.js`, `checks.js`, `combinations.js`, `deploy.js`, `form.js`, `improvements.js`, `layer.js`, `list.js`, `lwc.js`, `nav.js`, `navmap.js`, `replay.js`, `server.js`, `watch.js` | give a name ("" for an unnamed icon button), a text, or a row for a role alone |
 | `BUDGET_SPENT` | 1 | `server.js` | this session used its budget of {led.budget} tool calls: end an open scenario with a reason that starts "not tested:", then call sf_end |
 | `CANCELLED` | 2 | `server.js` | the caller cancelled sf_start, so {id} was closed |
 | `CLICK_MISSED` | 1 | `act.js` | "{...}" took the press, but the release did not reach it, so no click did: {why} |
@@ -719,7 +719,7 @@ A tool error carries a `code`, and its message starts with that code. This table
 | `NO_DISPLAY` | 1 | `session.js` | headed: true needs a display, and this host has none; start without headed, or run where a window can open |
 | `NO_DOWNLOAD` | 1 | `act.js` | "{...}" started no download |
 | `NO_FORM` | 1 | `server.js` | call sf_edit_record, sf_edit_inline or sf_create_record first |
-| `NO_HIGHLIGHTS` | 1 | `nav.js` | {recordId}'s page showed no Highlights Panel and no error card within {timeout} ms: a slow page, or a page with no panel (the record tools need one) |
+| `NO_HIGHLIGHTS` | 1 | `nav.js` | {recordId}'s page drew no record page and no error card within {timeout} ms: a slow page, or an object the user cannot read |
 | `NO_MAP` | 1 | `server.js` | call sf_map_feature first |
 | `NO_PERSONA_USER` | 1 | `validity.js` | no active user with profile {profile} has exactly these perm sets: {...} |
 | `NO_SESSION` | 3 | `server.js` | call sf_start first |
@@ -737,7 +737,7 @@ A tool error carries a `code`, and its message starts with that code. This table
 | `ROW_NOT_FOUND` | 2 | `act.js`, `list.js` | {count} of {of} rows contain "{row}" |
 | `ROW_STILL_SHOWN` | 1 | `list.js` | {recordId} is deleted but its row is still in the list |
 | `SAVE_UNCONFIRMED` | 6 | `form.js` | the dialog still shows "Review the errors on this page." with no error listed, and did not close within {timeout} ms of the Save |
-| `SEARCH_FAILED` | 2 | `nav.js` | searching for "{text}" did not open the results page |
+| `SEARCH_FAILED` | 3 | `nav.js` | searching for "{text}" did not open the results page |
 | `SEARCH_NOT_APPLIED` | 1 | `list.js` | the search box holds "{box}", not "{text}" |
 | `SELECTION_MISMATCH` | 2 | `list.js` | the status line counts {x.selected} selected, not {n} |
 | `SESSION_REPLACED` | 1 | `server.js` | another sf_start or sf_end on {id} ran while this one started, so this browser was closed |

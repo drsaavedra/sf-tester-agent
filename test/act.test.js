@@ -6,7 +6,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { session, act, modal, api, lwc, nav, AT } = require('..');
-const { auth, env, skip, probe, account, stamp, localPage } = require('./helpers');
+const { auth, env, skip, record, probe, account, stamp, localPage } = require('./helpers');
 
 test('act', { skip, timeout: 300_000 }, async (t) => {
   const s = await session.start(await auth(env.org));
@@ -255,6 +255,110 @@ test('modal.find takes an open aria-modal dialog over a later non-modal one, and
   assert.equal(await (await modal.find({ page })).getAttribute('aria-label'), 'App Launcher');
   await page.evaluate(() => document.getElementById('m').remove());
   assert.equal(await (await modal.find({ page }, { timeout: 2_000 })).getAttribute('aria-label'), 'SF UI Utility');
+});
+
+// No org: LightningAlert and LightningConfirm draw role="alertdialog", not dialog, so find and open missed them (F-fixtures-4).
+test('modal.find and modal.open take an alertdialog, over a later non-modal dialog too, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent(`<main></main><section role="alertdialog" aria-modal="true" aria-label="SFUIC Alert"><div class="slds-modal__content">SFUIC alert message</div><button>OK</button></section>
+    <footer><div role="dialog" aria-label="SF UI Utility"><input aria-label="Utility note"></div></footer>`);
+  assert.equal(await (await modal.find({ page }, { timeout: 2_000, body: true })).getAttribute('aria-label'), 'SFUIC Alert');
+  await page.setContent('<section role="alertdialog" aria-label="SFUIC Confirm"><button>OK</button><button>Cancel</button></section>');
+  assert.equal(await (await modal.open({ page }, { timeout: 500 })).getAttribute('aria-label'), 'SFUIC Confirm');
+});
+
+// No org: a dialog the page hides because a newer one opened over it may come later in the DOM than the shown one (R7);
+// an aria-modal dialog under aria-hidden still beats a shown non-modal one (a utility panel on an Aura template page).
+test('modal.find takes a shown dialog over a later one under aria-hidden, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent(`<section role="alertdialog" aria-modal="true" aria-label="Front"><button>OK</button></section>
+    <div aria-hidden="true"><div role="dialog" aria-modal="true" aria-label="Back"><input aria-label="Name"></div></div>`);
+  const m = await modal.find({ page }, { timeout: 2_000 });
+  assert.equal(await m.getAttribute('aria-label'), 'Front');
+  assert.equal(m.hiddenBy, undefined);
+  await page.setContent(`<div aria-hidden="true"><div role="dialog" aria-modal="true" aria-label="Drawn"><input aria-label="Name"></div></div>
+    <footer><div role="dialog" aria-label="SF UI Utility"><input aria-label="Utility note"></div></footer>`);
+  assert.equal(await (await modal.find({ page }, { timeout: 2_000 })).getAttribute('aria-label'), 'Drawn');
+});
+
+// No org: a second stacked panel on an Aura template page sets aria-hidden on div.viewport, which holds both dialogs
+// (F-fixtures-26). find still takes the drawn dialog, a click reaches inside it, and read gives its text and the hider.
+test('modal.find, act.click and modal.read reach a drawn dialog under aria-hidden, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent(`<div class="viewport" aria-hidden="true"><main>Record page</main>
+    <div role="dialog" aria-modal="true" aria-label="Shell" class="slds-modal"></div>
+    <div role="dialog" aria-modal="true" aria-label="New SFUIC Aura" class="slds-modal"><h2>New SFUIC Aura</h2>
+      <div class="slds-modal__content"><input aria-label="Aura Name">
+        <label for="code"><abbr title="required" aria-hidden="true">*</abbr>Aura Code</label><input id="code" required>
+        <div role="group" aria-labelledby="story"><span id="story"><abbr title="required" aria-hidden="true">*</abbr>Aura Story</span><div role="toolbar"><button>Bold</button></div><div class="read" style="min-height:40px">Tell it</div></div>
+      </div><button onclick="this.textContent='Cancelled'">Cancel</button></div></div>
+    <div role="dialog" aria-label="Hidden copy" style="display:none"><input></div>`);
+  const m = await modal.find({ page }, { timeout: 2_000, body: true });
+  assert.equal(await m.getAttribute('aria-label'), 'New SFUIC Aura');
+  assert.equal(m.hiddenBy, '<div class="viewport">');
+  const r = await modal.read(m, (l) => l.ariaSnapshot());
+  assert.equal(r.hiddenBy, '<div class="viewport">');
+  assert.match(r.text, /New SFUIC Aura/);
+  // A required box's aria-hidden "*" leads its name under includeHidden (R4): fill by the label still finds it.
+  await act.fill(m, { name: 'Aura Code', value: 'A-1', timeout: 2_000 });
+  assert.equal(await page.locator('#code').inputValue(), 'A-1');
+  await page.evaluate(() => document.querySelector('#story ~ .read').addEventListener('click', (e) => { e.target.outerHTML = '<div role="textbox" aria-label="Aura Story" contenteditable="true" style="min-height:40px" oninput="window.typed = this.textContent"></div>'; }));
+  await act.fill(m, { name: 'Aura Story', value: 'Once', timeout: 2_000 });
+  assert.equal(await page.evaluate(() => window.typed), 'Once');
+  await act.click(m, { name: 'Cancel', timeout: 2_000 });
+  assert.equal(await m.getByText('Cancelled').count(), 1);
+  await m.evaluate((d) => { d.innerHTML += '<button title="Cancel and close" onclick="this.closest(\'[role=dialog]\').remove()">Cancel and close</button>'; });
+  await modal.close(m, { timeout: 2_000 });
+  assert.equal(await page.getByText('New SFUIC Aura').count(), 0, 'closed');
+  // Control: a dialog in the accessibility tree is read by its snapshot and carries no hiddenBy.
+  await page.setContent('<div role="dialog" aria-modal="true" aria-label="Plain"><input aria-label="Name"></div>');
+  const plain = await modal.find({ page }, { timeout: 2_000 });
+  assert.equal(plain.hiddenBy, undefined);
+  assert.match((await modal.read(plain, (l) => l.ariaSnapshot())).snapshot, /textbox "Name"/);
+});
+
+// The repro on the component fixture: the second force:editRecord or force:createRecord panel on the Aura template
+// record page draws under an aria-hidden div.viewport, so getByRole('dialog') finds none (F-fixtures-26).
+test('modal.find reads and clicks in the Edit dialog an Aura template record page hides', { skip, timeout: 300_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const app = await session.openApp(s, 'SfUiC_Aura_Home').catch((e) => { if (e.code === 'APP_UNAVAILABLE') return null; throw e; });
+  if (!app) return t.skip('the org has no test/fixture-components app SfUiC_Aura_Home');
+  const name = `BREAK fix 38 aura ${stamp()}`;
+  const id = await record(s, t, 'SfUiC_Aura__c', { Name: name });
+  for (const button of ['force:createRecord', 'force:editRecord']) {
+    await nav.openRecord(s, id);
+    await act.waitFor(s.page, { text: 'force:recordSave', timeout: 20_000 });
+    await act.click(s.page, { name: button });
+    await s.page.waitForTimeout(2_000); // the platform sets aria-hidden on div.viewport about a second after the panels open
+    const m = await modal.find(s, { timeout: 10_000, body: true });
+    if (button === 'force:createRecord') { await s.page.keyboard.press('Escape'); continue; } // the first panel opens unhidden
+    assert.equal(m.hiddenBy, '<div class="viewport">', 'control: the page hides this dialog from assistive tech');
+    assert.equal(await s.page.getByRole('dialog').count(), 0, 'control: no dialog in the accessibility tree');
+    assert.match((await modal.read(m, (l) => l.ariaSnapshot())).text, new RegExp(`Edit ${name}`));
+    await act.fill(m, { name: 'Aura Name', value: `${name} edited` }); // required, so named "*Aura Name" there (R4); Cancel drops it
+    const handle = await m.elementHandle();
+    await act.click(m, { name: 'Cancel' });
+    await handle.waitForElementState('hidden', { timeout: 10_000 });
+  }
+});
+
+// The repro on the component fixture: LightningAlert and LightningConfirm on the Aura Calls tab, read and closed as modals.
+test('modal.open reads a LightningAlert and a LightningConfirm, and a click inside closes each', { skip, timeout: 300_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const app = await session.openApp(s, 'SfUiC_App').catch((e) => { if (e.code === 'APP_UNAVAILABLE') return null; throw e; });
+  if (!app) return t.skip('the org has no test/fixture-components app SfUiC_App');
+  await nav.openTab(s, 'SfUiC_Aura_Calls');
+  for (const [button, text, close] of [['SFUIC Open Alert', 'SFUIC alert message', 'OK'], ['SFUIC Open Confirm', 'SFUIC confirm message', 'Cancel']]) {
+    await act.click(s.page, { name: button });
+    const m = await modal.open(s, { timeout: 5_000, body: true });
+    assert.ok(m, `${button}: no dialog found`);
+    await m.getByText(text).waitFor({ timeout: 5_000 });
+    await act.click(m, { name: close });
+    await m.waitFor({ state: 'hidden', timeout: 10_000 }); // it fades out over about a second
+    assert.equal(await modal.open(s, { timeout: 0 }), null, `${button}: still open after ${close}`);
+  }
 });
 
 // No org: a click that starts a download (a file preview's Download) saves it and says what came down.
@@ -859,6 +963,112 @@ test('act hover, no org', async (t) => {
   });
 });
 
+// No org: the clip card's label holds its hidden hover card, so the label's text is its own plus the card's (F-flow-21).
+test('hover by text reaches a label that holds a hidden hover card, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent(`<style>.card{display:none} .host:hover .card{display:block}</style>
+    <span class="host">Shipment<span class="card">Hover card: three parcels, one pallet</span></span><p>Shipment details</p>`);
+  const body = page.locator('body');
+  const { layer } = require('..');
+  assert.equal((await layer.measure(body, { selector: '.card' })).rendered, 0);
+  await act.hover(body, { text: 'Shipment', timeout: 1_000 });
+  assert.equal((await layer.measure(body, { selector: '.card' })).rendered, 1, 'the mouse is on the label, so its card opens');
+  await act.hover(body, { text: 'Shipment details', timeout: 1_000 }); // a plain exact text still aims at its own element
+  assert.equal((await layer.measure(body, { selector: '.card' })).rendered, 0);
+  await assert.rejects(act.hover(body, { text: 'Shipmen', timeout: 1_000 }), (e) => e.code === 'NOT_FOUND'); // still exact
+});
+
+// No org: a row named by a text across two cells ("Todo 60"), as the error's rows print it (F-flow-27).
+test('row text that crosses a cell boundary finds its one row, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  const tr = (n, kind, score) => `<tr><td>Item ${n}</td><td>${kind}</td><td>${score}</td><td><input type=checkbox aria-label="Select Item ${n}"></td></tr>`;
+  await page.setContent(`<table>${tr(1, 'Todo', 6)}${tr(2, 'Todo', 60)}${tr(3, 'Done', 60)}</table>`);
+  const checked = () => page.$$eval('input', (els) => els.map((e) => e.checked));
+  await act.click(page, { role: 'checkbox', row: 'Todo 60', timeout: 1_000 });
+  assert.deepEqual(await checked(), [false, true, false]);
+  await act.hover(page, { role: 'checkbox', row: 'todo  60', timeout: 1_000 }); // case and spaces as before
+  await act.click(page, { role: 'checkbox', row: 'Item 2Todo', timeout: 1_000 }); // the cells run together still match
+  assert.deepEqual(await checked(), [false, false, false]);
+  await assert.rejects(act.click(page, { role: 'checkbox', row: 'Todo 6', timeout: 500 }),
+    (e) => e.code === 'AMBIGUOUS_ROW' && /2 of 3 rows/.test(e.message) && e.evidence.rows[1] === 'Item 2 Todo 60');
+  await assert.rejects(act.click(page, { role: 'checkbox', row: 'Todo 61', timeout: 500 }), (e) => e.code === 'ROW_NOT_FOUND');
+});
+
+// No org: an SVG row has no innerText; it no longer stops the marking, so a text across two cells after it is found (R12).
+test('an SVG row before a table row does not stop the row text across cells, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent('<svg><g role="row"><text>chart</text></g></svg><table><tr><td>Item 2</td><td>Todo</td><td>60</td>'
+    + '<td><input type=checkbox aria-label="Select Item 2"></td></tr></table>');
+  await act.click(page, { role: 'checkbox', row: 'Todo 60', timeout: 1_000 });
+  assert.equal(await page.$eval('input', (e) => e.checked), true);
+  // A page error in the marking is that error, not ROW_NOT_FOUND with no cause.
+  await page.$eval('tr', (e) => Object.defineProperty(e, 'innerText', { get() { throw new Error('row read broke'); } }));
+  await assert.rejects(act.click(page, { role: 'checkbox', row: 'Todo 60', timeout: 500 }), /row read broke/);
+});
+
+// No org: sf_on_top and sf_measure aim with includeHidden, which adds aria-hidden text to a name: a column header's
+// hidden sort label, a required box's asterisk. The name the page shows still finds them (F-fixtures-11, -21).
+test('with includeHidden, a name the page shows finds its element, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent(`<table><thead><tr><th scope="col">SFUIC Email<span aria-hidden="true">Sort</span></th><th scope="col">SFUIC Amount</th></tr></thead>
+    <tr><td><a href="#">Email two@example.com</a></td><td>$250.00</td></tr></table>
+    <label for="n"><abbr title="required" aria-hidden="true">*</abbr>Name</label><input id="n" required>
+    <div aria-hidden="true"><button>Behind</button></div>`);
+  const { layer } = require('..');
+  const hidden = { timeout: 1_000, includeHidden: true };
+  const at = (o) => act.resolve(page, { ...hidden, ...o }).then((l) => l.evaluate((e) => e.localName));
+  assert.equal(await at({ role: 'link', name: 'Email two@example.com', row: 'two@example.com', column: 'SFUIC Email' }), 'a');
+  assert.equal(await at({ role: 'textbox', name: 'Name' }), 'input');
+  assert.equal(await at({ role: 'button', name: 'Behind' }), 'button', 'an aria-hidden area still resolves');
+  assert.equal((await layer.onTop(page, { text: '$250.00', row: 'two@example.com', column: 'SFUIC Amount', timeout: 1_000 })).visible, 1);
+  await assert.rejects(act.resolve(page, { ...hidden, role: 'textbox', name: 'Nam' }), (e) => e.code === 'NOT_FOUND'); // still exact
+});
+
+// No org: two tables share a column label; the row names one table, so its own header is the column (F-fixtures-12).
+test('a column label shared by two tables is the one in the row\'s table, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent(`<table role="treegrid"><thead><tr><th scope="col">SFUIC Name</th><th scope="col">SFUIC Amount</th></tr></thead>
+    <tr><td>SFUIC Row One</td><td>$100.00</td></tr></table>
+    <table><thead><tr><th scope="col">SFUIC Note</th><th scope="col">SFUIC Name</th><th scope="col">SFUIC Amount</th></tr></thead>
+    <tr><td>$250.00</td><td>SFUIC Row Two</td><td><button>$250.00</button></td></tr></table>`);
+  const at = (o) => act.resolve(page, { timeout: 1_000, ...o }).then((l) => l.evaluate((e) => e.outerHTML));
+  assert.equal(await at({ text: '$250.00', row: 'SFUIC Row Two', column: 'SFUIC Amount' }), '<button>$250.00</button>');
+  assert.equal(await at({ text: '$100.00', row: 'SFUIC Row One', column: 'SFUIC Amount' }), '<td>$100.00</td>');
+  await act.hover(page, { role: 'button', name: '$250.00', row: 'SFUIC Row Two', column: 'SFUIC Amount', timeout: 1_000 });
+  // With no row, nothing names a table: the shared label is still AMBIGUOUS.
+  await assert.rejects(act.resolve(page, { text: '$250.00', column: 'SFUIC Amount', timeout: 500 }), (e) => e.code === 'AMBIGUOUS' && /2 columnheaders/.test(e.message));
+});
+
+// No org: the target is the cell under the column itself, aimed by its own role (F-fixtures-22, a chart's table).
+test('a cell aimed by its own role with row and column is that cell, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.setContent(`<table><tr><th scope="col">Date</th><th scope="col">New</th><th scope="col">Total</th></tr>
+    <tr><th scope="row">Jul 12</th><td>3</td><td>8</td></tr><tr><th scope="row">Jul 13</th><td>12</td><td>39</td></tr></table>
+    <div role="grid"><div role="row"><span role="columnheader">Part</span><span role="columnheader">Stock</span></div>
+    <div role="row"><span role="rowheader">Washer</span><span role="gridcell"><button>2</button></span></div></div>`);
+  const at = (o) => act.resolve(page, { timeout: 1_000, ...o }).then((l) => l.evaluate((e) => e.outerHTML));
+  assert.equal(await at({ role: 'cell', name: '39', row: 'Jul 13', column: 'Total' }), '<td>39</td>');
+  assert.equal(await at({ role: 'rowheader', name: 'Washer', row: 'Washer', column: 'Part' }), '<span role="rowheader">Washer</span>');
+  assert.equal(await at({ role: 'gridcell', name: '2', row: 'Washer', column: 'Stock' }), '<span role="gridcell"><button>2</button></span>');
+  // What the cell holds is still found below it, and a cell of another name is still a miss.
+  assert.equal(await at({ role: 'button', name: '2', row: 'Washer', column: 'Stock' }), '<button>2</button>');
+  await assert.rejects(act.resolve(page, { role: 'cell', name: '12', row: 'Jul 13', column: 'Total', timeout: 500 }), (e) => e.code === 'NOT_FOUND');
+  await act.hover(page, { role: 'cell', name: '39', row: 'Jul 13', column: 'Total', timeout: 1_000 });
+});
+
+// The repro on the component fixture: the Aura page's tree grid and datatable both have "SFUIC Amount".
+test('a column label shared by a tree grid and a datatable aims in the row\'s table', { skip, timeout: 300_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const app = await session.openApp(s, 'SfUiC_App').catch((e) => { if (e.code === 'APP_UNAVAILABLE') return null; throw e; });
+  if (!app) return t.skip('the org has no test/fixture-components app SfUiC_App');
+  await nav.openTab(s, 'SfUiC_Aura_Nav');
+  // The currency symbol is the org's locale ("$250.00", "₱250.00"), so the amount is matched without it.
+  const aim = { text: /250\.00/, row: 'SFUIC Row Two', column: 'SFUIC Amount', timeout: 15_000 };
+  assert.match(await (await act.resolve(s.page, aim)).innerText(), /^\D*250\.00$/);
+  await act.hover(s.page, aim);
+});
+
 // No org: a validation line that collapses on blur moves the button up between press and release, as on the
 // fixture's Check code, so no click reaches it; a click that lands and then moves its own button is not a miss.
 test('a click whose target moved before the release is TARGET_MOVED; one that lands and moves is not', { timeout: 30_000 }, async (t) => {
@@ -1265,6 +1475,27 @@ test('fill on a flow screen is VALUE_NOT_SET for a date or time the component dr
   await act.fill(main, { role: 'spinbutton', name: 'SFUIC Currency', value: '1000' }); // control
 });
 
+// F-flow-3, F-fixtures-5: a select a Lightning component renders (flow picklist, multi-select, Aura lightning:select)
+// listed no options, so every value was VALUE_NOT_FOUND with options [].
+test('fill chooses an option in a native select that a Lightning component renders', { skip, timeout: 180_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const tab = (label) => nav.openTab(s, label).catch((e) => { if (e.code === 'TAB_UNAVAILABLE') return null; throw e; });
+  const flow = await tab('SFUIC Screens');
+  if (!flow) return t.skip('the org has no test/fixture-components flow tab SFUIC Screens');
+  await act.click(flow.main, { role: 'checkbox', name: 'SFUIC Checkbox' });
+  await act.click(flow.main, { name: 'Next' });
+  await act.waitFor(flow.main, { text: 'Flow: Picklist', timeout: 30_000 });
+  await act.fill(flow.main, { role: 'combobox', name: 'SFUIC Picklist', value: 'SFUIC Two' });
+  await act.fill(flow.main, { role: 'listbox', name: 'SFUIC Multi Pick', value: 'SFUIC Two' });
+  await assert.rejects(act.fill(flow.main, { role: 'combobox', name: 'SFUIC Picklist', value: 'SFUIC Nine' }), // a miss still names the options
+    (e) => e.code === 'VALUE_NOT_FOUND' && e.evidence.options.includes('SFUIC Three'));
+  const aura = await tab('SFUIC Aura Inputs');
+  if (!aura) return t.skip('the org has no test/fixture-components tab SFUIC Aura Inputs');
+  await act.fill(aura.main, { role: 'combobox', name: 'SFUIC Select', value: 'SFUIC Blue' });
+  await act.waitFor(aura.main, { text: 'Select: blue', timeout: 10_000 });
+});
+
 // No org: fill selects, then types, so a colour box fills, a box sees one input event (no empty one first), and a
 // box that locks on its first input event still takes the typed value (a clear first left it blank).
 test('fill replaces a value with one input event, a colour box included, no org', { timeout: 30_000 }, async (t) => {
@@ -1330,6 +1561,26 @@ test('waitFor does not take text on an off-stage carousel slide as shown, no org
   await act.waitFor(body, { text: 'Slide Three', timeout: 500 });
 });
 
+// No org: a label and its value in two block elements (F-fixtures-16), which the snapshot prints as one text line.
+test('waitFor sees a text that spans two block elements, as the snapshot prints it, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  const code = (p) => p.then(() => null, (x) => x?.code ?? String(x));
+  const body = page.locator('body');
+  await page.setContent('<main><div><div>Stage</div><div>Working</div></div><p>Other text</p></main>');
+  assert.match(await body.ariaSnapshot(), /- text: Stage Working/); // the snapshot's own line
+  await act.waitFor(body, { text: 'Stage Working', timeout: 500 });
+  assert.equal((await act.waitFor(body, { any: [{ text: 'Stage Working' }, { text: 'Other text' }], timeout: 500 })).matched.index, 0);
+  assert.equal(await code(act.waitFor(body, { text: 'Stage Working', gone: true, timeout: 500 })), 'TIMEOUT');
+  // Controls: two inline spans read "StageWorking", a hidden value and a box collapsed to nothing are not shown.
+  await page.setContent('<main><span>Stage</span><span>Working</span></main>');
+  assert.equal(await code(act.waitFor(body, { text: 'Stage Working', timeout: 500 })), 'TIMEOUT');
+  await page.setContent('<main><div><div>Stage</div><div style="display:none">Working</div></div></main>');
+  assert.equal(await code(act.waitFor(body, { text: 'Stage Working', timeout: 500 })), 'TIMEOUT');
+  assert.equal((await act.waitFor(body, { text: 'Stage Working', gone: true, timeout: 500 })).neverSeen, true);
+  await page.setContent('<main><div style="height:0;overflow:hidden"><div>Stage</div><div>Working</div></div></main>');
+  assert.equal(await code(act.waitFor(body, { text: 'Stage Working', timeout: 500 })), 'TIMEOUT');
+});
+
 // No org: an SLDS assistive label (1x1, margin -1px) sits just outside its overflow:hidden box, as the App Launcher's
 // search label does; it had nothing a stage could cut, so it stays shown as it was before the carousel rule.
 test('waitFor still takes an assistive label at the edge of an overflow:hidden box as shown, no org', { timeout: 30_000 }, async (t) => {
@@ -1388,4 +1639,110 @@ test('a click missed by a pattern name keeps the pattern in its evidence, no org
   const miss = await act.click(page, { name: /^Show (\d+ )?more actions$/, timeout: 500 }).then(() => null, (x) => x);
   assert.equal(miss?.code, 'NOT_FOUND', String(miss));
   assert.equal(JSON.parse(JSON.stringify(miss.evidence)).name, '/^Show (\\d+ )?more actions$/');
+});
+
+// An LWC ShowToastEvent with messageData never reaches the window as force:showToast: Lightning renders the toast
+// itself, so the recorder reads it off the page. A plain one still comes once, from its force:showToast.
+test('toasts records an LWC toast that carries messageData', { skip, timeout: 180_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const tab = await nav.openTab(s, 'SFUIC Panel').catch((e) => { if (e.code === 'TAB_UNAVAILABLE') return null; throw e; });
+  if (!tab) return t.skip('the org has no test/fixture-components tab SFUIC Panel');
+  const seen = async () => (await act.toasts(s.page, { timeout: 4_000 })).map(({ type, title, message }) => ({ type, title, message }));
+  await act.click(tab.main, { name: 'Toast with link' });
+  const r = await act.waitFor(tab.main, { any: [{ toast: 'link' }, { text: 'SFUIC link toast' }], timeout: 4_000 });
+  assert.equal(r.matched.index, 0, JSON.stringify(r));
+  assert.deepEqual(await seen(), [{ type: 'success', title: 'SFUIC link toast', message: 'Open SFUIC Shapes' }]);
+  await act.click(tab.main, { name: 'Toast success' });
+  await new Promise((done) => setTimeout(done, 2_000)); // a second copy, read off the page, would come after the event
+  assert.deepEqual(await seen(), [{ type: 'success', title: 'SFUIC success toast', message: 'A success toast' }]);
+});
+
+// No org: the same two shapes on a local page, the toast markup as Lightning renders it.
+test('toasts reads a rendered toast that no force:showToast announced, once, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.goto(`data:text/html,${encodeURIComponent('<main><c-panel></c-panel></main>')}`);
+  const raise = (title, event) => page.evaluate(([x, e]) => {
+    document.querySelector('c-panel').dispatchEvent(new CustomEvent('lightning__showtoast', { detail: { label: x }, bubbles: true, composed: true }));
+    if (e) window.dispatchEvent(new CustomEvent('force:showToast', { detail: { data: { type: 'info', title: x, message: 'From the event' } } }));
+    setTimeout(() => document.body.insertAdjacentHTML('beforeend', `<div data-key="success" class="forceToastMessage"><div class="toastTitle">${x}</div>
+      <span class="toastMessage">Open <a href="#"><div>SFUIC  Shapes</div></a></span></div>`), 300);
+  }, [title, event]);
+  await act.armToasts(page);
+  await raise('Linked', false);
+  assert.deepEqual((await act.toasts(page, { timeout: 2_000 })).map(({ type, title, message }) => ({ type, title, message })),
+    [{ type: 'success', title: 'Linked', message: 'Open SFUIC Shapes' }]);
+  await act.armToasts(page);
+  await raise('Plain', true);
+  await new Promise((done) => setTimeout(done, 1_000));
+  assert.deepEqual((await act.toasts(page)).map(({ type, title, message }) => ({ type, title, message })),
+    [{ type: 'info', title: 'Plain', message: 'From the event' }]);
+});
+
+// F-cascade-34: the favorites star's toast is a template whose last entry has no label; it read "...  undefined".
+test('toasts records the favorites star toast as the page shows it', { skip, timeout: 180_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const Name = `BREAK fix favorite ${stamp()}`;
+  await nav.openRecord(s, await probe(s, t, { Name }));
+  await act.click(s.page.locator('body'), { name: 'Add favorite' });
+  try {
+    const seen = await act.toasts(s.page);
+    assert.deepEqual(seen.map((x) => x.message), [`"${Name}" was added to your favorites.`], JSON.stringify(seen));
+  } finally {
+    await act.click(s.page.locator('body'), { name: 'Remove favorite' });
+  }
+});
+
+// No org, F-cascade-34: a template entry with no label, or no entry at all, fills as nothing, not "undefined".
+test('toasts fills a template entry with no label as nothing, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.goto(`data:text/html,${encodeURIComponent('<main></main>')}`);
+  const raise = (messageTemplate, messageTemplateData) => page.evaluate(([m, d]) => window.dispatchEvent(new CustomEvent('force:showToast',
+    { detail: { type: 'success', messageTemplate: m, messageTemplateData: d } })), [messageTemplate, messageTemplateData]);
+  await act.armToasts(page);
+  await raise('"{0}" was added to your favorites.  {1}', [{ label: 'Alpha' }, { url: '/x' }]);
+  await raise('"{0}" was added to your favorites.  {1}', ['Beta']);
+  await raise('{0} of {1} saved', [2, { label: 'three' }]);
+  assert.deepEqual((await act.toasts(page)).map((x) => x.message),
+    ['"Alpha" was added to your favorites.', '"Beta" was added to your favorites.', '2 of three saved']);
+});
+
+// A lightning/toast toast fires no force:showToast and no .forceToastMessage: it renders as a lightning-toast inside
+// lightning-toastContainer's shadow, so the recorder reads it there. A sticky one still on screen is not read again.
+test('toasts records a toast shown with the lightning/toast module', { skip, timeout: 180_000 }, async (t) => {
+  const s = await session.start(await auth(env.org));
+  t.after(() => session.end(s));
+  const tab = await nav.openTab(s, 'SfUiC_Modules').catch((e) => { if (e.code === 'TAB_UNAVAILABLE') return null; throw e; });
+  if (!tab) return t.skip('the org has no test/fixture-components tab SfUiC_Modules');
+  const seen = async () => (await act.toasts(s.page, { timeout: 4_000 })).map(({ type, title, message }) => ({ type, title, message }));
+  await act.click(tab.main, { name: 'SFUIC Show Sticky Toast' });
+  assert.deepEqual(await seen(), [{ type: 'warning', title: 'SFUIC Sticky Toast 1', message: 'SFUIC sticky toast' }]);
+  await act.click(tab.main, { name: 'SFUIC Show Toast' });
+  const r = await act.waitFor(tab.main, { any: [{ toast: 'SFUIC Toast 2' }, { text: 'never on this page' }], timeout: 4_000 });
+  assert.equal(r.matched.index, 0, JSON.stringify(r));
+  assert.deepEqual(await seen(), [{ type: 'success', title: 'SFUIC Toast 2', message: 'SFUIC lightning/toast message' }]);
+});
+
+// No org: the same shape on a local page, lightning-toast in the container in the overlay container, as Lightning nests it.
+test('toasts reads a lightning/toast toast in its container, once, no org', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  await page.goto(`data:text/html,${encodeURIComponent('<main><c-modules></c-modules></main><lightning-overlay-container></lightning-overlay-container>')}`);
+  await act.armToasts(page);
+  await page.evaluate(() => {
+    document.querySelector('c-modules').dispatchEvent(new CustomEvent('lightning__showtoast',
+      { detail: { label: 'Sticky', message: 'It stays', variant: 'warning', mode: 'sticky' }, bubbles: true, composed: true }));
+    setTimeout(() => {
+      const toast = document.createElement('lightning-toast');
+      toast.attachShadow({ mode: 'open' }).innerHTML = `<div role="alert"><div class="slds-notify slds-notify_toast slds-theme_warning">
+        <div class="slds-notify__content"><h2 class="slds-text-heading_small"><slot>Sticky</slot></h2><slot name="message">It  stays</slot>
+        <span class="slds-assistive-text">Press Command + F6 to navigate to the next toast notification or focusable region.</span></div></div></div>`;
+      const box = document.createElement('lightning-toast-container');
+      box.attachShadow({ mode: 'open' }).append(toast);
+      document.querySelector('lightning-overlay-container').attachShadow({ mode: 'open' }).append(box);
+    }, 300);
+  });
+  await new Promise((done) => setTimeout(done, 1_000)); // a second copy would come from a later look
+  assert.deepEqual((await act.toasts(page, { timeout: 2_000 })).map(({ type, title, message }) => ({ type, title, message })),
+    [{ type: 'warning', title: 'Sticky', message: 'It stays' }]);
 });
