@@ -2186,7 +2186,7 @@ test('a footer with no such button says it is missing, no org', { timeout: 30_00
 });
 
 // No org, the delta's row 12: an enabled button that takes no click (a cover over it) is TIMEOUT with disabled false;
-// a click error that is no timeout (two Cancels) keeps its own error.
+// two Cancels end AMBIGUOUS naming both (F23), not Playwright's raw strict-mode error.
 test('a covered and a doubled footer button each keep what happened, no org', { timeout: 30_000 }, async (t) => {
   const { localPage } = require('./helpers');
   const page = await localPage(t);
@@ -2194,7 +2194,7 @@ test('a covered and a doubled footer button each keep what happened, no org', { 
   await page.setContent('<div role="dialog" aria-label="Edit"><input aria-label="Subject"><button>Cancel</button></div><div style="position:fixed;inset:0;z-index:9"></div>');
   await assert.rejects(form.cancel(f), (e) => e.code === 'TIMEOUT' && e.evidence.disabled === false);
   await page.setContent('<div role="dialog" aria-label="Edit"><input aria-label="Subject"><button>Cancel</button><button>Cancel</button></div>');
-  await assert.rejects(form.cancel(f), (e) => !e.code && /strict mode/.test(e.message));
+  await assert.rejects(form.cancel(f), (e) => e.code === 'AMBIGUOUS' && e.evidence.controls.length === 2 && e.evidence.controls.every((c) => c.label === 'Cancel'));
 });
 
 // No org: switchTo's wait for the switched object reads only a timeout as "did not switch"; a page that closed under it
