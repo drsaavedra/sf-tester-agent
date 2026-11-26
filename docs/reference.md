@@ -672,7 +672,7 @@ A tool error carries a `code`, and its message starts with that code. This table
 | `ACTION_NOT_AVAILABLE` | 7 | `action.js`, `form.js`, `nav.js` | no {label} action on this record as this user |
 | `ACTION_NOT_OPENED` | 1 | `list.js` | {button} opened no dialog and no page |
 | `ALREADY_REPLACED` | 1 | `combinations.js` | {...} was retired by {by.id}: run the remap again against that route, or leave this draft |
-| `AMBIGUOUS` | 8 | `act.js`, `action.js`, `discover.js`, `form.js`, `layer.js`, `nav.js`, `session.js` | {n} {label} buttons on this record |
+| `AMBIGUOUS` | 10 | `act.js`, `action.js`, `discover.js`, `form.js`, `layer.js`, `nav.js`, `session.js` | {n} {label} buttons on this record |
 | `AMBIGUOUS_ROW` | 2 | `act.js`, `list.js` | {count} of {of} rows contain "{row}" |
 | `API_ERROR` | 7 | `api.js`, `errors.js`, `session.js`, `verify.js` | {path} answered {res.status} |
 | `APP_NOT_OPENED` | 1 | `session.js` | {name} did not open in {...} s: the page shows app {...} at {...} |
@@ -711,7 +711,7 @@ A tool error carries a `code`, and its message starts with that code. This table
 | `NOT_ON_PAGE` | 4 | `lwc.js` | {lwcApiName} is not placed on {page} and no component showing now renders it; a parent on a closed tab is not searched, so open the parent first (sf_lwc_read it) |
 | `NOT_RECORDING` | 1 | `server.js` | call sf_apex start first |
 | `NOT_SAVED` | 3 | `list.js` | "{all}" did not tick |
-| `NOT_SEARCHABLE_YET` | 1 | `form.js` | {field.label}: this user reads record {value} ("{name}"), but its search, made again for up to 60 s, listed no record, only its full search ({full}); a record another user made can take about a minute to be searchable |
+| `NOT_SEARCHABLE_YET` | 2 | `form.js` | {field.label}: this user reads record {value} ("{name}"), but its search, made again for up to 60 s, listed no record, only its full search ({full}); a record another user made can take about a minute to be searchable |
 | `NOT_TABLE` | 1 | `list.js` | the list shows as {display}, not as a Table: show it with sf_list display Table first |
 | `NOT_WATCHING` | 1 | `watch.js` | no watch on this page: sf_watch start first, or the page loaded since it started (a load ends a watch) |
 | `NO_AUTH` | 1 | `session.js` | no sf CLI alias or username {alias} has auth here; check sf alias list |
