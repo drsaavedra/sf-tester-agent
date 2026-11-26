@@ -261,6 +261,7 @@ async function search(s, text, { timeout = 60_000 } = {}) {
   await box.first().fill(String(text));
   await box.first().press('Enter');
   // A search from a results page redraws it in place (F-flow-20): the marked old results leaving is the redraw (R10).
+  // Measured on new terms sharing a record, standard and console app: the mark left 35-208 ms after it was set (D2).
   // Only unmarked does it wait for "We searched for", which a natural-language results page never prints.
   if (old) await s.page.locator('[data-sf-tester-old]').waitFor({ state: 'detached', timeout }).catch(() => {
     throw new SfUiError('SEARCH_FAILED', `the results page for "${text}" was not redrawn: the old results are still on it`, { text, url: s.page.url() });
