@@ -398,7 +398,8 @@ test('createRecord ends AMBIGUOUS on two New controls and presses neither, no or
   t.mock.method(nav, 'openList', async () => {});
   t.mock.method(require('../src/discover'), 'formModel', async () => ({ fields: [] }));
   t.mock.method(api, 'call', async () => ({ createable: true, label: 'Task', recordTypeInfos: {} }));
-  const ambiguous = (e) => e.code === 'AMBIGUOUS' && e.evidence.controls.length === 2 && e.evidence.controls.every((c) => /^New/.test(c.label));
+  // The message sends the tester to BLOCKED, not to sf_click: a New pressed that way leaves no form to set or save.
+  const ambiguous = (e) => e.code === 'AMBIGUOUS' && e.evidence.controls.length === 2 && e.evidence.controls.every((c) => /^New/.test(c.label)) && /end BLOCKED and name both controls/.test(e.message) && !/press the one meant/.test(e.message);
   const pressed = () => page.locator('[data-pressed]').count();
   await page.setContent(`<main><button aria-haspopup="true" onclick="document.querySelectorAll('[role=menu]').forEach((m) => { m.hidden = false; })">Show 2 more actions</button></main>
     <div role="menu" hidden><div role="menuitem" ${by('one')}>New</div></div><div role="menu" hidden><div role="menuitem" ${by('two')}>New</div></div>`);

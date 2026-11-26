@@ -78,7 +78,7 @@ async function createRecord(s, objectApiName, { recordType, timeout = 30_000 } =
   const pressNew = async ({ exact, named }) => {
     const pick = (await exact.count()) ? exact : named;
     const n = await pick.count();
-    if (n > 1) throw new SfUiError('AMBIGUOUS', `the ${objectApiName} home shows ${n} New controls, so the press would be a guess: press the one meant with sf_click`, { objectApiName, controls: await controlsOf(pick) });
+    if (n > 1) throw new SfUiError('AMBIGUOUS', `the ${objectApiName} home shows ${n} New controls, so the press would be a guess. No tool opens this form from one of them (a New pressed with sf_click leaves no form for sf_set_fields or sf_save), so end BLOCKED and name both controls`, { objectApiName, controls: await controlsOf(pick) });
     return pick.first().click({ timeout });
   };
   const button = news(main, 'button');
