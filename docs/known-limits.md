@@ -12,7 +12,7 @@ The 93 findings have these classes: 13 false green, 39 false red, 19 unclear err
 - 38 findings are in 29 limits.
 - 5 fix-list entries came after the break run: 4 from a time zone test and 1 about `sf_api` queries.
 
-The fix list thus has 47 entries. This preview corrects 16 entries. 31 entries are open.
+The fix list thus has 47 entries. This preview corrects 44 entries. It corrects 3 entries in part: F37, F38 and F39.
 
 How to read the classes and the ids:
 
@@ -22,50 +22,20 @@ How to read the classes and the ids:
 
 ## Open: a verdict can be wrong
 
-Each row is one open fix-list entry. An entry that has two classes is in the table of its worst class.
+Each row is the open case of a fix-list entry that this preview corrects in part. The section "Fixed in this preview" gives the cases that are corrected.
 
-### False green (4 entries)
-
-The fix list gives these four entries the class false red. Each entry also names a false green, thus they are in this table.
+### False green (1 entry)
 
 | Id | Tool | Case | Effect |
 |---|---|---|---|
-| F4 | `sf_toasts`, and the `toast` condition and `toasts` list of `sf_wait` | A component shows a toast with the `lightning/toast` module (`Toast.show`). | The toast list is empty and the `toast` condition does not match. A check for no error toast can give a PASS. The run did not do that check: the entry names it by inference. A check that a toast showed gives a FAIL. |
-| F11 | `sf_wait` | A label and its value are in two block elements, and the snapshot prints them as one `text:` line. Examples are `lightning:recordForm` in view mode, `lightning:outputField` and `lightning:fileCard`. | A wait with `gone: true` passes while the page shows the text. A wait for the text ends in `TIMEOUT`. |
-| F37 | `sf_modal`, and `inModal` on `sf_click`, `sf_fill`, `sf_wait`, `sf_hover`, `sf_on_top` and `sf_measure` | A `LightningAlert` or a `LightningConfirm` covers the page. | `sf_modal` answers `{"open":false}`. A check that expects no dialog gives a PASS. A call with `inModal` ends in `LOCATOR_TIMEOUT` after 30 s. |
-| F38 | `sf_modal`, `sf_click` with `inModal`, `sf_page_snapshot` | The standard New or Edit dialog opens on a record page that has a custom Aura template (`lightning:recordHomeTemplate`). | `sf_modal` answers `{"open":false}` while the dialog shows. A check that expects no dialog gives a PASS. A click with `inModal` ends in `LOCATOR_TIMEOUT` after 30 s. `sf_page_snapshot` returns only `- status`. |
+| F37 | `sf_on_top`, `sf_launch_action` | A `LightningAlert` or a `LightningConfirm` covers the page. | `sf_on_top` answers `modalOpen: false`, thus a check that expects no dialog gives a PASS. `sf_launch_action` does not return a dialog of this type. Both effects come from the code: no test did them. |
 
-### False red (27 entries)
+### False red (2 entries)
 
 | Id | Tool | Case | Effect |
 |---|---|---|---|
-| F2 | `sf_fill` | A Picklist or a Multi-Select Picklist on a flow screen, or an Aura `lightning:select`, is a native select in a Lightning component. | `VALUE_NOT_FOUND` with `"options":[]`, but the page has the option. |
-| F3 | `sf_toasts`, and the `toast` condition of `sf_wait` | An LWC sends a `ShowToastEvent` that has `messageData`, for example a message template with a link. | The toast list is empty and the `toast` condition does not match. A check that a toast showed gives a FAIL. |
-| F5 | `sf_toasts`, and the `toasts` list of `sf_wait`, `sf_save` and `sf_launch_action` | A toast has a message template, and one entry of its data has no label. An example is the toast of the favorites star. | The message ends in "undefined", which the page does not show. A check of the full message gives a FAIL. |
-| F6 | `sf_hover`. `sf_click`, `sf_on_top` and `sf_measure` use the same text aim. | A label holds a hidden child element, for example a hover card that uses only CSS. | `NOT_FOUND: 0 elements with text "<label>"`, but the snapshot shows the text. No tool can open the hover card. |
-| F7 | `sf_click`, `sf_hover`. `sf_fill`, `sf_measure` and `sf_on_top` aim with `row` in the same way. | The `row` text goes across two cells of one table row. | `ROW_NOT_FOUND`, but the row is on the page. |
-| F8 | `sf_on_top`, `sf_measure` | You aim at a cell of an Aura `lightning:datatable` with `column`. Or you aim by name at a `lightning-input` or a `lightning-textarea` that has `required`. | `NOT_FOUND` after 10 s, but the page shows the column header or the input. |
-| F9 | `sf_hover`, `sf_click`, `sf_fill` | Two tables on one page have the same column label, and the `row` text names one table. | `AMBIGUOUS: 2 columnheaders named "<label>"`. Workaround: aim without `column`. |
-| F10 | `sf_measure`, `sf_hover`. `sf_click`, `sf_on_top` and `sf_fill` aim with `column` in the same way. | You aim at a table cell by its role (`cell`, `gridcell` or `rowheader`) with `row` and `column`. | `NOT_FOUND`, but the snapshot in the error shows the cell. The same aim with `text`, or without `column`, finds the cell. |
-| F14 | `sf_set_fields`, and the `missing` list of `sf_edit_record` | A standard lookup is on a Dynamic Forms record page. The model has the label "Account ID" and the form has the label "Account Name". | `FIELD_NOT_SHOWN`, but the form shows the lookup. |
-| F15 | `sf_set_fields`, `sf_assert_field`, and the `missing` list of `sf_edit_record` | A custom Address field is on a Dynamic Forms record page. The model has the label "City" and the form has the label "<field> (City)". | `FIELD_NOT_SHOWN` for each part of the address, but the form and the record page show the part. |
-| F18 | `sf_set_fields`, and the `missing` list of `sf_create_record` and `sf_edit_record` | A Rich Text Area is on the New form or the Edit form of a page layout. | `FIELD_NOT_SHOWN`, but the form has the editor. The editor box is not in the page until a click starts it. |
-| F19 | `sf_set_fields`, `sf_assert_field`, and the `missing` list of `sf_create_record` and `sf_edit_inline` | A Geolocation field is on a form or on a record page. | `FIELD_NOT_SHOWN` for the Latitude and the Longitude, but the form and the record page show them. |
-| F20 | `sf_edit_inline`, `sf_assert_field` | The compound Name of a Contact is on a Dynamic Forms record page. | `sf_edit_inline` gives `ACTION_NOT_AVAILABLE: no "Edit Full Name" pencil`. `sf_assert_field` gives `FIELD_VALUE_MISMATCH` for Name and `FIELD_NOT_SHOWN` for First Name. |
-| F21 | `sf_create_record`, `sf_set_fields` | You open the New dialog of an object whose record page uses Dynamic Forms. | `FIELD_NOT_ON_FORM` for a field that the dialog shows. The model can also list a field as editable that the dialog does not show. |
-| F23 | `sf_assert_field` | A Text Area or a Text Area (Long) holds more than one line. | `FIELD_VALUE_MISMATCH`. The API value has CRLF line ends, and the page read drops a blank line. |
-| F24 | `sf_assert_field` | A Number field holds 1,000 or more, or the field is a Percent. You assert with `via: "ui"` or `via: "both"`. | `FIELD_VALUE_MISMATCH`. The page shows "12,345" or "25%", and the API gives no display value. The same assert with `via: "api"` passes. |
-| F25 | `sf_assert_field` | A field has help text. You assert with `via: "ui"` or `via: "both"`. | `FIELD_VALUE_MISMATCH`. The tool reads the text of the help icon, "Help <label>", as a part of the value. |
-| F26 | `sf_assert_field` | You assert Owner or Created By with `via: "ui"` or `via: "both"`. | `FIELD_VALUE_MISMATCH`. The page value holds the text "Change Owner", or the label and the date of Created By. |
-| F27 | `sf_assert_field` | You assert a part of a standard compound Address, for example Billing City, with `via: "ui"` or `via: "both"`. | `FIELD_NOT_SHOWN` after 17 s, but the record page shows the address. |
-| F28 | `sf_assert_field` | You assert a checkbox with the text that the page shows, "True" or "False". | `FIELD_VALUE_MISMATCH`, and the error shows two equal strings. The boolean value passes. |
-| F29 | `sf_assert_field` | You assert a multi-select picklist with the values in a different sequence from that of the picklist. | `FIELD_VALUE_MISMATCH`, but the record holds the same set of values. |
-| F31 | `sf_search` | You call `sf_search` a second time from the search results page. | `ACTION_NOT_AVAILABLE: the header search box did not open` after 31 s. |
-| F32 | `sf_open_record`. `sf_launch_action`, `sf_click` and `sf_lwc_read` open a record through it when they get a `recordId`. | The record page has no Highlights Panel. | `NO_HIGHLIGHTS` after 60 s, but the record page is open. |
-| F34 | `sf_on_top`, `sf_measure` | A `position: fixed` dropdown is in a modal that scrolls. An example is the calendar of a date picker in a New or Edit dialog. | `visible: 0` with a `clippedBy` value, but the page shows the full dropdown. An `expect` on `visible` gives `MEASURE_MISMATCH`. |
-| F39 | `sf_save`, `sf_assert_field` | A text value holds `&`, `<`, `>`, `'` or `"`. A Rich Text Area that you assert with `via: "api"` or `via: "both"` is the same case. | After a create, `sf_save` gives `CREATE_UNCONFIRMED`, but the record holds the typed value. `sf_assert_field` with `via: "api"` or `via: "both"` gives `FIELD_VALUE_MISMATCH`. |
-| F40 | `sf_lwc_read`, and each tool that you scope with `recordId` and `lwcApiName` | A custom Aura component is on a record page. | `NOT_ON_PAGE: <component> is on <page> but did not render` after 31 s, but the page shows the component. |
-| F41 | `sf_whoami` | `sf_launch_action` went through a Visualforce page and then came back to a record page. | `"app": null` with `"appReason": "the page shows no Lightning app"`, but the navigation bar shows the app. |
+| F38 | `sf_edit_record`, `sf_create_record` | The standard New or Edit dialog opens on a record page that has a custom Aura template (`lightning:recordHomeTemplate`). | The two tools do not find the dialog. This effect comes from the code review: no test did it. `sf_modal`, and `sf_click` and `sf_fill` with `inModal`, find the dialog. |
+| F39 | `sf_assert_field` | You assert a Rich Text Area with its plain text, with `via: "api"` or `via: "both"`. | `FIELD_VALUE_MISMATCH`. The API value is the stored markup, for example `<p>`. |
 
 ### Unclear error, crash or hang, component with no tool
 
@@ -73,7 +43,7 @@ No open fix-list entry has one of these three classes. The findings of these cla
 
 ## Limits
 
-A limit does not give a wrong PASS or a wrong FAIL about the page. The tool cannot do the work, or its error is not clear. There is no L13: that entry is F42, which this preview corrects.
+A limit does not give a wrong PASS or a wrong FAIL about the page. The tool cannot do the work, or its error is not clear. There is no L13: that entry is F42, which this preview corrects. L31 to L33 did not come from the break run: they came from the corrections.
 
 ### Forms and fields
 
@@ -88,7 +58,8 @@ A limit does not give a wrong PASS or a wrong FAIL about the page. The tool cann
 - **L9** `sf_fill`: `ui:inputRichText`. Its editor is in an iframe, and the tool answers `NOT_FOUND`. No other tool can put text into it.
 - **L10** `sf_upload_file`: the scope holds two file inputs. The tool answers `NO_SINGLE_FILE_INPUT: expected one file input in the scope, found 2`, and it has no `name` or `nth` argument. There is no workaround.
 - **L11** `sf_upload_file`: Upload Files on the Notes & Attachments related list. The tool gives a raw `LOCATOR_TIMEOUT` on the record page and `NO_SINGLE_FILE_INPUT ... found 0` on the View All page. No file is uploaded, and there is no workaround.
-- **L12** `sf_set_fields`: a Geolocation field in inline edit on a page that has a second pair of Latitude and Longitude boxes. The tool answers `UNEXPECTED: locator.selectText: Error: strict mode violation` and sets no field. `sf_save` then answers saved, but the record did not change. The correction of F19 will also correct this.
+- **L12** This preview corrects L12 together with F19: `sf_set_fields` sets a Geolocation field in inline edit on a page that has a second pair of Latitude and Longitude boxes. The check is a test that uses no org.
+- **L33** `sf_assert_field` with `via: "ui"` or `via: "both"`: a Number or a Percent for a user whose locale uses a comma as the decimal mark. The tool reads only the English separators, and the answer is `FIELD_VALUE_MISMATCH`. This limit comes from the code: no test did it. Use `via: "api"`.
 
 ### Lists
 
@@ -96,7 +67,7 @@ A limit does not give a wrong PASS or a wrong FAIL about the page. The tool cann
 
 ### Flows
 
-- **L15** `sf_click`: an option of a closed native select on a flow screen. The call gives a raw `LOCATOR_TIMEOUT` after 20 s. The tool for a select is `sf_fill`, which does not work on a flow screen picklist in this preview (F2).
+- **L15** `sf_click`: an option of a closed native select on a flow screen. The call gives a raw `LOCATOR_TIMEOUT` after 20 s. The tool for a select is `sf_fill`.
 - **L16** `sf_page_snapshot`, `sf_measure`: an image that did not load. The snapshot lists the `img`, and `sf_measure` gives `visible: 1` for the box of its alternative text. No tool says that the picture is missing, thus a check "the image shows" passes.
 - **L17** `sf_click`: a button below a spinner that stays. The call gives a raw `LOCATOR_TIMEOUT` after 10 s. `sf_page_snapshot` shows the cause: it marks the lines below the spinner as `covered`.
 
@@ -112,6 +83,7 @@ A limit does not give a wrong PASS or a wrong FAIL about the page. The tool cann
 - **L22** `sf_open_tab` goes to the URL of the tab. A page that set `lightning:unsavedChanges` does not show its dialog, and the unsaved state goes away with no message. Go away from the page with a click on a link or a button of the app.
 - **L23** `sf_click`, `sf_launch_action`: a link, a button or an action that opens a new browser tab or window. `sf_click` answers ok, and `sf_launch_action` answers `navigated: true` with the URL of the page that did not move. No tool reads or closes the new tab.
 - **L24** `sf_open_record`: a record of an object that the user cannot read. The tool waits 60 s and answers `NO_HIGHLIGHTS`, not `RECORD_UNAVAILABLE`. `sf_page_snapshot` after the error shows the text of the page.
+- **L31** `sf_search`: a search that Salesforce reads as a question and that finds no row, for example "accounts created today". The page shows no result row and no "no matches" text, and the tool answers `SEARCH_FAILED` after the full timeout. One measurement, on one org.
 
 ### Aura and base components
 
@@ -119,6 +91,7 @@ A limit does not give a wrong PASS or a wrong FAIL about the page. The tool cann
 - **L26** `sf_click`: a control that is not enabled. The call gives a raw `LOCATOR_TIMEOUT` after 10 s. The snapshot marks the control `[disabled]`: read the snapshot before the click.
 - **L27** A button in the page has the name of a button in the global header, for example the "Help" button of `lightning:helptext`. The answer is `AMBIGUOUS: 2 buttons named "Help"`, and its snapshot holds only one of them. Use `nth`.
 - **L28** Drag and drop. No tool takes a source and a target. The tools cannot do an HTML5 drag or change the width of a `lightning-datatable` column.
+- **L32** `sf_lwc_read`, and each tool that you scope with `recordId` and `lwcApiName`: a custom Aura component. An Aura component has no host element to scope by its name. The tool answers `BAD_ARGS` with the reason `auraComponent` in a maximum of 2 s. Aim at the control with its role and its name on the page.
 
 ### App Builder pages
 
@@ -130,16 +103,49 @@ A limit does not give a wrong PASS or a wrong FAIL about the page. The tool cann
 
 ## Fixed in this preview
 
+The entries are in the sequence of their numbers. Where a correction adds a wait, a new error or a limit, its entry says so.
+
 - **F1** `sf_fill` gives `VALUE_NOT_SET` when a date, time or number component does not keep the typed value.
+- **F2** `sf_fill` selects an option of a native select in a Lightning component: a Picklist or a Multi-Select Picklist on a flow screen, and an Aura `lightning:select`. `VALUE_NOT_FOUND` lists the options.
+- **F3** `sf_toasts` and the `toast` condition of `sf_wait` record the toast of a `ShowToastEvent` that has `messageData`.
+- **F4** `sf_toasts` and the `toast` condition of `sf_wait` record a toast that a component shows with the `lightning/toast` module (`Toast.show`).
+- **F5** A toast message does not end in "undefined" when one entry of its data has no label. If that entry is in the middle of the message, the message has two spaces there.
+- **F6** `sf_hover`, `sf_click`, `sf_on_top` and `sf_measure` find by `text` a label that holds a hidden child element, thus `sf_hover` can open a hover card that uses only CSS. For such a label, the call first waits until the aim timeout ends.
+- **F7** A `row` text that goes across two cells of one table row finds the row. `sf_list` finds such a row for its `select` and `massEdit` actions. `AMBIGUOUS_ROW` can now occur for a text that two rows hold in this way.
+- **F8** `sf_on_top` and `sf_measure` find a column header of an Aura `lightning:datatable`, and a `lightning-input` or a `lightning-textarea` that has `required`, by the name that the page shows. `AMBIGUOUS` can now occur when a shown name and a hidden name are the same.
+- **F9** With `row`, the tools look for `column` in the table of that row, thus two tables can have the same column label. Without `row`, the answer continues to be `AMBIGUOUS`.
+- **F10** The tools find a table cell by its role (`cell`, `gridcell` or `rowheader`) with `row` and `column`.
+- **F11** `sf_wait` finds a text of two or more words that is in two block elements, also with `gone: true` and with `any`.
 - **F12** On a page with Dynamic Actions, `sf_actions` lists the actions of the page, as its ribbon shows them. An action whose visibility rule uses a field that the user cannot read comes back as `shown: 'unknown'`.
-- **F13** On a Dynamic Forms page that shows the user no field, `sf_form_model` and `sf_edit_record` give an empty field list with the source `dynamicForms`. The New dialog of such a page is open as F21.
+- **F13** On a Dynamic Forms page that shows the user no field, `sf_form_model` and `sf_edit_record` give an empty field list with the source `dynamicForms`.
+- **F14** On a Dynamic Forms record page, the model gives a standard lookup the label of the form ("Account Name"), thus `sf_set_fields` finds it.
+- **F15** On a Dynamic Forms record page, the model gives each part of a custom Address the label of the form ("<field> (City)"). `sf_set_fields` sets the parts and `sf_assert_field` reads them.
 - **F16** `sf_cancel` gives `FORM_CLOSED` and names the New dialog that Save & New left open.
 - **F17** `sf_set_fields` refuses a Date/Time in the first pass of the hour that the time zone of the user repeats (`VALUE_NOT_SET`). It refuses a Date/Time with seconds (`INVALID_VALUE`).
+- **F18** `sf_set_fields` opens the editor of a Rich Text Area with a click and then types, on the New form and on the Edit form.
+- **F19** `sf_set_fields` sets the Latitude and the Longitude of a Geolocation field, and `sf_assert_field` reads each of them on the record page.
+- **F20** On a Dynamic Forms record page of a Contact, `sf_edit_inline` opens the compound Name from First Name. `sf_assert_field` passes on Name and on First Name with `via: "ui"`.
+- **F21** `sf_create_record` makes the model of the New dialog from the Dynamic Forms page, thus the model has the fields that the dialog shows.
 - **F22** `sf_assert_field` with `via: "ui"` gives `FIELD_NOT_SHOWN` on the first load after the user collapses the section. Each assert with `via: "ui"` or `via: "both"` now waits 1 s more.
+- **F23** `sf_assert_field` passes on a Text Area that holds more than one line, with LF or CRLF line ends. The page comparison reads a sequence of spaces or tabs as one space.
+- **F24** `sf_assert_field` passes on a Number of 1,000 or more and on a Percent with `via: "ui"` or `via: "both"`. You can give the value as `12345` or as the page shows it. L33 gives the limit.
+- **F25** `sf_assert_field` does not read the text of the help icon as a part of the value.
+- **F26** `sf_assert_field` passes on Owner and on Created By with `via: "ui"` or `via: "both"`, by the name of the user or by the id. Created Date and Last Modified Date give the date.
+- **F27** `sf_assert_field` finds a part of a compound Address, for example Billing City, in the address that the page shows. With `via: "ui"` it also reads the stored part, and the two must agree. Thus a value that is only the text of a different part gives `FIELD_VALUE_MISMATCH`.
+- **F28** `sf_assert_field` passes on a checkbox when the expected value is the text that the page shows, "True" or "False".
+- **F29** `sf_assert_field` and the read-back of `sf_save` compare a multi-select picklist as a set of values. The sequence of the values is not important.
 - **F30** `sf_search` returns the results page after it becomes stable, with the result row or with the no-results page.
+- **F31** A second `sf_search` from the search results page returns the new results. L31 gives the case that continues to fail.
+- **F32** `sf_open_record` opens a record page that has no Highlights Panel and answers `highlights: false`. Each time it opens such a page, it waits 5 s for the panel.
 - **F33** `sf_wait` does not count a text on an off-stage carousel slide as shown. `sf_on_top` did not change.
+- **F34** `sf_on_top` and `sf_measure` give the correct `visible` value for a `position: fixed` dropdown in a modal that scrolls.
 - **F35** `sf_launch_action` returns the Change Owner dialog and the Change Record Type dialog with their forms.
 - **F36** A `recordId` with no `lwcApiName` opens that record before the tool acts. A value that is not a record id gives `BAD_ARGS`. A `recordId` with `inModal` continues to act in the modal.
+- **F37** `sf_modal`, and the tools that take `inModal`, read a `LightningAlert` or a `LightningConfirm`, and a click in it closes it. The section "Open" gives the case that is not corrected.
+- **F38** `sf_modal`, and `sf_click` and `sf_fill` with `inModal`, find the standard New or Edit dialog on a record page that has a custom Aura template. When the page hides a dialog from assistive technology, `sf_modal` answers `hiddenBy` and the text of the dialog. `sf_launch_action` and the `mass` action of `sf_list` do the same. The section "Open" gives the case that is not corrected.
+- **F39** `sf_save` confirms a create, and `sf_assert_field` passes with `via: "api"` or `via: "both"`, for a text value that holds `&`, `<`, `>`, `'` or `"`. The section "Open" gives the case that is not corrected.
+- **F40** For a custom Aura component, `sf_lwc_read` and the tools that you scope with `recordId` and `lwcApiName` answer `BAD_ARGS`, not `NOT_ON_PAGE` after 31 s. L32 gives the limit.
+- **F41** After a Visualforce page, `sf_whoami` reads the app from the navigation bar, and `appReason` says so.
 - **F42** `sf_list` runs in a session that `sf_start` made with `session: "new"`.
 - **F43** `sf_set_fields` refuses `StartDateTime` or `EndDateTime` together with `IsAllDayEvent: true` (`INVALID_VALUE`). Thus `sf_set_fields` cannot set the date of an all-day Event: use `sf_fill` with the date text.
 - **F44** `sf_assert_field` with `via: "both"` passes on the Start or the End of an all-day Event that holds the expected value.
