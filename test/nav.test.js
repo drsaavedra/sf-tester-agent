@@ -244,6 +244,44 @@ test('search a natural-language term with no rows returns its empty results page
   assert.equal(await main.getByRole('rowheader').textContent(), 'hit my accounts');
 });
 
+// Step 74 (D1, R10 a), no org: a results page that redraws in place, with a stub switch `stuck` that stops the redraw.
+// In main, beside the results, an Aura error node `src/form.js` marked earlier keeps `data-sf-tester-old` for good.
+const redrawPage = `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main><div data-sf-tester-old>Aura error</div><section></section></main>
+    <script>
+      window.stuck = false;
+      const rows = (term) => '<table><tr><th role=rowheader>hit ' + term + '</th></tr></table>';
+      q.onkeydown = (e) => {
+        if (e.key !== 'Enter') return;
+        const term = q.value, main = document.querySelector('main section');
+        q.hidden = true;
+        document.querySelector('header button').setAttribute('aria-label', 'Search: ' + term);
+        if (location.hash) return window.stuck || setTimeout(() => { main.innerHTML = rows(term); }, 300);
+        location.hash = btoa(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop', term }));
+        main.innerHTML = rows(term);
+      };
+    </script></body></html>`;
+
+test('search again is not held by a form error mark, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: redrawPage }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  const main = await nav.search({ page }, 'BREAK mark one', { timeout: 3_000 });
+  await nav.search({ page }, 'BREAK mark two', { timeout: 3_000 });
+  assert.equal(await main.getByRole('rowheader').textContent(), 'hit BREAK mark two');
+});
+
+test('a search that fails from a results page leaves no search mark on it, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: redrawPage }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  await nav.search({ page }, 'BREAK stuck one', { timeout: 3_000 });
+  await page.evaluate(() => { window.stuck = true; });
+  await assert.rejects(nav.search({ page }, 'BREAK stuck two', { timeout: 1_000 }), { code: 'SEARCH_FAILED' });
+  assert.equal(await page.locator('main section [data-sf-tester-old]').count(), 0, 'the failed call left its mark');
+});
+
 // No org: the tab list as UI API serves it (test/nav-items.json), in two pages with the custom tabs on page 2, so a
 // missing nextPageUrl loop goes red. The page is a stub that knows which tab names exist.
 const items = require('./nav-items.json').navItems;

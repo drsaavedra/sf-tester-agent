@@ -257,16 +257,24 @@ async function search(s, text, { timeout = 60_000 } = {}) {
     .or(main.getByRole('heading', { name: 'No matching records' })).first();
   const again = isSearch(new URL(before));
   // On a results page the old rows already match settled: mark them, and wait for the redraw to drop them (R10).
-  const old = again && (await settled.count()) > 0 && await settled.evaluate((e) => e.setAttribute('data-sf-tester-old', '')).then(() => true, () => false);
-  await box.first().fill(String(text));
-  await box.first().press('Enter');
-  // A search from a results page redraws it in place (F-flow-20): the marked old results leaving is the redraw (R10).
-  // Measured on new terms sharing a record, standard and console app: the mark left 35-208 ms after it was set (D2).
+  // The mark's value is this call's own: form.js marks Aura errors with the same attribute, empty (D1).
+  const id = `search-${crypto.randomUUID()}`;
+  const marked = main.locator(`[data-sf-tester-old="${id}"]`);
+  const old = again && (await settled.count()) > 0 && await settled.evaluate((e, v) => e.setAttribute('data-sf-tester-old', v), id).then(() => true, () => false);
+  try {
+    await box.first().fill(String(text));
+    await box.first().press('Enter');
+    // A search from a results page redraws it in place (F-flow-20): the marked old results leaving is the redraw (R10).
+    // Measured on new terms sharing a record, standard and console app: the mark left 35-208 ms after it was set (D2).
+    if (old) await marked.waitFor({ state: 'detached', timeout }).catch(() => {
+      throw new SfUiError('SEARCH_FAILED', `the results page for "${text}" was not redrawn: the old results are still on it`, { text, url: s.page.url() });
+    });
+  } finally {
+    // A throw leaves the old results on the page: unmark them. A failed unmark means the page, and the mark, are gone.
+    if (old) await marked.evaluateAll((els) => els.forEach((e) => e.removeAttribute('data-sf-tester-old'))).catch(() => {});
+  }
   // Only unmarked does it wait for "We searched for", which a natural-language results page never prints.
-  if (old) await s.page.locator('[data-sf-tester-old]').waitFor({ state: 'detached', timeout }).catch(() => {
-    throw new SfUiError('SEARCH_FAILED', `the results page for "${text}" was not redrawn: the old results are still on it`, { text, url: s.page.url() });
-  });
-  else await (again
+  if (!old) await (again
     ? main.getByText(`We searched for "${text}"`).first().waitFor({ timeout })
     : s.page.waitForURL((u) => u.href !== before && isSearch(u), { timeout })
   ).catch(() => {
