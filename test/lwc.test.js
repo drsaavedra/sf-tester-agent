@@ -164,8 +164,8 @@ test('lwc.locate keeps one deadline and survives a Tooling error, no org', async
   assert.ok(took < 4_800, `took ${took} ms on a 4000 ms timeout`); // two budgets: 2000 + 1000 + 4000
   // A Tooling call that never answers is cut at the same deadline (its signal), not left to the transport's own limit.
   tooling = ({ signal } = {}) => new Promise((_, reject) => {
-    if (signal) signal.addEventListener('abort', () => reject(new Error('cut at the deadline')));
-    setTimeout(() => reject(new Error('never cut')), 8_000);
+    const late = setTimeout(() => reject(new Error('never cut')), 8_000);
+    if (signal) signal.addEventListener('abort', () => { clearTimeout(late); reject(new Error('cut at the deadline')); }, { once: true });
   });
   const hung = Date.now();
   await assert.rejects(lwc.locate({ page }, id, 'recordBanner', { timeout: 4_000 }), (e) => e.code === 'NOT_ON_PAGE' && e.evidence.auraCheckFailed === 'cut at the deadline');
