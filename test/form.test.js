@@ -510,7 +510,8 @@ test('a lookup with two records of the asked name is AMBIGUOUS, not the first, n
 });
 
 // No org: a record id types the name the API reads for it and picks the option whose data-value is that id, so a
-// twin of the name cannot make it AMBIGUOUS; an id no option carries is searched again, then NOT_SEARCHABLE_YET.
+// twin of the name cannot make it AMBIGUOUS; an id no option carries is searched again, then NOT_SEARCHABLE_YET,
+// only while a same-name twin is listed; with other names only it is VALUE_NOT_FOUND at once.
 test('a lookup given a record id picks the option with that id, no org', { timeout: 150_000 }, async (t) => {
   const { localPage } = require('./helpers');
   const page = await localPage(t);
