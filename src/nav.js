@@ -257,7 +257,7 @@ async function search(s, text, { timeout = 60_000 } = {}) {
   // main shows before its results: wait for a result row or the no-match text (F-flow-19).
   // A natural-language term with no rows prints only the heading "No matching records" (step 68).
   const settled = main.getByRole('rowheader').or(main.getByText(/find any matches/))
-    .or(main.getByRole('heading', { name: 'No matching records' })).first();
+    .or(main.getByRole('heading', { name: 'No matching records', exact: true })).first();
   const again = isSearch(new URL(before));
   // On a results page the old rows already match settled: mark them, and wait for the redraw to drop them (R10).
   // The mark's value is this call's own: form.js marks Aura errors with the same attribute, empty (D1).

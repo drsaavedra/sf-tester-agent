@@ -319,6 +319,27 @@ test('search gives up on a covered Search button by its deadline, no org', async
   assert.ok(Date.now() - started < 8_000, `took ${Date.now() - started} ms on a 3000 ms timeout`);
 });
 
+// No org: only the exact heading "No matching records" settles an empty page. A longer heading that holds the words
+// (one section of a page whose rows come 500 ms later) does not, so the rows are waited for.
+test('search does not settle on a heading that only holds "No matching records", no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main></main>
+    <script>
+      q.onkeydown = (e) => {
+        if (e.key !== 'Enter') return;
+        const main = document.querySelector('main');
+        location.hash = btoa(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop' }));
+        main.innerHTML = '<h2>No matching records in Contacts</h2>';
+        setTimeout(() => { main.innerHTML += '<table><tr><th role=rowheader>hit</th></tr></table>'; }, 500);
+      };
+    </script></body></html>` }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  const main = await nav.search({ page }, 'BREAK sections', { timeout: 5_000 });
+  assert.equal(await main.getByRole('rowheader').count(), 1, 'returned before the rows drew');
+});
+
 test('a search from an unmarked results page names why on its SEARCH_FAILED, no org', async (t) => {
   const page = await localPage(t);
   await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
