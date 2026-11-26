@@ -140,6 +140,30 @@ test('lwc.locate asks Tooling only for a host still hidden after 2 s, no org', a
   assert.equal(qs.length, 2);
 });
 
+// No org: the 2 s look, the Tooling call and the render wait share one timeout; a Tooling error does not fail the call.
+test('lwc.locate keeps one deadline and survives a Tooling error, no org', async (t) => {
+  const page = await localPage(t);
+  const { api } = require('..');
+  let tooling = async () => { throw new Error('INVALID_SESSION_ID'); };
+  t.mock.method(api, 'call', async () => tooling());
+  t.mock.method(nav, 'showsRecord', () => false);
+  t.mock.method(nav, 'openRecord', async () => {});
+  t.mock.method(discover, 'renderedPage', async () => 'Some_Page');
+  t.mock.method(discover, 'lwcOnPage', async () => ({ tag: 'c-record-banner', componentName: 'c:recordBanner', tabs: [] }));
+  const id = '001000000000001AAA';
+  await page.setContent('<main></main>');
+  await page.evaluate(() => setTimeout(() => { document.querySelector('main').innerHTML = '<c-record-banner>Banner</c-record-banner>'; }, 2_500));
+  const { host } = await lwc.locate({ page }, id, 'recordBanner', { timeout: 5_000 }); // paints after the Tooling error
+  assert.equal(await host.textContent(), 'Banner');
+  await page.setContent('<main></main>'); // never paints: the Tooling error is evidence on NOT_ON_PAGE
+  await assert.rejects(lwc.locate({ page }, id, 'recordBanner', { timeout: 4_000 }), (e) => e.code === 'NOT_ON_PAGE' && e.evidence.auraCheckFailed === 'INVALID_SESSION_ID');
+  tooling = async () => { await new Promise((r) => setTimeout(r, 1_000)); return { records: [] }; }; // a slow "not Aura"
+  const started = Date.now();
+  await assert.rejects(lwc.locate({ page }, id, 'recordBanner', { timeout: 4_000 }), (e) => e.code === 'NOT_ON_PAGE' && !('auraCheckFailed' in e.evidence));
+  const took = Date.now() - started;
+  assert.ok(took < 4_800, `took ${took} ms on a 4000 ms timeout`); // two budgets: 2000 + 1000 + 4000
+});
+
 // A managed package renders its components as <namespace>-<name> inside native shadow roots; the fixture org has
 // neither, so a local page builds that shape, with a decoy whose tag only ends the same way.
 test('lwc nested host in a namespace, no org', async (t) => {

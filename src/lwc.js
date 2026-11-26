@@ -19,14 +19,16 @@ async function locate(s, recordId, lwcApiName, { flexiPageApiName, timeout = 30_
   if (!place) return nested(s, page, lwcApiName, { timeout: Math.min(timeout, 10_000) }); // a mistyped name fails in 10 s
   await openTabs(s, place, { timeout });
   const host = s.page.locator(place.tag).locator('visible=true').first();
-  // Ask Tooling only for a host that has not painted in 2 s: most paint by then, and a Tooling error must not fail a render.
+  const end = Date.now() + timeout; // one budget for both waits and the Tooling call between them
+  // Ask Tooling only for a host that has not painted in 2 s: most paint by then. A Tooling error goes in the evidence, not the throw.
   const shown = await host.waitFor({ state: 'visible', timeout: Math.min(timeout, 2_000) }).then(() => true, (e) => { if (e.name !== 'TimeoutError') throw e; return false; });
-  if (!shown && (await isAura(s, place.componentName))) {
+  const aura = shown ? false : await isAura(s, place.componentName).catch((e) => e);
+  if (aura === true) {
     throw new SfUiError('BAD_ARGS', `${lwcApiName} is an Aura component: it renders no host to scope by its name, so aim at it without lwcApiName (role and name on the page)`, { reason: 'auraComponent', page, place });
   }
-  await host.waitFor({ state: 'visible', timeout }).catch((e) => {
+  await host.waitFor({ state: 'visible', timeout: Math.max(100, end - Date.now()) }).catch((e) => {
     if (e.name !== 'TimeoutError') throw e; // a closed page is not a hidden component
-    throw new SfUiError('NOT_ON_PAGE', `${lwcApiName} is on ${page} but did not render${ruleHint(place.visibilityRule)}`, { ...why('notRendered', place.visibilityRule), page, place });
+    throw new SfUiError('NOT_ON_PAGE', `${lwcApiName} is on ${page} but did not render${ruleHint(place.visibilityRule)}`, { ...why('notRendered', place.visibilityRule), page, place, ...(aura instanceof Error && { auraCheckFailed: aura.message }) });
   });
   return { host, foundBy: { via: 'flexiPage', page, tabs: place.tabs } };
 }
