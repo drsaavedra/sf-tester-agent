@@ -186,7 +186,7 @@ test('sf_screenshot refuses a path where a file exists, as a call and as a route
   assert.match((await answer('sf_run_route', { steps: [{ tool: 'sf_screenshot', args: { path: file } }] })).message, /step 0 sf_screenshot: a file already exists/);
   assert.equal(fs.readFileSync(file, 'utf8'), 'old', 'the old file is untouched');
   // Two steps on one new path: the second would meet the first's file mid-route, so the plan refuses it.
-  const twice = [`${file}.a.png`, `${file}.a.png`].map((p) => ({ tool: 'sf_screenshot', args: { path: p } }));
+  const twice = [`${file}.a.png`, path.join(path.dirname(file), '.', 'x', '..', `${path.basename(file)}.a.png`).replace(`${path.sep}old`, `${path.sep}.${path.sep}old`)].map((p) => ({ tool: 'sf_screenshot', args: { path: p } }));
   assert.match((await answer('sf_run_route', { steps: twice })).message, /step 1 sf_screenshot: step 0 already writes/);
   assert.equal((await answer('sf_screenshot', { path: `${file}.png` })).code, 'NO_SESSION', 'control: a new path reaches the session check');
 });

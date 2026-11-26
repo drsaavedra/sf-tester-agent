@@ -4,7 +4,7 @@
 // MCP server over sf-tester: browser sessions that outlive a tool call, so a Login As, an open form or an armed
 // recorder survives between calls. Results are compact JSON; coded errors come back as tool errors.
 const { AsyncLocalStorage } = require('node:async_hooks');
-const { isAbsolute, join } = require('node:path');
+const { isAbsolute, join, resolve } = require('node:path');
 const { existsSync } = require('node:fs');
 const { createHash } = require('node:crypto');
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
@@ -863,7 +863,8 @@ function planRoute(steps) {
     const ahead = [...JSON.stringify(own).matchAll(STEP_REF)].find((m) => Number(m[1]) >= i);
     if (ahead) throw new lib.SfUiError('BAD_ARGS', `step ${i} ${name}: ${ahead[0]} names a step not yet run`, { step: i, tool: name, ref: ahead[0] });
     try { stepLimits(name, parsed.data); } catch (e) { throw new lib.SfUiError(e.code, `step ${i} ${name}: ${e.message.replace(/^\w+: /, '')}`, { step: i, tool: name, ...e.evidence }); }
-    const shot = name === 'sf_screenshot' && parsed.data.path;
+    // One file under two spellings (/a/./b.png, or another case where the file system ignores case) is one path.
+    const shot = name === 'sf_screenshot' && parsed.data.path && ((p) => (process.platform === 'linux' ? p : p.toLowerCase()))(resolve(parsed.data.path));
     if (shot && shots.has(shot)) throw new lib.SfUiError('BAD_ARGS', `step ${i} ${name}: step ${shots.get(shot)} already writes ${shot}, and sf_screenshot never replaces a file`, { step: i, tool: name, path: shot });
     if (shot) shots.set(shot, i);
     return { name, run: h.run, args: parsed.data };
