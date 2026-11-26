@@ -118,13 +118,14 @@ function read(el, { hit = true, styles = [], textBox = false, withBox = false, c
   const area = (b) => Math.max(0, b.right - b.left) * Math.max(0, b.bottom - b.top);
   // b cut to the clipping ancestors from n up (not body or html), the first that cut it, and shut when a collapsed one
   // clips it (a closed accordion); an absolute or fixed box (out, el's own position) is not cut below its containing block.
-  // ponytail: transform, filter, perspective, contain and will-change make a fixed box's containing block, not other rules.
+  // ponytail: transform, filter, backdrop-filter, perspective, contain, content-visibility auto and will-change make a
+  // fixed box's containing block, not other rules (container-type is left out: unmeasured).
   const clipFrom = (n, b, out = null) => {
     let [by, shut] = [null, false];
     for (; n; n = up(n)) {
       if (n.nodeType !== 1 || n === document.body || n === document.documentElement) continue;
       const c = getComputedStyle(n);
-      const holds = c.transform !== 'none' || c.perspective !== 'none' || c.filter !== 'none' || /paint|layout|strict|content/.test(c.contain) || /transform|perspective|filter/.test(c.willChange);
+      const holds = c.transform !== 'none' || c.perspective !== 'none' || c.filter !== 'none' || c.backdropFilter !== 'none' || c.contentVisibility === 'auto' || /paint|layout|strict|content/.test(c.contain) || /transform|perspective|filter/.test(c.willChange);
       if (holds || (out === 'absolute' && c.position !== 'static')) out = null; // n is the containing block, so it clips
       if (out) continue; // a fixed calendar over a scrolling modal's edge (F-flow-16)
       if (['absolute', 'fixed'].includes(c.position)) out = c.position;

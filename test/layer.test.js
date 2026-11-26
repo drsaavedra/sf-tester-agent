@@ -689,3 +689,16 @@ test('a fixed or absolute dropdown is not clipped by an overflow box it escapes,
   const [pinned, pinnedBy] = await read('Pinned');
   assert.ok(pinned === 0.5 && pinnedBy, `control: a transformed box is a fixed box's containing block: ${pinned}`);
 });
+
+// No org (R14): backdrop-filter and content-visibility auto also make the containing block of a fixed box, so they clip it.
+test('a fixed box is clipped by a backdrop-filter or content-visibility auto ancestor, no org', async (t) => {
+  const page = await localPage(t);
+  await page.setViewportSize({ width: 1000, height: 600 });
+  const pop = (name) => `<div style="position:fixed;top:60px;left:10px;width:120px;height:80px"><button style="display:block;width:60px;height:30px;margin-top:25px">${name}</button></div>`;
+  const box = (left, style, name) => `<div style="position:absolute;top:100px;left:${left}px;width:250px;height:100px;overflow:hidden;${style}">${pop(name)}</div>`;
+  await page.setContent(box(20, 'backdrop-filter:blur(1px)', 'Blurred') + box(400, 'content-visibility:auto', 'Skipped') + box(700, '', 'Free'));
+  const read = async (name) => { const r = await layer.onTop(page.locator('body'), { name }); return [r.visible, !!r.clippedBy]; };
+  assert.deepEqual(await read('Blurred'), [0.5, true], 'backdrop-filter');
+  assert.deepEqual(await read('Skipped'), [0.5, true], 'content-visibility auto');
+  assert.deepEqual(await read('Free'), [1, false], 'control: a plain overflow box does not clip a fixed child');
+});
