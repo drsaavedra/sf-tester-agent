@@ -413,6 +413,31 @@ test('assert, no org: an empty part of an Address expected null passes via both 
   await assert.rejects(lib.assert.fieldValue({ page }, '001x', 'BillingState', null, { via: 'both' }), { code: 'FIELD_VALUE_MISMATCH' });
 });
 
+// D1, no org: via ui a part also needs its stored value, so City "Portland" does not pass on the street "1 Portland Ave".
+test('assert, no org: via ui a part of an Address must be the stored part, not any text of the Address', { timeout: 30_000 }, async (t) => {
+  const page = await localPage(t);
+  page.setDefaultTimeout(2_000);
+  t.mock.method(require('../src/nav'), 'openRecord', async () => {});
+  t.mock.method(require('../src/discover'), 'formModel', async () => ({ objectApiName: 'Account',
+    fields: ['Street', 'City', 'State'].map((p) => ({ apiName: `Billing${p}`, label: `Billing ${p}`, itemLabel: 'Billing Address', dataType: 'String' })) }));
+  const part = (apiName) => ({ apiName, label: apiName, dataType: 'String', compoundFieldName: 'BillingAddress' });
+  const info = { BillingAddress: { apiName: 'BillingAddress', label: 'Billing Address', dataType: 'Address' },
+    BillingStreet: part('BillingStreet'), BillingCity: part('BillingCity'), BillingState: part('BillingState') };
+  const stored = { BillingStreet: '1 Portland Ave', BillingCity: 'Seattle', BillingState: null };
+  t.mock.method(require('../src/api'), 'call', async (s, p) => (p.startsWith('/ui-api/object-info/') ? { fields: info }
+    : { fields: { [p.split('.').pop()]: { value: stored[p.split('.').pop()], displayValue: null } } }));
+  await page.setContent(`<div role="tablist"><button role="tab">Details</button></div><${A.layoutItem} field-label="Billing Address"><div>Billing Address</div>`
+    + `<a href="#"><div>1 Portland Ave</div><div>Seattle</div><div>USA</div></a><button>Edit Billing Address</button></${A.layoutItem}>`);
+  await assert.rejects(lib.assert.fieldValue({ page }, '001x', 'BillingCity', 'Portland', { via: 'ui' }),
+    (e) => e.code === 'FIELD_VALUE_MISMATCH' && /Portland Ave/.test(e.evidence.ui) && !('api' in e.evidence));
+  await lib.assert.fieldValue({ page }, '001x', 'BillingCity', 'Seattle', { via: 'ui' });
+  // An empty part has no text to find, so via ui it now rests on the stored value too (R1's via-ui half).
+  await lib.assert.fieldValue({ page }, '001x', 'BillingState', null, { via: 'ui' });
+  // Control: the page must still show the part; a stored value the page lacks is red.
+  stored.BillingCity = 'Portland';
+  await assert.rejects(lib.assert.fieldValue({ page }, '001x', 'BillingCity', 'Seattle', { via: 'ui' }), { code: 'FIELD_VALUE_MISMATCH' });
+});
+
 // No org: a lookup only a Dynamic Forms page places is not in the View model; object-info says it is a lookup.
 test('assert, no org: an off-layout lookup expected by its 15-char id matches the stored 18', async (t) => {
   const ID = 'a0BC1000004XyZ9MAK';

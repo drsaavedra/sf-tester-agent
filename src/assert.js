@@ -89,7 +89,7 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   // Via ui, a date or time given as ISO still needs the stored value and its display value to reach the page's text.
   const temporal = !!field && ['Date', 'DateTime', 'Time'].includes(field.dataType);
   let stored = null;
-  if (via !== 'ui' || temporal) {
+  if (via !== 'ui' || temporal || whole) {
     // A polymorphic lookup (a custom object's Owner) has a display value only when its Name is asked for.
     const optional = rel ? `${model.objectApiName}.${rel}.Id,${model.objectApiName}.${rel}.Name` : dayField ? `Event.IsAllDayEvent,Event.${dayField}` : '';
     const { fields } = await api.call(s, `/ui-api/records/${recordId}?fields=${model.objectApiName}.${apiName}${optional ? `&optionalFields=${optional}` : ''}`);
@@ -120,10 +120,10 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   // The page renders a run of spaces or tabs as one space.
   const spaced = (v) => v.replace(/[ \t]+/g, ' ');
   // A part is found inside its compound's text ("Suite 9, Oakland\n94607 CA"), between line breaks, commas or spaces.
-  // ponytail: a part that starts a longer one ("2 Break St" of "2 Break St\nSuite 9") passes via ui; via both catches it.
   const inWhole = () => want !== '' && new RegExp(`(^|[\\s,])${discover.escRe(spaced(want))}(?=$|[\\s,])`).test(spaced(result.ui));
-  // An empty part leaves no text in its compound to find, so via both it rests on the stored value.
-  const uiOk = !('ui' in result) || (whole ? (want === '' ? storedOk : inWhole()) : spaced(shown) === spaced(want)) || num(field.dataType, result.ui) === num(field.dataType, want)
+  // Any part's text can hold the value (City "Portland" in "1 Portland Ave"), so a part also needs its stored value.
+  // An empty part leaves no text to find, so it rests on the stored value alone.
+  const uiOk = !('ui' in result) || (whole ? storedOk && (want === '' || inWhole()) : spaced(shown) === spaced(want)) || num(field.dataType, result.ui) === num(field.dataType, want)
     || sameSet(result.ui)
     || (storedOk && ((stored.display != null && page === stored.display) || (dayDisplay != null && page === dayDisplay)));
   if (!apiOk || !uiOk) throw new SfUiError('FIELD_VALUE_MISMATCH', `${apiName} expected ${JSON.stringify(expected)}`, { expected, ...result });
