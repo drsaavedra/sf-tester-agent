@@ -305,7 +305,6 @@ test('search keeps one deadline across its waits, no org', async (t) => {
   assert.ok(Date.now() - start < 2_700, `took ${Date.now() - start} ms on a 2000 ms timeout`);
 });
 
-// Step 75 (D10, R10 b), no org: a results page with nothing on it before Enter cannot be marked; the SEARCH_FAILED says why.
 // No org: a results page whose old row refuses the mark. The call then waits as from an unmarked page, and its
 // SEARCH_FAILED names the failed mark.
 test('a search whose mark fails names that on its SEARCH_FAILED, no org', async (t) => {
@@ -355,6 +354,7 @@ test('search does not settle on a heading that only holds "No matching records",
   assert.equal(await main.getByRole('rowheader').count(), 1, 'returned before the rows drew');
 });
 
+// Step 75 (D10, R10 b), no org: a results page with nothing on it before Enter cannot be marked; the SEARCH_FAILED says why.
 test('a search from an unmarked results page names why on its SEARCH_FAILED, no org', async (t) => {
   const page = await localPage(t);
   await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
