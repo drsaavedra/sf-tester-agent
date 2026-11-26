@@ -242,7 +242,7 @@ async function openTab(s, tab, { timeout = 60_000 } = {}) {
 // One deadline for the whole call (D9): MCP SDK clients give up at 60 s, Claude Code's stdio default is 1e8 ms.
 async function search(s, text, { timeout = 60_000 } = {}) {
   const end = Date.now() + timeout;
-  const left = () => Math.max(1, end - Date.now());
+  const left = () => Math.max(100, end - Date.now()); // a floor, as lwc.locate has: 1 ms is under one protocol round trip
   await requireEnglish(s);
   const box = s.page.locator('input[placeholder="Search..."]').locator('visible=true');
   const button = s.page.getByRole('button', { name: /^Search(: .*)?$/ });
