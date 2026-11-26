@@ -337,12 +337,18 @@ async function press(page, { key }) {
   return { [AT]: { pressed: new Date().toISOString() } };
 }
 
+// A Rich Text Area's group: one of that name that holds a toolbar. form's shownOf counts it, openRich opens it (R13).
+function richGroup(scope, name) {
+  const byRole = rolesOf(Boolean(scope.hiddenBy)); // as resolve finds the textbox after
+  const page = typeof scope.page === 'function' ? scope.page() : scope; // a `has` locator is matched inside the group
+  return byRole(scope, 'group', { name, exact: true }).filter({ has: byRole(page, 'toolbar') });
+}
+
 // Clicks the area under a rich text editor's toolbar, which mounts its textbox; false when no one such group is named.
 async function openRich(scope, name, { timeout } = {}) {
-  const byRole = rolesOf(Boolean(scope.hiddenBy)); // as resolve finds the textbox after
-  const group = byRole(scope, 'group', { name, exact: true });
-  const toolbar = byRole(group, 'toolbar').first();
-  if ((await group.count()) !== 1 || !(await toolbar.count())) return false;
+  const group = richGroup(scope, name);
+  const toolbar = rolesOf(Boolean(scope.hiddenBy))(group, 'toolbar').first();
+  if ((await group.count()) !== 1) return false;
   await group.scrollIntoViewIfNeeded({ timeout });
   const [g, bar] = [await group.boundingBox(), await toolbar.boundingBox()];
   await group.click({ position: { x: 20, y: bar.y + bar.height - g.y + 15 }, timeout });
@@ -529,4 +535,4 @@ async function waitFor(scope, { text, gone = false, any, timeout = 30_000 } = {}
   throw new SfUiError('TIMEOUT', `none of ${what.join(', ')} within ${timeout} ms`, { conditions: conds, timeout, toasts: raised(page), snapshot: await snapshot(scope) });
 }
 
-module.exports = { near, click, hover, press, fill, openRich, replaceText, boxValue, readBack, waitFor, toasts, armToasts, recordToasts, raised, mainOf, snapshot, marked, cut, resolve, rowsOf };
+module.exports = { near, click, hover, press, fill, openRich, richGroup, replaceText, boxValue, readBack, waitFor, toasts, armToasts, recordToasts, raised, mainOf, snapshot, marked, cut, resolve, rowsOf };

@@ -5,7 +5,7 @@ const { SfUiError } = require('./errors');
 const nav = require('./nav');
 const discover = require('./discover');
 const api = require('./api');
-const { armToasts, raised, boxValue, readBack, replaceText, openRich } = require('./act');
+const { armToasts, raised, boxValue, readBack, replaceText, openRich, richGroup } = require('./act');
 const lwc = require('./lwc');
 const action = require('./action');
 const { requireEnglish } = require('./session');
@@ -237,7 +237,7 @@ async function switchTo(f, field, object) {
 // An Aura lookup (a Task's Name and Related To) shows its choice as a pill in a list "<label> - Current Selection: …".
 const pillOf = (f, field) => f.scope.getByRole('list', { name: new RegExp(`^${esc(field.label)} - Current Selection`) });
 // A Rich Text Area shows a group with a toolbar and no textbox until a click mounts its editor (F-cascade-3).
-const richOf = (f, field) => f.scope.getByRole('group', { name: field.label, exact: true }).filter({ has: f.s.page.getByRole('toolbar') });
+const richOf = (f, field) => richGroup(f.scope, field.label);
 const shownOf = (f, field) => (field.dataType === 'Reference' ? locate(f, field).or(pillOf(f, field))
   : field.dataType === 'TextArea' ? locate(f, field).or(richOf(f, field)) : locate(f, field));
 

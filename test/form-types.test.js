@@ -80,6 +80,20 @@ test('setFields, no org: a Rich Text Area not yet mounted is clicked open, then 
   assert.equal(f.set.Rich__c.rich, true);
 });
 
+// R13, no org: a second group of the same name with no toolbar (a section, a read view) does not stop the editor opening.
+test('setFields, no org: a Rich Text Area beside a same-named group with no toolbar is opened and typed', { timeout: 30_000 }, async (t) => {
+  const { localPage } = require('./helpers');
+  const page = await localPage(t);
+  await page.setContent(`<main><div role="group" aria-label="Rich"><span>section</span></div>
+    <div role="group" aria-label="Rich"><div role="toolbar" aria-label="Text Formatting"><button>Bold</button></div>
+    <lightning-formatted-rich-text style="display:block;min-height:40px"></lightning-formatted-rich-text></div></main><script>
+    document.querySelector('lightning-formatted-rich-text').addEventListener('click', (e) => e.target.outerHTML = '<div role="textbox" aria-label="Rich" contenteditable="true" style="min-height:40px"></div>');
+  </script>`);
+  const f = { s: { page }, scope: page.locator('main'), model: { fields: [{ apiName: 'Rich__c', label: 'Rich', dataType: 'TextArea', editable: true }] } };
+  await form.setFields(f, { Rich__c: 'BREAK rich text' });
+  assert.equal(await page.getByRole('textbox', { name: 'Rich' }).innerText(), 'BREAK rich text');
+});
+
 // F-cascade-17, F-flow-22, no org: a Geolocation draws group "Spot" with textboxes "Latitude" and "Longitude"; the
 // layout model names the parts "Spot (Latitude)", a Dynamic Forms model "Latitude", which a second pair makes ambiguous.
 test('setFields, no org: a Geolocation part is the Latitude or Longitude box of its group', { timeout: 30_000 }, async (t) => {
