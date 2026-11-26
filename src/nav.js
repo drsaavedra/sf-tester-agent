@@ -248,7 +248,7 @@ async function search(s, text, { timeout = 60_000 } = {}) {
   const button = s.page.getByRole('button', { name: /^Search(: .*)?$/ });
   for (const boxEnd = Math.min(Date.now() + 20_000, end); !(await box.count()); await s.page.waitForTimeout(1_000)) {
     if (Date.now() > boxEnd) throw new SfUiError('ACTION_NOT_AVAILABLE', 'the header search box did not open', { url: s.page.url() });
-    await button.click().catch(() => {});
+    await button.click({ timeout: Math.min(1_000, left()) }).catch(() => {}); // a button not there yet, or covered: the loop tries again
   }
   // Results open at /one/one.app#<base64 of {"componentDef":"forceSearch:searchPageDesktop",...}>.
   const isSearch = (u) => Buffer.from(u.hash.slice(1), 'base64').toString().includes('forceSearch');
@@ -269,8 +269,8 @@ async function search(s, text, { timeout = 60_000 } = {}) {
     .then(() => true, (e) => { notMarked = `the mark failed: ${e.message.split('\n')[0]}`; return false; });
   const failed = (message) => new SfUiError('SEARCH_FAILED', message, { text, url: s.page.url(), ...(notMarked && { notMarked }) });
   try {
-    await box.first().fill(String(text));
-    await box.first().press('Enter');
+    await box.first().fill(String(text), { timeout: left() });
+    await box.first().press('Enter', { timeout: left() });
     // A search from a results page redraws it in place (F-flow-20): the marked old results leaving is the redraw (R10).
     // Measured on new terms sharing a record, standard and console app: the mark left 35-208 ms after it was set (D2).
     if (old) await marked.waitFor({ state: 'detached', timeout: left() }).catch(() => {
