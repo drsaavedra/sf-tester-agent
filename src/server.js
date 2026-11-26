@@ -853,6 +853,7 @@ function stepLimits(name, { path, recordId, objectApiName, ...rest }) {
 }
 // Every step checked before any runs: a tool that may be a step, its arguments, its limits, no reference ahead of itself.
 function planRoute(steps) {
+  const shots = new Map(); // a screenshot path to the step that writes it: the file check cannot see a second step on it
   return steps.map(({ tool: name, args = {} }, i) => {
     const h = !NOT_A_STEP.includes(name) && (name === 'sf_verify_checks' ? verifyStep : handlers.get(name));
     if (!h) throw new lib.SfUiError('BAD_ARGS', `step ${i}: ${name} cannot be a route step`, { step: i, tool: name });
@@ -862,6 +863,9 @@ function planRoute(steps) {
     const ahead = [...JSON.stringify(own).matchAll(STEP_REF)].find((m) => Number(m[1]) >= i);
     if (ahead) throw new lib.SfUiError('BAD_ARGS', `step ${i} ${name}: ${ahead[0]} names a step not yet run`, { step: i, tool: name, ref: ahead[0] });
     try { stepLimits(name, parsed.data); } catch (e) { throw new lib.SfUiError(e.code, `step ${i} ${name}: ${e.message.replace(/^\w+: /, '')}`, { step: i, tool: name, ...e.evidence }); }
+    const shot = name === 'sf_screenshot' && parsed.data.path;
+    if (shot && shots.has(shot)) throw new lib.SfUiError('BAD_ARGS', `step ${i} ${name}: step ${shots.get(shot)} already writes ${shot}, and sf_screenshot never replaces a file`, { step: i, tool: name, path: shot });
+    if (shot) shots.set(shot, i);
     return { name, run: h.run, args: parsed.data };
   });
 }
