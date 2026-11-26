@@ -61,6 +61,8 @@ const sameInstant = (type, stored, want) => !!ISO[type] && typeof stored === 'st
   && instant(type, stored) === instant(type, want);
 // The page groups a number's digits (12,345) and adds a Percent's sign (25%); the UI API gives neither a display value.
 // ponytail: en-style separators only; a comma-decimal locale's page text reads as no number and stays red.
+// A multi-select value in one order: its ;-separated items trimmed and sorted, so picklist order does not count.
+const multiSet = (v) => String(v ?? '').split(';').map((x) => x.trim()).filter(Boolean).sort().join(';');
 const NUMERIC = ['Double', 'Int', 'Long', 'Percent'];
 const num = (type, v) => (NUMERIC.includes(type) && new RegExp(`^-?(\\d{1,3}(,\\d{3})+|\\d+)(\\.\\d+)?${type === 'Percent' ? '%?' : ''}$`).test(v)
   ? Number(v.replace(/[,%]/g, '')) : NaN);
@@ -104,8 +106,7 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   // A checkbox is true or false in the API and "True" or "False" on the page: either spelling names the value.
   const want = field && field.dataType === 'Boolean' ? typed.toLowerCase() : typed;
   // A multi-select is stored and shown in picklist order, so it matches as a set (as sf_save's read-back does).
-  const set = (v) => String(v ?? '').split(';').map((x) => x.trim()).filter(Boolean).sort().join(';');
-  const sameSet = (v) => !!field && field.dataType === 'MultiPicklist' && v != null && set(want) === set(v);
+  const sameSet = (v) => !!field && field.dataType === 'MultiPicklist' && v != null && multiSet(want) === multiSet(v);
   // A field off the View model (Dynamic Forms) has no known type, so a 15-char id may name its stored 18-char one.
   const storedOk = !!stored && (sameValue(want, stored.value, stored.display, { id: rel || !field, name: rel })
     || sameSet(stored.value) || sameSet(stored.display)
@@ -129,4 +130,4 @@ async function fieldValue(s, recordId, apiName, expected, { via = 'both' } = {})
   return result;
 }
 
-module.exports = { fieldValue, sameValue };
+module.exports = { fieldValue, sameValue, multiSet };

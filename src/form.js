@@ -9,7 +9,7 @@ const { armToasts, raised, boxValue, readBack, replaceText, openRich, richGroup 
 const lwc = require('./lwc');
 const action = require('./action');
 const { requireEnglish } = require('./session');
-const { sameValue } = require('./assert');
+const { sameValue, multiSet } = require('./assert');
 const { dateOk, instantOf } = require('./iso');
 const A = require('./anchors');
 
@@ -614,8 +614,7 @@ function stored(kind, typed, { value, displayValue }, name, scale) {
   }
   if (kind === 'DateTime') return value != null && instantOf(want) === instantOf(value); // the whole instant
   if (kind === 'Time') return String(value ?? '').slice(0, 5) === want;
-  const set = (v) => String(v ?? '').split(';').map((x) => x.trim()).filter(Boolean).sort().join(';');
-  if (kind === 'MultiPicklist') return set(want) === set(value) || (displayValue != null && set(want) === set(displayValue)); // labels, as setMulti picks
+  if (kind === 'MultiPicklist') return multiSet(want) === multiSet(value) || (displayValue != null && multiSet(want) === multiSet(displayValue)); // labels, as setMulti picks
   if (kind === 'Reference') return sameValue(want, value, name, { id: true, name: true });
   if (kind === 'Picklist') return sameValue(want, value, displayValue, { name: true }); // a label, or the API value
   // The org trims text at both ends and lowercases an email, so each compares in that form.
