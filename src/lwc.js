@@ -22,7 +22,7 @@ async function locate(s, recordId, lwcApiName, { flexiPageApiName, timeout = 30_
   const end = Date.now() + timeout; // one budget for both waits and the Tooling call between them
   // Ask Tooling only for a host that has not painted in 2 s: most paint by then. A Tooling error goes in the evidence, not the throw.
   const shown = await host.waitFor({ state: 'visible', timeout: Math.min(timeout, 2_000) }).then(() => true, (e) => { if (e.name !== 'TimeoutError') throw e; return false; });
-  const aura = shown ? false : await isAura(s, place.componentName).catch((e) => e);
+  const aura = shown ? false : await isAura(s, place.componentName, AbortSignal.timeout(Math.max(100, end - Date.now()))).catch((e) => e);
   if (aura === true) {
     throw new SfUiError('BAD_ARGS', `${lwcApiName} is an Aura component: it renders no host to scope by its name, so aim at it without lwcApiName (role and name on the page)`, { reason: 'auraComponent', page, place });
   }
@@ -36,10 +36,10 @@ async function locate(s, recordId, lwcApiName, { flexiPageApiName, timeout = 30_
 // An Aura bundle renders no tag of its name (and no class without CSS of its own), so a wait for its host never ends.
 // c is the org's own: no namespace, or its own one; an installed package's bundle of the same name is not it.
 const OWN = " AND (NamespacePrefix = null OR ManageableState NOT IN ('installed', 'installedEditable', 'deprecated', 'deprecatedEditable'))";
-async function isAura(s, componentName) {
+async function isAura(s, componentName, signal) {
   const [ns, name] = componentName.split(':').map((v) => v.replace(/'/g, ''));
   const q = `SELECT Id FROM AuraDefinitionBundle WHERE DeveloperName = '${name}'${ns === 'c' ? OWN : ` AND NamespacePrefix = '${ns}'`} LIMIT 1`;
-  return (await api.call(s, `/tooling/query?q=${encodeURIComponent(q)}`, { as: 'admin' })).records.length > 0;
+  return (await api.call(s, `/tooling/query?q=${encodeURIComponent(q)}`, { as: 'admin', signal })).records.length > 0;
 }
 
 // Open recordId unless the page shows it: reopening reloads it and loses what earlier clicks opened there (an expanded panel, a row's editor).

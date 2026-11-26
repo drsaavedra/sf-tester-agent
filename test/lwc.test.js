@@ -145,7 +145,7 @@ test('lwc.locate keeps one deadline and survives a Tooling error, no org', async
   const page = await localPage(t);
   const { api } = require('..');
   let tooling = async () => { throw new Error('INVALID_SESSION_ID'); };
-  t.mock.method(api, 'call', async () => tooling());
+  t.mock.method(api, 'call', async (s, path, opts) => tooling(opts));
   t.mock.method(nav, 'showsRecord', () => false);
   t.mock.method(nav, 'openRecord', async () => {});
   t.mock.method(discover, 'renderedPage', async () => 'Some_Page');
@@ -162,6 +162,14 @@ test('lwc.locate keeps one deadline and survives a Tooling error, no org', async
   await assert.rejects(lwc.locate({ page }, id, 'recordBanner', { timeout: 4_000 }), (e) => e.code === 'NOT_ON_PAGE' && !('auraCheckFailed' in e.evidence));
   const took = Date.now() - started;
   assert.ok(took < 4_800, `took ${took} ms on a 4000 ms timeout`); // two budgets: 2000 + 1000 + 4000
+  // A Tooling call that never answers is cut at the same deadline (its signal), not left to the transport's own limit.
+  tooling = ({ signal } = {}) => new Promise((_, reject) => {
+    if (signal) signal.addEventListener('abort', () => reject(new Error('cut at the deadline')));
+    setTimeout(() => reject(new Error('never cut')), 8_000);
+  });
+  const hung = Date.now();
+  await assert.rejects(lwc.locate({ page }, id, 'recordBanner', { timeout: 4_000 }), (e) => e.code === 'NOT_ON_PAGE' && e.evidence.auraCheckFailed === 'cut at the deadline');
+  assert.ok(Date.now() - hung < 4_800, `took ${Date.now() - hung} ms on a 4000 ms timeout`);
 });
 
 // A managed package renders its components as <namespace>-<name> inside native shadow roots; the fixture org has
