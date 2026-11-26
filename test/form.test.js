@@ -524,6 +524,7 @@ test('a lookup given a record id picks the option with that id, no org', { timeo
     calls.push(path);
     if (path === '/ui-api/object-info/Account') return { fields: { ParentId: { referenceToInfos: [{ apiName: 'Account', nameFields: ['Name'] }] } } };
     if (path.startsWith(`/ui-api/records/${PARIS.slice(0, 15)}`)) return { apiName: 'Account', fields: { Name: { value: 'Acme' } } };
+    if (path.startsWith('/ui-api/records/001C100000XZETA')) return { apiName: 'Account', fields: { Name: { value: 'Zeta' } } };
     if (path.startsWith('/ui-api/records/001C100000XBOOM')) throw new SfUiError('API_ERROR', 'answered 500', { status: 500 });
     if (path.startsWith('/ui-api/records/001C100000XNONE')) return { apiName: 'Account', fields: { Name: { value: null } } };
     if (path.startsWith('/ui-api/records/001C100000XWRNG')) throw new SfUiError('API_ERROR', 'answered 400', { status: 400, errorCode: 'INVALID_INPUT_COMBINATION' });
@@ -537,6 +538,11 @@ test('a lookup given a record id picks the option with that id, no org', { timeo
   assert.equal(await page.evaluate(() => document.body.dataset.typed), 'Acme', 'the name the API read was typed');
   assert.equal(await page.evaluate(() => document.body.dataset.cleared), 'yes', 'control: a good id clears the old choice');
   assert.ok(calls.some((p) => p.includes('optionalFields=Account.Name')), calls.join());
+  // A readable record the dropdown does not offer, with no same-name twin listed (a lookup filter): not a search lag,
+  // so VALUE_NOT_FOUND without the 60 s of searching again.
+  const started = Date.now();
+  await assert.rejects(form.setFields(f, { ParentId: '001C100000XZETA' }), (e) => e.code === 'VALUE_NOT_FOUND');
+  assert.ok(Date.now() - started < 40_000, `no search again without a twin: took ${Date.now() - started} ms`);
   await page.evaluate(() => delete document.body.dataset.picked);
   // A failure after the Clear says the chosen record is gone, so a caller knows a save would write a blank.
   await assert.rejects(form.setFields(f, { ParentId: 'Acme' }), (e) => e.code === 'AMBIGUOUS' && e.evidence.cleared === true);
