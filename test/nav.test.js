@@ -123,6 +123,16 @@ test('nav', { skip, timeout: 600_000 }, async (t) => {
     assert.ok(await main.getByRole('rowheader').count(), await main.ariaSnapshot());
     assert.equal(await main.getByText('We searched for "my accounts"').count(), 0, 'the page this test needs prints no "We searched for"');
   });
+
+  // Step 68: a natural-language term with no rows ("created last year": this file's account is new) draws only a
+  // heading "No matching records"; the search returns that page, and a search from it returns the next results.
+  await t.test('search a natural-language term with no rows returns its empty results page', async () => {
+    await nav.openList(s, 'SfUiProbe__c');
+    const main = await nav.search(s, 'accounts created last year', { timeout: 30_000 });
+    assert.equal(await main.getByRole('heading', { name: 'No matching records' }).count(), 1, await main.ariaSnapshot());
+    await nav.search(s, 'my accounts', { timeout: 30_000 });
+    assert.ok(await main.getByRole('rowheader').count(), await main.ariaSnapshot());
+  });
 });
 
 // F-flow-20, no org: a stub of the header and the results page. The button is "Search", then "Search: <last term>";
@@ -205,6 +215,159 @@ test('search again from a natural-language results page returns the new results,
   assert.equal(await main.getByRole('rowheader').textContent(), 'hit BREAK inexact two 2');
   await nav.search({ page }, 'BREAK inexact two', { timeout: 3_000 });
   assert.equal(await main.getByRole('rowheader').textContent(), 'hit BREAK inexact two 3');
+});
+
+// Step 68, no org: a natural-language term with no rows draws only a heading "No matching records" (measured on
+// sfui-pool-1); the search returns that page, and a second search from it returns the redrawn rows.
+test('search a natural-language term with no rows returns its empty results page, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main></main>
+    <script>
+      const empty = '<h2>No matching records</h2><h2>Try searching instead:</h2><ul><li><button>accounts</button></li></ul>';
+      const rows = (term) => '<table><tr><th role=rowheader>hit ' + term + '</th></tr></table>';
+      q.onkeydown = (e) => {
+        if (e.key !== 'Enter') return;
+        const term = q.value, main = document.querySelector('main');
+        q.hidden = true;
+        document.querySelector('header button').setAttribute('aria-label', 'Search: ' + term);
+        if (location.hash) return setTimeout(() => { main.innerHTML = rows(term); }, 300);
+        location.hash = btoa(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop', term }));
+        main.innerHTML = empty;
+      };
+    </script></body></html>` }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  const main = await nav.search({ page }, 'accounts created last year', { timeout: 3_000 });
+  assert.equal(await main.getByRole('heading', { name: 'No matching records' }).count(), 1);
+  await nav.search({ page }, 'my accounts', { timeout: 3_000 });
+  assert.equal(await main.getByRole('rowheader').textContent(), 'hit my accounts');
+});
+
+// Step 74 (D1, R10 a), no org: a results page that redraws in place, with a stub switch `stuck` that stops the redraw.
+// In main, beside the results, an Aura error node `src/form.js` marked earlier keeps `data-sf-tester-old` for good.
+const redrawPage = `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main><div data-sf-tester-old>Aura error</div><section></section></main>
+    <script>
+      window.stuck = false;
+      const rows = (term) => '<table><tr><th role=rowheader>hit ' + term + '</th></tr></table>';
+      q.onkeydown = (e) => {
+        if (e.key !== 'Enter') return;
+        const term = q.value, main = document.querySelector('main section');
+        q.hidden = true;
+        document.querySelector('header button').setAttribute('aria-label', 'Search: ' + term);
+        if (location.hash) return window.stuck || setTimeout(() => { main.innerHTML = rows(term); }, 300);
+        location.hash = btoa(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop', term }));
+        main.innerHTML = rows(term);
+      };
+    </script></body></html>`;
+
+test('search again is not held by a form error mark, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: redrawPage }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  const main = await nav.search({ page }, 'BREAK mark one', { timeout: 3_000 });
+  await nav.search({ page }, 'BREAK mark two', { timeout: 3_000 });
+  assert.equal(await main.getByRole('rowheader').textContent(), 'hit BREAK mark two');
+});
+
+test('a search that fails from a results page leaves no search mark on it, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: redrawPage }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  await nav.search({ page }, 'BREAK stuck one', { timeout: 3_000 });
+  await page.evaluate(() => { window.stuck = true; });
+  await assert.rejects(nav.search({ page }, 'BREAK stuck two', { timeout: 1_000 }), { code: 'SEARCH_FAILED' });
+  assert.equal(await page.locator('main section [data-sf-tester-old]').count(), 0, 'the failed call left its mark');
+});
+
+// Step 75 (D9), no org: the results page opens 800 ms after Enter and draws its row 800 ms later. Each wait alone is
+// under the 2 s timeout; the call is not, so it ends SEARCH_FAILED at the timeout.
+test('search keeps one deadline across its waits, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main></main>
+    <script>
+      q.onkeydown = (e) => {
+        if (e.key !== 'Enter') return;
+        const term = q.value;
+        setTimeout(() => {
+          location.hash = btoa(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop', term }));
+          setTimeout(() => { document.querySelector('main').innerHTML = '<table><tr><th role=rowheader>hit</th></tr></table>'; }, 800);
+        }, 800);
+      };
+    </script></body></html>` }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  const start = Date.now();
+  await assert.rejects(nav.search({ page }, 'BREAK slow', { timeout: 2_000 }), { code: 'SEARCH_FAILED' });
+  assert.ok(Date.now() - start < 2_700, `took ${Date.now() - start} ms on a 2000 ms timeout`);
+});
+
+// No org: a results page whose old row refuses the mark. The call then waits as from an unmarked page, and its
+// SEARCH_FAILED names the failed mark.
+test('a search whose mark fails names that on its SEARCH_FAILED, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main><table><tr><th role=rowheader>old hit</th></tr></table></main>
+    <script>
+      document.querySelector('th').setAttribute = () => { throw new Error('mark refused'); };
+    </script></body></html>` }));
+  await page.goto(`https://x.lightning.force.com/one/one.app#${Buffer.from(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop' })).toString('base64')}`);
+  await assert.rejects(nav.search({ page }, 'BREAK mark fails', { timeout: 2_500 }),
+    (e) => e.code === 'SEARCH_FAILED' && /^the mark failed: .*mark refused/.test(e.evidence.notMarked));
+});
+
+// No org: a header Search button under a cover takes no click. Each try is bounded, so the call ends by its own deadline
+// and not after Playwright's 30 s default for one click.
+test('search gives up on a covered Search button by its deadline, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search">x</button></header><input id="q" placeholder="Search..." hidden><main></main>
+    <div style="position:fixed;inset:0;z-index:9"></div></body></html>` }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  const started = Date.now();
+  await assert.rejects(nav.search({ page }, 'BREAK covered', { timeout: 3_000 }), (e) => e.code === 'ACTION_NOT_AVAILABLE');
+  assert.ok(Date.now() - started < 8_000, `took ${Date.now() - started} ms on a 3000 ms timeout`);
+});
+
+// No org: only the exact heading "No matching records" settles an empty page. A longer heading that holds the words
+// (one section of a page whose rows come 500 ms later) does not, so the rows are waited for.
+test('search does not settle on a heading that only holds "No matching records", no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main></main>
+    <script>
+      q.onkeydown = (e) => {
+        if (e.key !== 'Enter') return;
+        const main = document.querySelector('main');
+        location.hash = btoa(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop' }));
+        main.innerHTML = '<h2>No matching records in Contacts</h2>';
+        setTimeout(() => { main.innerHTML += '<table><tr><th role=rowheader>hit</th></tr></table>'; }, 500);
+      };
+    </script></body></html>` }));
+  await page.goto('https://x.lightning.force.com/lightning/page/home');
+  const main = await nav.search({ page }, 'BREAK sections', { timeout: 5_000 });
+  assert.equal(await main.getByRole('rowheader').count(), 1, 'returned before the rows drew');
+});
+
+// Step 75 (D10, R10 b), no org: a results page with nothing on it before Enter cannot be marked; the SEARCH_FAILED says why.
+test('a search from an unmarked results page names why on its SEARCH_FAILED, no org', async (t) => {
+  const page = await localPage(t);
+  await page.route('https://x.lightning.force.com/**', (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>
+    <header><button aria-label="Search" onclick="q.hidden = false">x</button></header>
+    <input id="q" placeholder="Search..." hidden><main></main>
+    <script>
+      q.onkeydown = (e) => {
+        if (e.key === 'Enter') document.querySelector('main').innerHTML = '<table><tr><th role=rowheader>hit</th></tr></table>';
+      };
+    </script></body></html>` }));
+  await page.goto(`https://x.lightning.force.com/one/one.app#${Buffer.from(JSON.stringify({ componentDef: 'forceSearch:searchPageDesktop' })).toString('base64')}`);
+  await assert.rejects(nav.search({ page }, 'BREAK unmarked', { timeout: 2_500 }),
+    (e) => e.code === 'SEARCH_FAILED' && e.evidence.notMarked === 'no result row or no-match text before Enter');
 });
 
 // No org: the tab list as UI API serves it (test/nav-items.json), in two pages with the custom tabs on page 2, so a

@@ -239,38 +239,56 @@ async function openTab(s, tab, { timeout = 60_000 } = {}) {
 // Global search from the header box, as a user types it; returns the results page's main area.
 // The header's Search button opens the box only once the header has loaded, so it is pressed until the box shows.
 // On a results page that button is named "Search: <last term>" (F-flow-20).
+// One deadline for the whole call (D9): MCP SDK clients give up at 60 s, Claude Code's stdio default is 1e8 ms.
 async function search(s, text, { timeout = 60_000 } = {}) {
+  const end = Date.now() + timeout;
+  const left = () => Math.max(100, end - Date.now()); // a floor, as lwc.locate has: 1 ms is under one protocol round trip
   await requireEnglish(s);
   const box = s.page.locator('input[placeholder="Search..."]').locator('visible=true');
   const button = s.page.getByRole('button', { name: /^Search(: .*)?$/ });
-  for (const end = Date.now() + 20_000; !(await box.count()); await s.page.waitForTimeout(1_000)) {
-    if (Date.now() > end) throw new SfUiError('ACTION_NOT_AVAILABLE', 'the header search box did not open', { url: s.page.url() });
-    await button.click().catch(() => {});
+  for (const boxEnd = Math.min(Date.now() + 20_000, end); !(await box.count()); await s.page.waitForTimeout(1_000)) {
+    if (Date.now() > boxEnd) throw new SfUiError('ACTION_NOT_AVAILABLE', 'the header search box did not open', { url: s.page.url() });
+    await button.click({ timeout: Math.min(1_000, left()) }).catch(() => {}); // a button not there yet, or covered: the loop tries again
   }
   // Results open at /one/one.app#<base64 of {"componentDef":"forceSearch:searchPageDesktop",...}>.
   const isSearch = (u) => Buffer.from(u.hash.slice(1), 'base64').toString().includes('forceSearch');
   const before = s.page.url();
   const main = s.page.getByRole('main');
   // main shows before its results: wait for a result row or the no-match text (F-flow-19).
-  const settled = main.getByRole('rowheader').or(main.getByText(/find any matches/)).first();
+  // A natural-language term with no rows prints only the heading "No matching records" (step 68).
+  const settled = main.getByRole('rowheader').or(main.getByText(/find any matches/))
+    .or(main.getByRole('heading', { name: 'No matching records', exact: true })).first();
   const again = isSearch(new URL(before));
   // On a results page the old rows already match settled: mark them, and wait for the redraw to drop them (R10).
-  const old = again && (await settled.count()) > 0 && await settled.evaluate((e) => e.setAttribute('data-sf-tester-old', '')).then(() => true, () => false);
-  await box.first().fill(String(text));
-  await box.first().press('Enter');
-  // A search from a results page redraws it in place (F-flow-20): the marked old results leaving is the redraw (R10).
+  // The mark's value is this call's own: form.js marks Aura errors with the same attribute, empty (D1).
+  const id = `search-${crypto.randomUUID()}`;
+  const marked = main.locator(`[data-sf-tester-old="${id}"]`);
+  // Why a results page went unmarked goes on a SEARCH_FAILED, since the call then waits as from another page (D10).
+  let notMarked = again && !(await settled.count()) && 'no result row or no-match text before Enter';
+  const old = again && !notMarked && await settled.evaluate((e, v) => e.setAttribute('data-sf-tester-old', v), id)
+    .then(() => true, (e) => { notMarked = `the mark failed: ${e.message.split('\n')[0]}`; return false; });
+  const failed = (message) => new SfUiError('SEARCH_FAILED', message, { text, url: s.page.url(), ...(notMarked && { notMarked }) });
+  try {
+    await box.first().fill(String(text), { timeout: left() });
+    await box.first().press('Enter', { timeout: left() });
+    // A search from a results page redraws it in place (F-flow-20): the marked old results leaving is the redraw (R10).
+    // Measured on new terms sharing a record, standard and console app: the mark left 35-208 ms after it was set (D2).
+    if (old) await marked.waitFor({ state: 'detached', timeout: left() }).catch(() => {
+      throw failed(`the results page for "${text}" was not redrawn: the old results are still on it`);
+    });
+  } finally {
+    // A throw leaves the old results on the page: unmark them. A failed unmark means the page, and the mark, are gone.
+    if (old) await marked.evaluateAll((els) => els.forEach((e) => e.removeAttribute('data-sf-tester-old'))).catch(() => {});
+  }
   // Only unmarked does it wait for "We searched for", which a natural-language results page never prints.
-  if (old) await s.page.locator('[data-sf-tester-old]').waitFor({ state: 'detached', timeout }).catch(() => {
-    throw new SfUiError('SEARCH_FAILED', `the results page for "${text}" was not redrawn: the old results are still on it`, { text, url: s.page.url() });
-  });
-  else await (again
-    ? main.getByText(`We searched for "${text}"`).first().waitFor({ timeout })
-    : s.page.waitForURL((u) => u.href !== before && isSearch(u), { timeout })
+  if (!old) await (again
+    ? main.getByText(`We searched for "${text}"`).first().waitFor({ timeout: left() })
+    : s.page.waitForURL((u) => u.href !== before && isSearch(u), { timeout: left() })
   ).catch(() => {
-    throw new SfUiError('SEARCH_FAILED', `searching for "${text}" did not open the results page`, { text, url: s.page.url() });
+    throw failed(`searching for "${text}" did not open the results page`);
   });
-  await settled.waitFor({ timeout }).catch(() => {
-    throw new SfUiError('SEARCH_FAILED', `the results page for "${text}" never showed a result row or "no matches"`, { text, url: s.page.url() });
+  await settled.waitFor({ timeout: left() }).catch(() => {
+    throw failed(`the results page for "${text}" never showed a result row or "no matches"`);
   });
   return main;
 }

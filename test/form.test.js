@@ -205,7 +205,7 @@ test('form on a Task', { skip, timeout: 600_000 }, async (t) => {
     assert.deepEqual(await stored(), [c1, acct]);
     f = await form.editRecord(s, task);
     await form.setFields(f, { WhoId: c2 });
-    assert.equal(f.set.WhoId.confirm, undefined, 'picked by id, not by name');
+    assert.equal(f.set.WhoId.confirm, true, 'an Aura pick by id: the save reads the stored id back');
     assert.equal((await form.save(f)).outcome, 'saved');
     assert.deepEqual(await stored(), [c2, acct]);
   });
@@ -389,18 +389,39 @@ test('createRecord takes the exact New from the overflow menu when New <label> s
   assert.equal(await page.locator('[data-by=exact][data-pressed]').count(), 1, 'the exact New was pressed');
   assert.equal(await page.locator('[data-by=label][data-pressed]').count(), 0, 'not New Task');
 });
-// No org, the delta's row 8: two visible "New" items (two menus open) press the first, never a raw strict-mode error.
-test('createRecord presses the first of two exact New menu items, no org', { timeout: 30_000 }, async (t) => {
+// No org, F23 (Dave 2026-11-24): two visible "New" items (two menus open) or two New buttons on the home end AMBIGUOUS
+// naming each control, and nothing is pressed; one New presses (the tests above are the control).
+test('createRecord ends AMBIGUOUS on two New controls and presses neither, no org', { timeout: 30_000 }, async (t) => {
   const { localPage } = require('./helpers');
   const page = await localPage(t);
   const by = (who) => `data-by="${who}" onclick="this.dataset.pressed=1; document.body.insertAdjacentHTML('beforeend', '<div role=dialog><button>Save</button></div>')"`;
   t.mock.method(nav, 'openList', async () => {});
   t.mock.method(require('../src/discover'), 'formModel', async () => ({ fields: [] }));
   t.mock.method(api, 'call', async () => ({ createable: true, label: 'Task', recordTypeInfos: {} }));
+  // The message sends the tester to BLOCKED, not to sf_click: a New pressed that way leaves no form to set or save.
+  const ambiguous = (e) => e.code === 'AMBIGUOUS' && e.evidence.controls.length === 2 && e.evidence.controls.every((c) => /^New/.test(c.label)) && /end BLOCKED and name both controls/.test(e.message) && !/press the one meant/.test(e.message);
+  const pressed = () => page.locator('[data-pressed]').count();
   await page.setContent(`<main><button aria-haspopup="true" onclick="document.querySelectorAll('[role=menu]').forEach((m) => { m.hidden = false; })">Show 2 more actions</button></main>
     <div role="menu" hidden><div role="menuitem" ${by('one')}>New</div></div><div role="menu" hidden><div role="menuitem" ${by('two')}>New</div></div>`);
-  await form.createRecord({ page, origin: 'http://127.0.0.1:1' }, 'Task', { timeout: 3_000 });
-  assert.deepEqual(await page.locator('[data-pressed]').evaluateAll((els) => els.map((e) => e.dataset.by)), ['one']);
+  await assert.rejects(form.createRecord({ page, origin: 'http://127.0.0.1:1' }, 'Task', { timeout: 3_000 }), ambiguous);
+  assert.equal(await pressed(), 0, 'no menu item was pressed');
+  await page.setContent(`<main><button ${by('one')}>New</button><button ${by('two')}>New</button></main>`);
+  await assert.rejects(form.createRecord({ page, origin: 'http://127.0.0.1:1' }, 'Task', { timeout: 3_000 }), ambiguous);
+  assert.equal(await pressed(), 0, 'no button was pressed');
+  await page.setContent(`<main><button ${by('one')}>New Task</button><button ${by('two')}>New Task</button></main>`);
+  await assert.rejects(form.createRecord({ page, origin: 'http://127.0.0.1:1' }, 'Task', { timeout: 3_000 }), ambiguous);
+  assert.equal(await pressed(), 0, 'no New Task was pressed');
+});
+// No org, F23: two footer buttons of one name end AMBIGUOUS naming each, not Playwright's raw strict-mode error; one presses.
+test('a footer press with two matches ends AMBIGUOUS naming the buttons, no org', { timeout: 30_000 }, async (t) => {
+  const { localPage } = require('./helpers');
+  const page = await localPage(t);
+  const f = { scope: page.locator('#panel'), footer: page.locator('#footer'), s: { page }, recordId: '001000000000001AAA' };
+  await page.setContent(`<article id="panel"><div id="footer"><button onclick="this.dataset.pressed=1">Cancel</button><button title="Cancel edit" onclick="this.dataset.pressed=1">Cancel</button></div></article>`);
+  await assert.rejects(form.cancel(f), (e) => e.code === 'AMBIGUOUS' && e.evidence.button === 'Cancel' && e.evidence.controls.map((c) => c.label).join('|') === 'Cancel|Cancel edit');
+  assert.equal(await page.locator('[data-pressed]').count(), 0, 'neither was pressed');
+  await page.setContent(`<article id="panel"><div id="footer"><button onclick="document.getElementById('panel').hidden=true">Cancel</button></div></article>`);
+  await form.cancel(f); // control: one Cancel presses and the form closes
 });
 test('createRecord reports a missing New button, not another failure, as ACTION_NOT_AVAILABLE, no org', async (t) => {
   const { localPage } = require('./helpers');
@@ -490,8 +511,9 @@ test('a lookup with two records of the asked name is AMBIGUOUS, not the first, n
 });
 
 // No org: a record id types the name the API reads for it and picks the option whose data-value is that id, so a
-// twin of the name cannot make it AMBIGUOUS; an id no option carries is VALUE_NOT_FOUND naming the id.
-test('a lookup given a record id picks the option with that id, no org', { timeout: 80_000 }, async (t) => {
+// twin of the name cannot make it AMBIGUOUS; an id no option carries is searched again, then NOT_SEARCHABLE_YET,
+// only while a same-name twin is listed; with other names only it is VALUE_NOT_FOUND at once.
+test('a lookup given a record id picks the option with that id, no org', { timeout: 150_000 }, async (t) => {
   const { localPage } = require('./helpers');
   const page = await localPage(t);
   const [LYON, PARIS] = ['001C100000XZ8PWIA1', '001C100000XVXrEIAX'];
@@ -504,6 +526,7 @@ test('a lookup given a record id picks the option with that id, no org', { timeo
     calls.push(path);
     if (path === '/ui-api/object-info/Account') return { fields: { ParentId: { referenceToInfos: [{ apiName: 'Account', nameFields: ['Name'] }] } } };
     if (path.startsWith(`/ui-api/records/${PARIS.slice(0, 15)}`)) return { apiName: 'Account', fields: { Name: { value: 'Acme' } } };
+    if (path.startsWith('/ui-api/records/001C100000XZETA')) return { apiName: 'Account', fields: { Name: { value: 'Zeta' } } };
     if (path.startsWith('/ui-api/records/001C100000XBOOM')) throw new SfUiError('API_ERROR', 'answered 500', { status: 500 });
     if (path.startsWith('/ui-api/records/001C100000XNONE')) return { apiName: 'Account', fields: { Name: { value: null } } };
     if (path.startsWith('/ui-api/records/001C100000XWRNG')) throw new SfUiError('API_ERROR', 'answered 400', { status: 400, errorCode: 'INVALID_INPUT_COMBINATION' });
@@ -513,9 +536,15 @@ test('a lookup given a record id picks the option with that id, no org', { timeo
   const f = { scope: page.getByRole('dialog'), s: { page }, model: { objectApiName: 'Account', fields: [{ apiName: 'ParentId', label: 'Parent Account', dataType: 'Reference', editable: true }] } };
   await form.setFields(f, { ParentId: PARIS.slice(0, 15) });
   assert.equal(await page.evaluate(() => document.body.dataset.picked), 'Paris', 'the option whose data-value is the id, not the first Acme');
+  assert.equal(f.set.ParentId.confirm, undefined, 'control: an LWC pick by id reads its id from the DOM, no stored-id check');
   assert.equal(await page.evaluate(() => document.body.dataset.typed), 'Acme', 'the name the API read was typed');
   assert.equal(await page.evaluate(() => document.body.dataset.cleared), 'yes', 'control: a good id clears the old choice');
   assert.ok(calls.some((p) => p.includes('optionalFields=Account.Name')), calls.join());
+  // A readable record the dropdown does not offer, with no same-name twin listed (a lookup filter): not a search lag,
+  // so VALUE_NOT_FOUND without the 60 s of searching again.
+  const started = Date.now();
+  await assert.rejects(form.setFields(f, { ParentId: '001C100000XZETA' }), (e) => e.code === 'VALUE_NOT_FOUND');
+  assert.ok(Date.now() - started < 40_000, `no search again without a twin: took ${Date.now() - started} ms`);
   await page.evaluate(() => delete document.body.dataset.picked);
   // A failure after the Clear says the chosen record is gone, so a caller knows a save would write a blank.
   await assert.rejects(form.setFields(f, { ParentId: 'Acme' }), (e) => e.code === 'AMBIGUOUS' && e.evidence.cleared === true);
@@ -551,10 +580,10 @@ test('a lookup given a record id picks the option with that id, no org', { timeo
   await form.setFields(f, { ParentId: 'AcmeCorporation' });
   assert.equal(await page.evaluate(() => document.body.dataset.picked), 'Nice', 'a 15-letter name the API does not know is picked by name');
   await page.evaluate(() => { delete document.body.dataset.picked; document.querySelectorAll('[role=option]')[2].remove(); });
-  // The name reads but no option carries the id: VALUE_NOT_FOUND naming the id and the options seen, nothing picked.
+  // The name reads but no option carries the id: searched again for 60 s (F10), then NOT_SEARCHABLE_YET naming the id and the options seen, nothing picked.
   await page.evaluate(() => document.querySelectorAll('[role=option]')[1].remove());
   await page.evaluate(() => document.querySelector('[role=group]').insertAdjacentHTML('beforeend', '<div role="option"><div>Acme</div><div>Account | Nice</div></div>'));
-  await assert.rejects(form.setFields(f, { ParentId: PARIS }), (e) => e.code === 'VALUE_NOT_FOUND' && e.message.includes(PARIS) && e.evidence.options.join() === `Acme | Account | Lyon (${LYON}),Acme | Account | Nice`);
+  await assert.rejects(form.setFields(f, { ParentId: PARIS }), (e) => e.code === 'NOT_SEARCHABLE_YET' && e.message.includes(PARIS) && e.evidence.options.join() === `Acme | Account | Lyon (${LYON}),Acme | Account | Nice`);
   await page.evaluate(() => document.querySelectorAll('[role=option]')[1].remove());
   assert.equal(await page.evaluate(() => document.body.dataset.picked), undefined, 'the other Acme was not picked');
   // The option with the id is there but the list changes on every read: the error says so, not that no option has it.
@@ -729,13 +758,13 @@ test('an Aura lookup given a record id picks the option whose component holds th
   const aura = '<script>window.$A = { getComponent: (g) => ({ getComponentValueProvider: () => ({ get: (k) => (k === \'v.value\' ? { id: g } : null) }) }) };</script>';
   const row = (id, second, where) => auraRow('Ann Lee', second, where).replace('<a ', `<a data-aura-rendered-by="${id}" `);
   const f = { scope: page.getByRole('dialog'), s: { page }, model: { objectApiName: 'Task', fields: [{ apiName: 'WhoId', label: 'Name', dataType: 'Reference', editable: true }] } };
-  await page.setContent(auraLookup(row(TWIN, 'Acme', 'twin')) + aura);
-  await assert.rejects(form.setFields(f, { WhoId: ANN }), (e) => e.code === 'VALUE_NOT_FOUND' && e.evidence.options.join() === `Ann Lee | Acme (${TWIN})`);
-  assert.equal(await page.evaluate(() => document.body.dataset.picked), undefined, 'the twin listed alone was not picked');
+  // A twin listed alone is searched again, then NOT_SEARCHABLE_YET: the next test.
   await page.setContent(auraLookup(row(TWIN, 'Acme', 'twin') + row(ANN, 'Globex', 'ann')) + aura);
   await form.setFields(f, { WhoId: ANN });
   assert.equal(await page.evaluate(() => document.body.dataset.picked), 'ann', 'the option with the id, not the first');
   assert.equal(f.set.WhoId.shown, 'Ann Lee', 'the pill was read back');
+  // F11: the id came from Aura's private runtime, so the save reads the stored id back (the next test).
+  assert.deepEqual([f.set.WhoId.confirm, f.set.WhoId.id], [true, ANN], 'an Aura pick by id is checked at save');
 });
 
 // No org: a save that stays on the record still reads it back when an Aura lookup was set by id, and refuses another id.
@@ -1861,6 +1890,31 @@ test('a lookup by an id the user reads searches again while its search lags, no 
   assert.equal(await page.evaluate(() => window.n), 1, 'no search again for a 404');
 });
 
+// No org, F10 (Dave 2026-11-24): a pick by id whose dropdown lists a same-name twin but not the target searches again
+// for up to 60 s, as when it lists no record, so a lagging target is picked; a true miss is NOT_SEARCHABLE_YET, twin never picked.
+test('a lookup by id with only a same-name twin listed searches again, then NOT_SEARCHABLE_YET, no org', { timeout: 150_000 }, async (t) => {
+  const { localPage } = require('./helpers');
+  const page = await localPage(t);
+  const [GUY, TWIN] = ['003C100000XZ8PWIA1', '003C100000XZ8PXIA1'];
+  t.mock.method(api, 'call', async (s, path) => {
+    if (path === '/ui-api/object-info/Task') return { fields: { WhoId: { referenceToInfos: [{ apiName: 'Contact', nameFields: ['Name'] }] } } };
+    return { apiName: 'Contact', fields: { Name: { value: 'New Guy' } } };
+  });
+  const row = (id, where) => auraRow('New Guy', where, where).replace('<a ', `<a data-aura-rendered-by="${id}" `);
+  const lagging = (after) => page.setContent(`<div role="dialog"><ul><li><span>Name</span><div id="box"><input role="combobox" aria-label="Name" oninput="find(this.value)"><div role="listbox" id="lb"></div></div></li></ul><button>Save</button></div>
+    <script>window.$A = { getComponent: (g) => ({ getComponentValueProvider: () => ({ get: (k) => (k === 'v.value' ? { id: g } : null) }) }) };
+      window.n = 0; window.pill = (name) => { box.innerHTML = '<ul role="list" aria-label="Name - Current Selection: ' + name + ' (Contact)"><li><div>' + name + '</div></li></ul>'; };
+      window.find = (v) => { if (!v) return; n++; lb.innerHTML = ${JSON.stringify(row(TWIN, 'twin'))} + (n >= ${after} ? ${JSON.stringify(row(GUY, 'guy'))} : ''); };</script>`);
+  const f = { scope: page.getByRole('dialog'), s: { page }, model: { objectApiName: 'Task', fields: [{ apiName: 'WhoId', label: 'Name', dataType: 'Reference', editable: true }] } };
+  await lagging(3);
+  await form.setFields(f, { WhoId: GUY });
+  assert.deepEqual(await page.evaluate(() => [document.body.dataset.picked, window.n]), ['guy', 3], 'picked on the third search, past the twin');
+  await lagging(999);
+  await assert.rejects(form.setFields(f, { WhoId: GUY }), (e) => e.code === 'NOT_SEARCHABLE_YET' && e.evidence.options.join() === `New Guy | twin (${TWIN})` && /no option with that id/.test(e.message));
+  assert.equal(await page.evaluate(() => document.body.dataset.picked), undefined, 'the twin was never picked');
+  assert.ok(await page.evaluate(() => window.n) > 1, 'searched again');
+});
+
 // No org, the gate's unverified read-back: after an Aura pick the box can stay a moment before the pill replaces it,
 // so the read-back waits for the pill; a pill naming another record than the one picked is VALUE_NOT_SET.
 test('an Aura pick reads its pill back, not the box it replaces, no org', { timeout: 60_000 }, async (t) => {
@@ -2140,7 +2194,7 @@ test('a footer with no such button says it is missing, no org', { timeout: 30_00
 });
 
 // No org, the delta's row 12: an enabled button that takes no click (a cover over it) is TIMEOUT with disabled false;
-// a click error that is no timeout (two Cancels) keeps its own error.
+// two Cancels end AMBIGUOUS naming both (F23), not Playwright's raw strict-mode error.
 test('a covered and a doubled footer button each keep what happened, no org', { timeout: 30_000 }, async (t) => {
   const { localPage } = require('./helpers');
   const page = await localPage(t);
@@ -2148,7 +2202,7 @@ test('a covered and a doubled footer button each keep what happened, no org', { 
   await page.setContent('<div role="dialog" aria-label="Edit"><input aria-label="Subject"><button>Cancel</button></div><div style="position:fixed;inset:0;z-index:9"></div>');
   await assert.rejects(form.cancel(f), (e) => e.code === 'TIMEOUT' && e.evidence.disabled === false);
   await page.setContent('<div role="dialog" aria-label="Edit"><input aria-label="Subject"><button>Cancel</button><button>Cancel</button></div>');
-  await assert.rejects(form.cancel(f), (e) => !e.code && /strict mode/.test(e.message));
+  await assert.rejects(form.cancel(f), (e) => e.code === 'AMBIGUOUS' && e.evidence.controls.length === 2 && e.evidence.controls.every((c) => c.label === 'Cancel'));
 });
 
 // No org: switchTo's wait for the switched object reads only a timeout as "did not switch"; a page that closed under it

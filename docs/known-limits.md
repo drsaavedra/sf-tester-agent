@@ -43,7 +43,7 @@ No open fix-list entry has one of these three classes. The findings of these cla
 
 ## Limits
 
-A limit does not give a wrong PASS or a wrong FAIL about the page. The tool cannot do the work, or its error is not clear. There is no L13: that entry is F42, which this preview corrects. L31 to L33 did not come from the break run: they came from the corrections.
+A limit does not give a wrong PASS or a wrong FAIL about the page. The tool cannot do the work, or its error is not clear. There is no L13: that entry is F42, which this preview corrects. L31 to L34 did not come from the break run: they came from the corrections.
 
 ### Forms and fields
 
@@ -60,6 +60,7 @@ A limit does not give a wrong PASS or a wrong FAIL about the page. The tool cann
 - **L11** `sf_upload_file`: Upload Files on the Notes & Attachments related list. The tool gives a raw `LOCATOR_TIMEOUT` on the record page and `NO_SINGLE_FILE_INPUT ... found 0` on the View All page. No file is uploaded, and there is no workaround.
 - **L12** This preview corrects L12 together with F19: `sf_set_fields` sets a Geolocation field in inline edit on a page that has a second pair of Latitude and Longitude boxes. The check is a test that uses no org.
 - **L33** `sf_assert_field` with `via: "ui"` or `via: "both"`: a Number or a Percent for a user whose locale uses a comma as the decimal mark. The tool reads only the English separators, and the answer is `FIELD_VALUE_MISMATCH`. This limit comes from the code: no test did it. Use `via: "api"`.
+- **L34** `sf_set_fields`: a lookup by record id on an Aura lookup field. The dropdown shows the record, but the tool cannot read the id of that option, and it can read the ids of the other options. The tool searches again for 60 s and answers `NOT_SEARCHABLE_YET`. That message says that the dropdown listed only other records, which is not correct. This limit comes from the code: no test did it. If no other record has the same name, give the name of the record, not its id.
 
 ### Lists
 
@@ -83,7 +84,7 @@ A limit does not give a wrong PASS or a wrong FAIL about the page. The tool cann
 - **L22** `sf_open_tab` goes to the URL of the tab. A page that set `lightning:unsavedChanges` does not show its dialog, and the unsaved state goes away with no message. Go away from the page with a click on a link or a button of the app.
 - **L23** `sf_click`, `sf_launch_action`: a link, a button or an action that opens a new browser tab or window. `sf_click` answers ok, and `sf_launch_action` answers `navigated: true` with the URL of the page that did not move. No tool reads or closes the new tab.
 - **L24** `sf_open_record`: a record of an object that the user cannot read. The tool waits 60 s and answers `NO_HIGHLIGHTS`, not `RECORD_UNAVAILABLE`. `sf_page_snapshot` after the error shows the text of the page.
-- **L31** `sf_search`: a search that Salesforce reads as a question and that finds no row, for example "accounts created today". The page shows no result row and no "no matches" text, and the tool answers `SEARCH_FAILED` after the full timeout. One measurement, on one org.
+- **L31** This preview corrects L31: `sf_search` returns the results page of a search that Salesforce reads as a question and that finds no row, for example "accounts created today". That page shows only the heading "No matching records". One test uses no org, and one test uses an org.
 
 ### Aura and base components
 
@@ -135,7 +136,7 @@ The entries are in the sequence of their numbers. Where a correction adds a wait
 - **F28** `sf_assert_field` passes on a checkbox when the expected value is the text that the page shows, "True" or "False".
 - **F29** `sf_assert_field` and the read-back of `sf_save` compare a multi-select picklist as a set of values. The sequence of the values is not important.
 - **F30** `sf_search` returns the results page after it becomes stable, with the result row or with the no-results page.
-- **F31** A second `sf_search` from the search results page returns the new results. L31 gives the case that continues to fail.
+- **F31** A second `sf_search` from the search results page returns the new results.
 - **F32** `sf_open_record` opens a record page that has no Highlights Panel and answers `highlights: false`. Each time it opens such a page, it waits 5 s for the panel.
 - **F33** `sf_wait` does not count a text on an off-stage carousel slide as shown. `sf_on_top` did not change.
 - **F34** `sf_on_top` and `sf_measure` give the correct `visible` value for a `position: fixed` dropdown in a modal that scrolls.

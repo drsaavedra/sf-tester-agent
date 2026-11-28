@@ -21,6 +21,12 @@ const ROLE = { Picklist: 'combobox', ComboBox: 'combobox', Reference: 'combobox'
 // listboxes; a required group's name is prefixed "required".
 const GROUP = ['DateTime', 'MultiPicklist'];
 const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Each match's label and the components (host tags) it sits in, for an AMBIGUOUS that names the controls.
+const controlsOf = (loc) => loc.evaluateAll((els) => els.map((n) => {
+  const hosts = [];
+  for (let r = n.getRootNode(); r.host && hosts.length < 3; r = r.host.getRootNode()) hosts.push(r.host.localName);
+  return { label: (n.getAttribute('aria-label') || n.getAttribute('title') || n.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120), hosts };
+}));
 // An Aura picklist (a Task's Status) is an <a role=combobox> named by its label and its value: "Priority Normal".
 // ponytail: a second Aura picklist whose label starts with this one's and a space matches too.
 const groupOf = (f, label) => f.scope.getByRole('group', { name: new RegExp(`^(required)?${esc(label)}$`) });
@@ -66,9 +72,15 @@ async function createRecord(s, objectApiName, { recordType, timeout = 30_000 } =
   await nav.openList(s, objectApiName, undefined, { timeout });
   const label = esc(String(info.label || '').trim());
   const main = s.page.getByRole('main');
-  // New or New <label>, as a button or a menu item; both showing, the exact New, so neither clashes; two, the first.
+  // New or New <label>, as a button or a menu item; both showing, the exact New, so neither clashes; two of the one
+  // pressed are AMBIGUOUS naming each (F23): pressing the first would be a guess.
   const news = (at, role) => ({ exact: at.getByRole(role, { name: 'New', exact: true }), named: at.getByRole(role, { name: new RegExp(`^New${label ? ` ${label}` : ''}$`) }) });
-  const pressNew = async ({ exact, named }) => ((await exact.count()) ? exact : named).first().click({ timeout });
+  const pressNew = async ({ exact, named }) => {
+    const pick = (await exact.count()) ? exact : named;
+    const n = await pick.count();
+    if (n > 1) throw new SfUiError('AMBIGUOUS', `the ${objectApiName} home shows ${n} New controls, so the press would be a guess. No tool opens this form from one of them (a New pressed with sf_click leaves no form for sf_set_fields or sf_save), so end BLOCKED and name both controls`, { objectApiName, controls: await controlsOf(pick) });
+    return pick.first().click({ timeout });
+  };
   const button = news(main, 'button');
   const more = main.getByRole('button', { name: action.MORE });
   const none = () => new SfUiError('ACTION_NOT_AVAILABLE', `the ${objectApiName} home shows no New button`, { objectApiName });
@@ -358,7 +370,7 @@ async function pick(f, field, input, value, v, read, timeout, object) {
     const isAura = !(await named.count()); // before the click, which closes an LWC lookup's named listbox
     if (id && !byName) {
       const k = ids.findIndex(hasId);
-      if (k >= 0) { if (await options.nth(k).click({ timeout: 2_000 }).then(() => true, () => false)) return { name, aura: isAura, id: ids[k] }; clickFailed = true; }
+      if (k >= 0) { if (await options.nth(k).click({ timeout: 2_000 }).then(() => true, () => false)) return { name, aura: isAura, id: ids[k], byId: true }; clickFailed = true; }
       continue;
     }
     const twins = names.flatMap((n, j) => (n === name ? [row(j)] : []));
@@ -378,6 +390,9 @@ async function pick(f, field, input, value, v, read, timeout, object) {
   const only = names.length ? [] : (await aura.getByRole('option').allInnerTexts().catch(() => [])).filter((t) => /" in \S/.test(t));
   const full = only.length ? only[0].replace(/\s+/g, ' ').trim() : '';
   if (id && full) throw new SfUiError('NOT_SEARCHABLE_YET', `${field.label}: this user reads record ${value} ("${name}"), but its search, made again for up to 60 s, listed no record, only its full search (${full}); a record another user made can take about a minute to be searchable`, { apiName: field.apiName, value, ...(searched && { searched }) });
+  // A same-name twin is listed with an id and the target is not: the target's search may lag, so search again (Dave, 2026-11-24).
+  // Without a twin the target is just not offered (a lookup filter, another name): VALUE_NOT_FOUND below, at once.
+  if (id && names.includes(name) && !listed) throw new SfUiError('NOT_SEARCHABLE_YET', `${field.label}: this user reads record ${value} ("${name}"), but its search, made again for up to 60 s, listed no option with that id, only other records; a record another user made can take about a minute to be searchable`, { apiName: field.apiName, value, options: names.map((_, j) => row(j)), ...(searched && { searched }) });
   const where = `${searched ? ` in ${searched}` : ''}${full ? `; the dropdown listed no record, only its full search (${full}): not searchable yet for this user (a record another user made in the last minute), or not visible to this user` : ''}`;
   const none = id ? `no ${field.label} option for record ${value} ("${name}")${where}` : `no ${field.label} record named "${value}"${where}${asId}`;
   const why = changing ? `the ${field.label} results kept changing, so ${what} was not picked` : failed ? `the ${field.label} option for ${what} is listed, but every click on it failed` : none;
@@ -490,7 +505,7 @@ async function setFields(f, values, { objects = {}, picklist } = {}) {
     const value = values[apiName];
     const field = fieldOf(f, apiName);
     let rich = false;
-    let confirm = false; // a lookup set by id but picked by name: save checks the stored id
+    let confirm = false; // a lookup picked by name for an id, or by id on Aura, or cleared: save checks the stored id
     let picked; // a lookup's option picked, with the record id it carried ('' when none)
     const input = locate(f, field);
     // A modelled field the form does not show (a visibility rule, a page that drifted) is said so, not waited on.
@@ -500,7 +515,8 @@ async function setFields(f, values, { objects = {}, picklist } = {}) {
     }
     if (field.dataType === 'Reference') {
       picked = await setLookup(f, field, input, value, { object: objects[apiName] });
-      confirm = !!(picked && picked.byName) || value == null || value === ''; // a clear: save checks the record holds none
+      // An Aura pick by id trusts the id from Aura's private runtime (a twin, a list that changed): the save reads it back.
+      confirm = !!(picked && (picked.byName || (picked.aura && picked.byId))) || value == null || value === '';
     } else if (field.dataType === 'Picklist') {
       await setPicklist(f, field, input, value, picklist);
       landed(field, value, String(value), (await input.innerText()).trim());
@@ -657,7 +673,7 @@ async function save(f, { timeout = 30_000 } = {}) {
   const shown = nav.recordIdOf(page.url()); // a create's page before the Save: never its new record
   const stale = await review.isVisible(); // an earlier block's banner stays until the dialog closes
   const tasks = !f.recordId && f.model.objectApiName === 'Task' ? await read((signal) => tasksNamed(f, signal)) : null;
-  // A lookup set by id on an Aura lookup (picked by its name) or cleared is proved by the stored id: compared, or held
+  // A lookup picked by name for an id, picked by id on Aura, or cleared is proved by the stored id: compared, or held
   // before, on a save that stays on the record or leaves it.
   const confirms = Object.keys(f.set || {}).filter((k) => f.set[k].confirm);
   const unprovedOf = (values) => confirms.filter((k) => !values.checked.includes(k) && !values.notChecked.some((x) => x.apiName === k && x.why === HELD));
@@ -848,8 +864,10 @@ const press = async (f, name) => {
   await f.s.page.evaluate(() => { let a = document.activeElement; while (a && a.shadowRoot && a.shadowRoot.activeElement) a = a.shadowRoot.activeElement; if (a && a.blur) a.blur(); }).catch(() => {}); // a page gone is read by the click below
   return button.click({ timeout: 5_000 }).catch(async (e) => {
     await stillOpen(f);
+    const n = await button.count(); // two matches is Playwright's strict-mode error: AMBIGUOUS, naming each (F23)
+    if (n > 1) throw new SfUiError('AMBIGUOUS', `the form shows ${n} ${name} buttons, so the press would be a guess`, { recordId: f.recordId, button: name, controls: await controlsOf(button) });
     if (e.name !== 'TimeoutError') throw e;
-    if (!(await button.count())) throw new SfUiError('ACTION_NOT_AVAILABLE', `the form shows no ${name} button`, { recordId: f.recordId, button: name });
+    if (!n) throw new SfUiError('ACTION_NOT_AVAILABLE', `the form shows no ${name} button`, { recordId: f.recordId, button: name });
     const disabled = await button.first().isDisabled({ timeout: 1_000 }).catch(() => null);
     throw new SfUiError('TIMEOUT', `${name} took no click in 5 s${disabled ? ': it stayed disabled' : ''}`, { recordId: f.recordId, button: name, disabled });
   });

@@ -1,7 +1,8 @@
 'use strict';
 
 // Modals render at page level, outside the component that opened them (LightningModal goes into
-// lightning-overlay-container), so always search from the page and take the newest visible dialog.
+// lightning-overlay-container), so always search from the page. `find` prefers an aria-modal dialog, then a
+// dialog the page did not hide, then the newest visible one.
 
 const { requireEnglish } = require('./session');
 
@@ -17,6 +18,8 @@ async function find(s, { timeout = 30_000, body = false } = {}) {
   const any = role().locator('visible=true');
   await any.last().waitFor({ state: 'visible', timeout: left() });
   // A shown dialog before one the page hid when a newer one opened over it: DOM order is not stacking order (R7).
+  // ponytail: a shown non-modal dialog over a hidden aria-modal one reads as a utility panel beside the drawn
+  // F-fixtures-26 dialog, so it loses (D8); no measured page has it, add a stacking signal if one does.
   const modal = (hidden) => s.page.locator('[aria-modal="true"]').and(role(hidden)).locator('visible=true');
   let dialog = any.last();
   for (const l of [modal(false), modal(true), role(false).locator('visible=true')]) {
