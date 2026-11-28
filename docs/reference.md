@@ -678,7 +678,7 @@ A tool error carries a `code`, and its message starts with that code. This table
 | `APP_NOT_OPENED` | 1 | `session.js` | {name} did not open in {...} s: the page shows app {...} at {...} |
 | `APP_UNAVAILABLE` | 1 | `session.js` | {name} is not a Lightning app this user can open |
 | `AUTH_UNREADABLE` | 1 | `session.js` | {alias} has auth, but it could not be read (keychain or file access); try sf org display -o {alias} |
-| `BAD_ARGS` | 44 | `access.js`, `act.js`, `checks.js`, `combinations.js`, `deploy.js`, `form.js`, `improvements.js`, `layer.js`, `list.js`, `lwc.js`, `nav.js`, `navmap.js`, `replay.js`, `server.js`, `watch.js` | give a name ("" for an unnamed icon button), a text, or a row for a role alone |
+| `BAD_ARGS` | 46 | `access.js`, `act.js`, `checks.js`, `combinations.js`, `deploy.js`, `form.js`, `improvements.js`, `layer.js`, `list.js`, `lwc.js`, `nav.js`, `navmap.js`, `replay.js`, `server.js`, `watch.js` | give a name ("" for an unnamed icon button), a text, or a row for a role alone |
 | `BUDGET_SPENT` | 1 | `server.js` | this session used its budget of {led.budget} tool calls: end an open scenario with a reason that starts "not tested:", then call sf_end |
 | `CANCELLED` | 2 | `server.js` | the caller cancelled sf_start, so {id} was closed |
 | `CLICK_MISSED` | 1 | `act.js` | "{...}" took the press, but the release did not reach it, so no click did: {why} |
